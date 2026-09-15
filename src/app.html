@@ -300,6 +300,10 @@
   .mrow:hover .mx{opacity:1}
   .mrow .mx:hover{background:var(--panel);color:var(--ink)}
   .mrow .mx.arm{opacity:1;color:var(--danger);box-shadow:0 0 0 1px var(--danger) inset}
+  #mapsTrash:not(:empty){border-top:1px solid var(--panel-line);margin-top:5px;padding-top:5px}
+  .tsec{font-size:10px;color:var(--muted);padding:2px 8px 4px;letter-spacing:.02em}
+  .mrow.trow .mn{color:var(--muted)}
+  .mrow.trow .mx{opacity:1}
   #mapsFoot{border-top:1px solid var(--panel-line);margin-top:5px;padding-top:6px}
   #mapsFoot button{font:inherit;font-size:12px;width:100%;text-align:left;background:none;border:0;color:var(--ink);padding:7px 8px;border-radius:7px;cursor:pointer}
   #mapsFoot button:hover{background:var(--panel-hover)}
@@ -397,7 +401,7 @@
   <span id="saveState">saved</span>
 </div>
 
-<div id="maps"><div id="mapsList"></div><div id="mapsFoot"><button id="btnNewMap">New map</button></div></div>
+<div id="maps"><div id="mapsList"></div><div id="mapsTrash"></div><div id="mapsFoot"><button id="btnNewMap">New map</button></div></div>
 
 <div id="jump">
   <input id="jumpIn" type="text" placeholder="Jump to…" autocomplete="off" spellcheck="false">
@@ -477,7 +481,7 @@
 
     <h3>Move around</h3>
     <table class="keys">
-      <tr><td><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></td><td>Walk the tree.</td></tr>
+      <tr><td><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></td><td>Walk the tree. Past the last of a node's siblings the arrow carries on into the next branch along at the same level, staying on that side of the map. Unlike <kbd>Tab</kbd> it does not wrap: run out of map that way and it stops.</td></tr>
       <tr><td>Arrows while typing</td><td>Stop typing and start moving, in one press. <kbd>⌥</kbd>+arrow moves the cursor inside the text instead.</td></tr>
       <tr><td><kbd>Tab</kbd> / <kbd>⇧</kbd><kbd>Tab</kbd></td><td>Cycle every node at the same level.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>K</kbd></td><td>Jump to any node by typing a few letters of it. Works across the whole map, opens folded branches and steps out of focus to get there.</td></tr>
@@ -485,6 +489,7 @@
       <tr><td><kbd>⇧</kbd><kbd>⌘</kbd><kbd>0</kbd></td><td>Fit just the selected branch, or the selected frame.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>.</kbd> / <kbd>⌘</kbd><kbd>1</kbd></td><td>Recentre on the selection / back to 100%.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>/</kbd></td><td>Focus: the selected branch fills the screen. <kbd>Esc</kbd> steps back out.</td></tr>
+      <tr><td>Arrows while focused</td><td>On the focused node itself, a sideways arrow carries the focus to the branch beside it and the arrow pointing back toward the centre lifts it a level, so you can walk a large map branch by branch without stepping out and back in. Outward still goes to the first child.</td></tr>
     </table>
 
     <h3>Reshape</h3>
@@ -493,6 +498,12 @@
       <tr><td><kbd>⌘</kbd><kbd>E</kbd></td><td>Fold or unfold a branch. A folded node wears a badge with the number hidden underneath; click the badge to open it. With a selection up it folds every selected node at once, so a whole level goes away in one press.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag (a small pennant).</td></tr>
+    </table>
+
+    <h3>Maps and touch</h3>
+    <table class="keys">
+      <tr><td><b>Maps</b></td><td>Every map is stored on its own. Delete asks once before it goes, and the last few deleted maps wait under <em>Recently deleted</em> in the same panel with a Restore button.</td></tr>
+      <tr><td><b>Touch</b></td><td>One finger pans, two fingers pinch to zoom, and a tap opens a folded branch. Making a map needs a keyboard, so touch is for reading one you already have.</td></tr>
     </table>
 
     <h3>Edit</h3>
@@ -688,8 +699,60 @@ function navigate(node,pressed){
   if(isRoot(node)) to=kids(node).filter(function(c){ return dirOf(c)===pressed; })[0]||null;
   else if(pressed===dirOf(node.id)) to=kids(node)[0]||null;
   else if(pressed===OPP[dirOf(node.id)]) to=node.parent;
-  else { var g=sibGroup(node), i=g.indexOf(node.id); to=g[i+((pressed==="U"||pressed==="L")?-1:1)]||null; }
+  else {
+    var g=sibGroup(node), i=g.indexOf(node.id), step=(pressed==="U"||pressed==="L")?-1:1;
+    to=g[i+step]||null;
+    /* Past the edge of its own group, an arrow carries on into the next branch
+       along at the same level, the way Tab cycling does. Two differences from
+       Tab, both deliberate: it stays among branches pointing the same way, so
+       you never teleport across the centre to the other side of the map, and it
+       does not wrap. An arrow is a direction; running out of map that way
+       should stop, not reappear at the far end. */
+    if(!to){
+      var d=dirOf(node.id);
+      var row=levelOrder(depthRel(node)).filter(function(x){ return dirOf(x)===d; });
+      var j=row.indexOf(node.id);
+      if(j>=0) to=row[j+step]||null;
+    }
+  }
   return (to && visible(to)) ? to : null;
+}
+/* Two arrow moves that navigate() cannot express, because they move the VIEW
+   rather than the selection. On the focused node itself a cross-axis arrow
+   carries the focus sideways to the sibling branch, and the inward arrow lifts
+   it one level, so a big map can be walked branch by branch without stepping
+   out and back in each time. The outward arrow still goes to the first child,
+   unchanged, so in and out stay opposites. */
+function focusSib(node,pressed){
+  /* Every sibling under the same parent, not sibGroup: that filters by
+     direction, and the spread only derives directions for what is INSIDE the
+     current view, so the focused node's own siblings are exactly the nodes
+     dirOf cannot speak for. Sides do not matter here anyway, since focus shows
+     one branch at a time. */
+  if(!node.parent) return false;
+  var g=N(node.parent).children, i=g.indexOf(node.id);
+  var to=g[i+((pressed==="U"||pressed==="L")?-1:1)];
+  if(!to||!N(to)) return false;
+  focusId=to; selected=to; editing=null; clearMarks(); hardRender(); fit(); saveSoon();
+  return true;
+}
+function focusUp(node){
+  var p=node.parent?N(node.parent):null;
+  if(!p) return false;
+  focusId=(p.id!==state.rootId)?p.id:null;
+  selected=p.id; editing=null; clearMarks(); hardRender(); fit(); saveSoon();
+  return true;
+}
+function arrowGo(pressed){
+  var n=N(selected); if(!n) return false;
+  if(focusId && isVR(n) && !isRoot(n)){
+    var d=dirOf(n.id);
+    if(pressed===OPP[d]){ if(focusUp(n)) return true; }
+    else if(pressed!==d){ if(focusSib(n,pressed)) return true; }
+  }
+  var to=navigate(n,pressed);
+  if(to){ select(to); return true; }
+  return false;
 }
 function levelOrder(depth){
   var out=[];
@@ -920,6 +983,25 @@ var elHint=document.getElementById("startHint");
 var elBadges=document.getElementById("badges");
 var els={}, ftEls={}, bdEls={};
 
+/* Key HANDLING has been cross-platform since the beginning (metaKey||ctrlKey,
+   altKey); only the labels were Mac-only, so every Windows and Linux visitor
+   was reading instructions for keys they do not have. Off a Mac the glyphs are
+   swapped for words, once, at boot. Only the app's own chrome is touched, never
+   the map: a node whose text is literally "⌘" belongs to whoever typed it. */
+var IS_MAC=/Mac|iPod|iPhone|iPad/i.test(
+  (navigator.userAgentData&&navigator.userAgentData.platform)||navigator.platform||navigator.userAgent||"");
+var KEYWORD={"⌘":"Ctrl","⌥":"Alt","⇧":"Shift","⏎":"Enter","⌫":"Backspace","⎋":"Esc"};
+function keyWords(s){ return s.replace(/[⌘⌥⇧⏎⌫⎋]/g,function(c){ return KEYWORD[c]||c; }); }
+function localizeKeys(){
+  if(IS_MAC) return;
+  ["topbar","style","framebar","hint","help","maps","jump"].forEach(function(id){
+    var root=document.getElementById(id); if(!root) return;
+    var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null), t, list=[];
+    while((t=w.nextNode())) list.push(t);
+    list.forEach(function(n){ n.nodeValue=keyWords(n.nodeValue); });
+    [].forEach.call(root.querySelectorAll("[title]"),function(el){ el.title=keyWords(el.title); });
+  });
+}
 function applyCss(){
   SC.gen++; SC.body={}; SC.edge={}; meas={};
   var R=document.documentElement, s=R.style;
@@ -2213,6 +2295,48 @@ function docDrop(id){ try{ localStorage.removeItem(DOCP+id); }catch(e){} }
 function libRead(){ return idxRead(); }
 function libWrite(l){ return idxWrite(l); }
 function docId(){ return "d"+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+/* Deleting a map cannot be undone by the node undo stack, so a deleted map is
+   set aside under its own key rather than dropped. Only the last few are kept:
+   localStorage is about 5MB with no eviction, and a bin that grows without
+   limit would eventually cost you the maps you still want. A trash write that
+   does not fit is not an error, it just means this one was not kept. */
+var TRASHP="mappr.trash.", TRASH_KEEP=3;
+function trashList(){
+  var out=[];
+  try{
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      if(k && k.indexOf(TRASHP)===0){
+        try{ var d=JSON.parse(localStorage.getItem(k)); if(d&&d.state&&d.id) out.push(d); }catch(e){}
+      }
+    }
+  }catch(e){}
+  out.sort(function(a,b){ return (b.deletedAt||0)-(a.deletedAt||0); });
+  return out;
+}
+function trashPrune(){
+  var l=trashList();
+  for(var i=TRASH_KEEP;i<l.length;i++){ try{ localStorage.removeItem(TRASHP+l[i].id); }catch(e){} }
+}
+function trashPut(id,doc){
+  if(!doc) return false;
+  doc.id=id; doc.deletedAt=Date.now();
+  try{ localStorage.setItem(TRASHP+id,JSON.stringify(doc)); }catch(e){ return false; }
+  trashPrune(); return true;
+}
+function trashRestore(id){
+  var raw=null, d=null;
+  try{ raw=localStorage.getItem(TRASHP+id); }catch(e){}
+  if(!raw) return;
+  try{ d=JSON.parse(raw); }catch(e){ return; }
+  if(!d||!d.state) return;
+  if(!docWriteRaw(id,d)) return;                 /* storeFail already said why */
+  var lib=idxRead()||{current:null,docs:{}};
+  lib.docs[id]={id:id,name:docName(d.state),count:nodeCount(d.state),updated:Date.now()};
+  if(!idxWrite(lib)) return;
+  try{ localStorage.removeItem(TRASHP+id); }catch(e){}
+  drawMaps(); flashSave("restored "+docName(d.state));
+}
 function nodeCount(st){ return Object.keys(st.nodes).length; }
 function docName(st){ return (st.nodes[st.rootId].text||"Untitled").split("\n")[0]; }
 
@@ -2248,6 +2372,16 @@ function drawMaps(){
       (ids.length>1?'<button class="mx'+(delArm===id?" arm":"")+'" data-del="'+id+'">'+(delArm===id?"Sure?":"Delete")+'</button>':"")+
     '</div>';
   }).join("");
+  /* The bin is part of the same panel: a map you deleted is one click from
+     coming back, and one glance from being seen to still exist. */
+  var tl=trashList();
+  var tel=document.getElementById("mapsTrash");
+  if(tel) tel.innerHTML = tl.length
+    ? '<div class="tsec">Recently deleted</div>'+tl.map(function(d){
+        return '<div class="mrow trow"><span class="mn">'+esc(docName(d.state))+'</span>'+
+               '<button class="mx" data-restore="'+d.id+'">Restore</button></div>';
+      }).join("")
+    : "";
 }
 function toggleMaps(on){
   var want=(on==null)?!elMaps.classList.contains("on"):on;
@@ -2290,6 +2424,8 @@ document.getElementById("btnNewMap").onclick=function(){ newDoc(); toggleMaps(fa
 elMaps.addEventListener("mousedown",function(e){ e.preventDefault(); });
 elMaps.addEventListener("click",function(e){
   var dup=e.target.closest("[data-dup]"), del=e.target.closest("[data-del]");
+  var res=e.target.closest("[data-restore]");
+  if(res){ disarmDelete(false); trashRestore(res.dataset.restore); return; }
   if(dup){
     disarmDelete(false);
     var src=docRead(dup.dataset.dup); if(!src) return;
@@ -2303,7 +2439,9 @@ elMaps.addEventListener("click",function(e){
     if(Object.keys(lib2.docs).length<2) return;
     if(delArm!==did){ armDelete(did); return; }
     disarmDelete(false);
-    delete lib2.docs[did]; idxWrite(lib2); docDrop(did);
+    var doomed=docRead(did);
+    delete lib2.docs[did]; idxWrite(lib2);
+    trashPut(did,doomed); docDrop(did);
     if(did===curDoc) switchDoc(Object.keys(lib2.docs)[0]);
     else drawMaps();
     return;
@@ -2533,8 +2671,7 @@ document.addEventListener("keydown",function(e){
     e.preventDefault();
     var from=editing; commitEdit();
     if(pruneIfBlank(from)){ render(); return; }
-    var go=navigate(N(selected),KEYDIR[e.key]);
-    go?select(go):render();
+    if(!arrowGo(KEYDIR[e.key])) render();
     return;
   }
   if(editing&&e.altKey) return;
@@ -2546,8 +2683,7 @@ document.addEventListener("keydown",function(e){
   if(e.key===" "){ e.preventDefault(); beginEdit(selected,true); return; }
   if(KEYDIR[e.key]){
     e.preventDefault();
-    var to=navigate(N(selected),KEYDIR[e.key]);
-    to?select(to):flash(selected);
+    if(!arrowGo(KEYDIR[e.key])) flash(selected);
     return;
   }
   if(e.key==="Backspace"||e.key==="Delete"){ e.preventDefault(); doDelete(); return; }
@@ -2665,6 +2801,52 @@ elStage.addEventListener("wheel",function(e){
   if(e.metaKey||e.ctrlKey) zoomBy(Math.exp(-e.deltaY*.0022),e.clientX,e.clientY);
   else { view.x-=e.deltaX; view.y-=e.deltaY; applyView(); }
 },{passive:false});
+/* Touch does exactly one thing: move the camera. One finger on the canvas pans,
+   two fingers pinch and pan together, and the point between your fingers stays
+   under them. Nothing on touch creates, retypes, lassoes or marks a row.
+   Mappr is a keyboard app and a thumb has no keyboard, so the honest touch
+   story is "read the map you made", not a second half-built way to build one.
+   A tap on a node still selects it, because the browser synthesises a click and
+   we deliberately leave that alone: reading a map means opening folded
+   branches. #stage already carries touch-action:none, so the page itself never
+   scrolls or zooms underneath. */
+var tpan=null, tpinch=null;
+function tdist(a,b){ return Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY); }
+function tmid(a,b){ return { x:(a.clientX+b.clientX)/2, y:(a.clientY+b.clientY)/2 }; }
+elStage.addEventListener("touchstart",function(e){
+  if(e.touches.length===2){
+    e.preventDefault(); stopCam(); tpan=null;
+    tpinch={ d:tdist(e.touches[0],e.touches[1]), m:tmid(e.touches[0],e.touches[1]),
+             z:view.z, x:view.x, y:view.y };
+    return;
+  }
+  if(e.touches.length===1 && !e.target.closest(".node") && !e.target.closest(".ftitle")){
+    stopCam();
+    tpan={ x:e.touches[0].clientX, y:e.touches[0].clientY, vx:view.x, vy:view.y };
+  }
+},{passive:false});
+elStage.addEventListener("touchmove",function(e){
+  if(tpinch && e.touches.length===2){
+    e.preventDefault();
+    var m=tmid(e.touches[0],e.touches[1]);
+    var z=Math.max(.15,Math.min(2.5, tpinch.z*(tdist(e.touches[0],e.touches[1])/(tpinch.d||1))));
+    var k=z/tpinch.z;
+    view.z=z;
+    view.x=m.x-(tpinch.m.x-tpinch.x)*k;
+    view.y=m.y-(tpinch.m.y-tpinch.y)*k;
+    applyView();
+    return;
+  }
+  if(tpan && e.touches.length===1){
+    e.preventDefault();
+    view.x=tpan.vx+(e.touches[0].clientX-tpan.x);
+    view.y=tpan.vy+(e.touches[0].clientY-tpan.y);
+    applyView();
+  }
+},{passive:false});
+function endTouch(){ tpan=null; tpinch=null; }
+elStage.addEventListener("touchend",endTouch);
+elStage.addEventListener("touchcancel",endTouch);
 function zoomBy(f,ox,oy){
   stopCam();
   ox=ox==null?innerWidth/2:ox; oy=oy==null?innerHeight/2:oy;
@@ -2826,7 +3008,7 @@ addEventListener("beforeunload",function(){ if(editing) commitEdit(); if(editFra
    ============================================================ */
 var restored=load();
 if(!restored){ state=freshState(); selected=state.rootId; uid=1; }
-applyCss(); drawPanel();
+localizeKeys(); applyCss(); drawPanel();
 function boot(){ render(true); restored?applyView():center(); }
 if(document.fonts&&document.fonts.load) document.fonts.load('17px "Excalifont"').then(boot,boot);
 else boot();
@@ -2878,9 +3060,14 @@ window.__mf={
   between:insertBetween, del:doDelete, select:select,
   mark:function(ids){ marked={}; ids.forEach(function(i){ marked[i]=1; }); render(true); },
   markSibs:markSiblings, fold:toggleCollapse,
+  get isMac(){ return IS_MAC; }, keyWords:keyWords,
+  trash:function(){ return trashList().map(function(d){ return {id:d.id,name:docName(d.state)}; }); },
+  restore:trashRestore,
+  cam:function(){ return {x:view.x,y:view.y,z:view.z}; },
   get rawMarked(){ return Object.keys(marked); },
   frame:makeFrame, ungroup:ungroup, pickFrame:function(id){ selFrame=id; render(true); },
   navigate:function(d){ var t=navigate(N(selected),d); if(t) select(t); return t; },
+  arrow:function(d){ return arrowGo(d); },
   tab:function(b){ var x=cycleLevel(N(selected),b); if(x) select(x); return x; },
   focusIn:enterFocus, focusOut:exitFocus,
   dir:dirOf, spread:function(v){ if(v===undefined) return CFG.spread; CFG.spread=v; drawPanel(); render(true); save(); },

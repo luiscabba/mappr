@@ -678,17 +678,17 @@ group("deleting a map asks first");
 {
   const openPanel = async () => { await M(() => document.getElementById("btnMaps").click()); await page.waitForTimeout(200); };
   const newMap = async () => { await openPanel(); await M(() => document.getElementById("btnNewMap").click()); await page.waitForTimeout(250); };
-  const rows = () => M(() => document.querySelectorAll(".mrow").length);
+  const rows = () => M(() => document.querySelectorAll("#mapsList .mrow").length);
   // The Delete button of a row that is not the open map, so deleting it cannot
   // be confused with the switch that follows.
   const delBtn = () => M(() => {
-    const r = [...document.querySelectorAll(".mrow")].find((x) => !x.classList.contains("on"));
+    const r = [...document.querySelectorAll("#mapsList .mrow")].find((x) => !x.classList.contains("on"));
     const b = r && r.querySelector("[data-del]");
     return b ? { text: b.textContent, armed: b.classList.contains("arm") } : null;
   });
   const clickDel = async () => {
     await M(() => {
-      const r = [...document.querySelectorAll(".mrow")].find((x) => !x.classList.contains("on"));
+      const r = [...document.querySelectorAll("#mapsList .mrow")].find((x) => !x.classList.contains("on"));
       r.querySelector("[data-del]").click();
     });
     await page.waitForTimeout(200);
@@ -725,6 +725,96 @@ group("deleting a map asks first");
   ok("and nothing went with it", (await rows()) === before - 1, await rows());
   await M(() => document.getElementById("btnMaps").click());
   await page.waitForTimeout(150);
+
+  // Deleting sets the map aside rather than dropping it.
+  await openPanel();
+  const liveBefore = await rows();
+  const doomed = await M(() => {
+    const r = [...document.querySelectorAll("#mapsList .mrow")].find((x) => !x.classList.contains("on"));
+    return r.dataset.m;
+  });
+  await clickDel(); await clickDel();
+  ok("the deleted map left the list", (await rows()) === liveBefore - 1, await rows());
+  const binned = await M(() => __mf.trash());
+  ok("and turned up in the bin", binned.some((d) => d.id === doomed), binned);
+  ok("the bin is shown in the panel", await M(() => !!document.querySelector("[data-restore]")));
+
+  await M((id) => document.querySelector('[data-restore="' + id + '"]').click(), doomed);
+  await page.waitForTimeout(250);
+  ok("Restore puts it back in the list", (await rows()) === liveBefore, await rows());
+  ok("and takes it out of the bin", !(await M(() => __mf.trash())).some((d) => d.id === doomed));
+
+  // The bin is capped, so it can never eat the maps you still have.
+  for (let i = 0; i < 5; i++) { await openPanel(); await clickDel(); await clickDel(); }
+  ok("the bin keeps only the last few", (await M(() => __mf.trash())).length <= 3, (await M(() => __mf.trash())).length);
+  await M(() => document.getElementById("btnMaps").click());
+  await page.waitForTimeout(150);
+}
+
+group("key labels off a Mac");
+{
+  ok("the glyph table covers the keys the app uses",
+    (await M(() => __mf.keyWords("\u2318\u2325\u21e7\u23ce\u232b"))) === "CtrlAltShiftEnterBackspace",
+    await M(() => __mf.keyWords("\u2318\u2325\u21e7\u23ce\u232b")));
+  ok("ordinary text is untouched", (await M(() => __mf.keyWords("Central idea"))) === "Central idea");
+  // Headless Chromium on Linux is not a Mac, so the swap should have run.
+  const mac = await M(() => __mf.isMac);
+  const hint = await M(() => document.getElementById("hint").textContent);
+  if (mac) {
+    ok("on a Mac the glyphs stay", /\u2318/.test(hint));
+  } else {
+    ok("off a Mac the hint bar reads in words", hint.includes("Ctrl") && !hint.includes("\u2318"), hint.slice(0, 120));
+    ok("the Keys dialog too", !(await M(() => document.getElementById("help").textContent)).includes("\u2318"));
+    ok("and the button titles", !(await M(() => document.getElementById("btnJump").title)).includes("\u2318"),
+      await M(() => document.getElementById("btnJump").title));
+  }
+  ok("the map itself is never rewritten", (await M(() => {
+    __mf.select(__mf.state.rootId);
+    __mf.state.nodes[__mf.state.rootId].text = "\u2318 shortcuts";
+    return __mf.state.nodes[__mf.state.rootId].text;
+  })) === "\u2318 shortcuts");
+}
+
+group("arrows across branches and inside focus");
+{
+  const newMap = async () => {
+    await M(() => document.getElementById("btnMaps").click());
+    await M(() => document.getElementById("btnNewMap").click());
+    await page.waitForTimeout(220);
+  };
+  await newMap();
+  // Two top-level branches on the same side, two children each, so "past the
+  // end of my siblings" has somewhere real to go.
+  await M(() => __mf.spread("right"));
+  await M(() => __mf.paste("Root\n- A\n  - A1\n  - A2\n- B\n  - B1\n  - B2"));
+  await page.waitForTimeout(250);
+  const sel = () => M(() => __mf.state.nodes[__mf.selected].text);
+
+  await pick("A2");
+  ok("arrows still step within a sibling group", await M(() => __mf.arrow("U")) && (await sel()) === "A1");
+  await pick("A2");
+  ok("and now carry on into the next branch", await M(() => __mf.arrow("D")) && (await sel()) === "B1", await sel());
+  await pick("B1");
+  ok("back the other way returns to the first group", await M(() => __mf.arrow("U")) && (await sel()) === "A2", await sel());
+  await pick("B2");
+  ok("but they do not wrap round", !(await M(() => __mf.arrow("D"))));
+  ok("and the selection stays put when they stop", (await sel()) === "B2");
+
+  // Inside focus: sideways moves the focus, inward lifts it, outward descends.
+  await pick("A");
+  await M(() => __mf.focusIn());
+  await page.waitForTimeout(200);
+  ok("focus is on the branch", (await M(() => __mf.focus)) !== null);
+  ok("a cross-axis arrow moves to the sibling branch", await M(() => __mf.arrow("D")));
+  ok("and it is the sibling that is now focused", (await sel()) === "B" && (await M(() => __mf.focus)) === (await M(() => Object.values(__mf.state.nodes).find((n) => n.text === "B").id)));
+  ok("still focused, not stepped out", (await M(() => __mf.focus)) !== null);
+  ok("coming back lands on the first branch", (await M(() => __mf.arrow("U"))) && (await sel()) === "A");
+
+  ok("the outward arrow still goes to the first child", (await M(() => __mf.arrow("R"))) && (await sel()) === "A1", await sel());
+  await pick("A");
+  ok("the inward arrow lifts the focus a level", (await M(() => __mf.arrow("L"))));
+  ok("landing on the parent", (await sel()) === "Root");
+  ok("and at the top it is the whole map again", (await M(() => __mf.focus)) === null);
 }
 
 group("console");

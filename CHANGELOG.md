@@ -3,6 +3,39 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.11.0] - 2026-09-15
+
+### Added
+- **Touch moves the camera.** One finger pans, two fingers pinch and pan
+  together with the point between them staying put. Nothing else on touch
+  creates, retypes, lassoes or marks: Mappr is a keyboard app and a thumb has
+  no keyboard, so touch is for reading a map you already made rather than a
+  second half-built way to build one. A tap on a node still selects, which is
+  how you open a folded branch. Until now the app shipped a manifest, an icon
+  and an install prompt, then handed anyone who installed it a map they could
+  not pan.
+- **Key labels read in words off a Mac.** The hint bar, the Keys dialog and
+  every button tooltip showed `⌘` and `⌥` to everyone, so Windows and Linux
+  visitors were reading instructions for keys they do not have. Handling was
+  always cross-platform; only the labels were not. The map itself is never
+  rewritten, so a node whose text is literally `⌘` stays as typed.
+- **Deleted maps wait in a bin.** A deleted map is set aside under its own key
+  instead of dropped, and the last few show under *Recently deleted* in the
+  maps panel with a Restore button. Only the last few: localStorage is about
+  5MB with no eviction, and a bin that grew without limit would eventually cost
+  you the maps you still want.
+- **Arrows carry on past a sibling group.** At the edge of a node's own
+  siblings the arrow continues into the next branch along at the same level,
+  the way `Tab` cycling does. Two deliberate differences: it stays among
+  branches pointing the same way, so you never teleport across the centre, and
+  it does not wrap, because an arrow is a direction and running out of map
+  should stop rather than reappear at the far end.
+- **Arrows work inside focus.** On the focused node itself a sideways arrow
+  carries the focus to the branch beside it and the inward arrow lifts it a
+  level, so a large map can be walked branch by branch without stepping out and
+  back in each time. Outward still goes to the first child, so in and out
+  remain opposites.
+
 ## [0.10.2] - 2026-09-15
 
 ### Changed
