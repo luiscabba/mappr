@@ -322,6 +322,40 @@ group("outlines from rendered documents");
   // glyph rule, even when its glyphs vary.
   await fresh("Top\n* A\n   - A1\n      + A1a");
   ok("indentation wins over mixed glyphs", (await depthOf()) === 3);
+
+  // Some pages put every line flush left with no bullets at all, which leaves
+  // the plain text with nothing to recover. The html flavour still has the real
+  // list nesting, so that is what should be read.
+  const RICH = '<p>Top</p><ul><li>A<ul><li>A1<ul><li>A1a</li></ul></li></ul></li><li>B<ul><li>B1</li></ul></li></ul>';
+  const FLAT = "Top\nA\nA1\nA1a\nB\nB1";
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(200);
+  await M((a) => __mf.pasteRich(a.html, a.txt), { html: RICH, txt: FLAT });
+  await page.waitForTimeout(150);
+  ok("html nesting is used when the text is flat", (await shape()) === WANT, await shape());
+
+  // And it must go through the real paste event, both flavours, as a browser
+  // delivers them.
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(200);
+  await M((a) => {
+    const dt = new DataTransfer();
+    dt.setData("text/html", a.html);
+    dt.setData("text/plain", a.txt);
+    document.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
+  }, { html: RICH, txt: FLAT });
+  await page.waitForTimeout(300);
+  ok("the paste event reads the html flavour", (await shape()) === WANT, await shape());
+
+  // A copy with no list in its html must still fall back to the text.
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(200);
+  await M(() => __mf.pasteRich("<p>just a paragraph</p>", "Top\n- A\n  - A1\n    - A1a\n- B\n  - B1"));
+  await page.waitForTimeout(150);
+  ok("plain text still wins when the html has no list", (await shape()) === WANT, await shape());
 }
 
 group("focus by right-click");

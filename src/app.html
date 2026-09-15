@@ -1616,6 +1616,65 @@ var BULLET_RANK={"\u2022":0,"\u25cf":0,"\u25aa":2,"\u25ab":2,"\u25e6":1,"\u25cb"
 var LEAD=/^[ \t\u00a0\u1680\u2000-\u200b\u202f\u205f\u3000]*/;
 var BULLET=/^([-*+>\u2022\u00b7\u25cf\u25aa\u25ab\u25e6\u25cb\u2023\u2043\u2013\u2014]|\d+[.)])[ \t\u00a0]+/;
 
+/* The plain-text flavour of the clipboard is what a rendered page decides to
+   give you, and some pages give you every line flush left with no bullets at
+   all, which leaves nothing to recover the structure from. The text/html
+   flavour of the same copy still carries the real <ul>/<li> nesting, so read
+   that when it is there and only fall back to the text. */
+function parseOutlineHtml(html){
+  var doc=null;
+  try{ doc=new DOMParser().parseFromString(html,"text/html"); }catch(e){ return null; }
+  if(!doc||!doc.body) return null;
+  var items=[];
+  function textOf(el){
+    var c=el.cloneNode(true);
+    /* Drop nested lists first, or a parent item swallows everything under it. */
+    Array.prototype.forEach.call(c.querySelectorAll("ul,ol"),function(x){
+      if(x.parentNode) x.parentNode.removeChild(x);
+    });
+    return (c.textContent||"").replace(/\u00a0/g," ").replace(/\s+/g," ").trim();
+  }
+  function walk(el,depth){
+    Array.prototype.forEach.call(el.children,function(ch){
+      var tag=(ch.tagName||"").toLowerCase();
+      if(tag==="ul"||tag==="ol"){ walk(ch,depth+1); return; }
+      if(tag==="li"){
+        var t=textOf(ch);
+        if(t) items.push({indent:depth*10,text:t});
+        Array.prototype.forEach.call(ch.children,function(k){
+          var kt=(k.tagName||"").toLowerCase();
+          if(kt==="ul"||kt==="ol") walk(k,depth+1);
+        });
+        return;
+      }
+      var h=tag.match(/^h([1-6])$/);
+      if(h){ var ht=textOf(ch); if(ht) items.push({indent:(+h[1]-1)*10,text:ht}); return; }
+      if(tag==="p"||tag==="div"){
+        /* A paragraph that only wraps a list is scaffolding, not an item. */
+        if(!ch.querySelector("ul,ol")){
+          var pt=textOf(ch);
+          if(pt) items.push({indent:depth*10,text:pt});
+          return;
+        }
+      }
+      walk(ch,depth);
+    });
+  }
+  walk(doc.body,0);
+  return items.length?items:null;
+}
+/* Whichever flavour recovered more structure wins. A copy with real nesting in
+   its html beats flattened text; a plain-text copy with no html beats nothing. */
+function levelCount(items){
+  var m={}; (items||[]).forEach(function(x){ m[x.indent]=1; });
+  return Object.keys(m).length;
+}
+function bestOutline(html,text){
+  var t=parseOutline(text||"");
+  var h=(html&&/<li|<ul|<ol/i.test(html))?parseOutlineHtml(html):null;
+  if(h && h.length>1 && levelCount(h)>levelCount(t)) return h;
+  return t;
+}
 function parseOutline(text){
   var rows=[];
   text.replace(/\r/g,"").split("\n").forEach(function(raw){
@@ -1724,13 +1783,15 @@ function currentOutline(){
   return toOutline([VR()]);
 }
 document.addEventListener("paste",function(e){
-  var txt=(e.clipboardData||window.clipboardData).getData("text/plain")||"";
-  if(!txt.trim()) return;
-  var multi=/\n/.test(txt.trim());
+  var cd=e.clipboardData||window.clipboardData;
+  var txt=cd.getData("text/plain")||"", html="";
+  try{ html=cd.getData("text/html")||""; }catch(err){ html=""; }
+  if(!txt.trim()&&!html.trim()) return;
+  var multi=/\n/.test(txt.trim())||/<li|<ul|<ol/i.test(html);
   if(editing&&!multi) return;
   e.preventDefault();
   if(editing) commitEdit();
-  flashSave(insertOutline(parseOutline(txt))+" added");
+  flashSave(insertOutline(bestOutline(html,txt))+" added");
 });
 document.addEventListener("copy",function(e){
   if(editing||editFrame) return;
@@ -2471,12 +2532,27 @@ document.getElementById("filePicker").onchange=function(e){
 };
 document.getElementById("btnPaste").onclick=function(){
   if(editing) commitEdit();
-  if(navigator.clipboard&&navigator.clipboard.readText){
-    navigator.clipboard.readText().then(function(t){
-      var n=insertOutline(parseOutline(t));
-      flashSave(n?n+" added":"nothing to add");
-    },function(){ flashSave("press ⌘V instead"); });
-  } else flashSave("press ⌘V instead");
+  function done(html,txt){
+    var n=insertOutline(bestOutline(html,txt));
+    flashSave(n?n+" added":"nothing to add");
+  }
+  function fallback(){ flashSave("press ⌘V instead"); }
+  /* clipboard.read() gives every flavour; readText() only ever gives the
+     flattened one, so try the richer call first. */
+  if(navigator.clipboard&&navigator.clipboard.read){
+    navigator.clipboard.read().then(function(list){
+      var it=list&&list[0]; if(!it) return fallback();
+      var want=function(type){
+        return it.types.indexOf(type)>=0 ? it.getType(type).then(function(b){ return b.text(); }) : Promise.resolve("");
+      };
+      return Promise.all([want("text/html"),want("text/plain")]).then(function(pair){ done(pair[0],pair[1]); });
+    }).catch(function(){
+      if(navigator.clipboard.readText) navigator.clipboard.readText().then(function(t){ done("",t); },fallback);
+      else fallback();
+    });
+  } else if(navigator.clipboard&&navigator.clipboard.readText){
+    navigator.clipboard.readText().then(function(t){ done("",t); },fallback);
+  } else fallback();
 };
 document.getElementById("btnSelect").onclick=function(){
   selectMode=!selectMode;
@@ -2582,6 +2658,7 @@ window.__mf={
   tab:function(b){ var x=cycleLevel(N(selected),b); if(x) select(x); return x; },
   focusIn:enterFocus, focusOut:exitFocus,
   outline:currentOutline, paste:function(t){ return insertOutline(parseOutline(t)); },
+  pasteRich:function(html,text){ return insertOutline(bestOutline(html,text||"")); },
   svg:function(){ var t=exportTargets(); return buildSvg(t.ids,t.frame); },
   png:function(cb){ var t=exportTargets(); svgToPng(buildSvg(t.ids,t.frame),2,cb); },
   panel:function(on){ toggleStyle(on); },

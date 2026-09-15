@@ -1,0 +1,225 @@
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index fe0c01e..8e75e16 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -3,6 +3,20 @@
+ All notable changes to Mappr. Format loosely follows
+ [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
+ 
++## [0.8.2] - 2026-09-15
++
++### Fixed
++- Pasting an outline copied out of a rendered page now reads the clipboard's
++  html flavour, not just its text. 0.8.1 taught the text parser about invisible
++  indentation and bullet glyphs, which was not enough: some pages hand over
++  every line flush left with no bullets at all, leaving the plain text with no
++  record of depth to recover. The same copy's `text/html` still carries the real
++  `<ul>`/`<li>` nesting. Both flavours are now parsed and whichever recovered
++  more structure is used, so a genuine plain-text outline is never overridden by
++  scaffolding html. The `Paste outline` button reads both flavours too, which
++  needed `clipboard.read()` in place of `readText()`, since `readText` can only
++  ever return the flattened version.
++
+ ## [0.8.1] - 2026-09-15
+ 
+ ### Added
+diff --git a/README.md b/README.md
+index 85bd9bc..ad9b353 100644
+--- a/README.md
++++ b/README.md
+@@ -163,7 +163,10 @@ Mouse: right-click a node to focus into it, right-click empty canvas to step
+ back out. On a Mac that is a two-finger click or ctrl-click. Double-click a node
+ to retype it.
+ 
+-Pasted outlines: indentation by spaces, tabs or the invisible Unicode spaces
++Pasted outlines: both clipboard flavours are parsed and whichever recovered more
++structure wins. The `text/html` flavour is the reliable one, because it keeps
++real `<ul>`/`<li>` nesting that the plain text often loses entirely. Falling back
++to text: indentation by spaces, tabs or the invisible Unicode spaces
+ rich-text copies use; `-` `*` `+` `>` `•` `◦` `▪` and numbered bullets; markdown
+ headings. A copy that arrives with no indentation at all, which is what Word and
+ Google Docs produce, is nested by bullet glyph instead, in their documented
+diff --git a/VERSION b/VERSION
+index 6f4eebd..100435b 100644
+--- a/VERSION
++++ b/VERSION
+@@ -1 +1 @@
+-0.8.1
++0.8.2
+diff --git a/src/app.html b/src/app.html
+index 77d8181..4986907 100644
+--- a/src/app.html
++++ b/src/app.html
+@@ -1616,6 +1616,65 @@ var BULLET_RANK={"\u2022":0,"\u25cf":0,"\u25aa":2,"\u25ab":2,"\u25e6":1,"\u25cb"
+ var LEAD=/^[ \t\u00a0\u1680\u2000-\u200b\u202f\u205f\u3000]*/;
+ var BULLET=/^([-*+>\u2022\u00b7\u25cf\u25aa\u25ab\u25e6\u25cb\u2023\u2043\u2013\u2014]|\d+[.)])[ \t\u00a0]+/;
+ 
++/* The plain-text flavour of the clipboard is what a rendered page decides to
++   give you, and some pages give you every line flush left with no bullets at
++   all, which leaves nothing to recover the structure from. The text/html
++   flavour of the same copy still carries the real <ul>/<li> nesting, so read
++   that when it is there and only fall back to the text. */
++function parseOutlineHtml(html){
++  var doc=null;
++  try{ doc=new DOMParser().parseFromString(html,"text/html"); }catch(e){ return null; }
++  if(!doc||!doc.body) return null;
++  var items=[];
++  function textOf(el){
++    var c=el.cloneNode(true);
++    /* Drop nested lists first, or a parent item swallows everything under it. */
++    Array.prototype.forEach.call(c.querySelectorAll("ul,ol"),function(x){
++      if(x.parentNode) x.parentNode.removeChild(x);
++    });
++    return (c.textContent||"").replace(/\u00a0/g," ").replace(/\s+/g," ").trim();
++  }
++  function walk(el,depth){
++    Array.prototype.forEach.call(el.children,function(ch){
++      var tag=(ch.tagName||"").toLowerCase();
++      if(tag==="ul"||tag==="ol"){ walk(ch,depth+1); return; }
++      if(tag==="li"){
++        var t=textOf(ch);
++        if(t) items.push({indent:depth*10,text:t});
++        Array.prototype.forEach.call(ch.children,function(k){
++          var kt=(k.tagName||"").toLowerCase();
++          if(kt==="ul"||kt==="ol") walk(k,depth+1);
++        });
++        return;
++      }
++      var h=tag.match(/^h([1-6])$/);
++      if(h){ var ht=textOf(ch); if(ht) items.push({indent:(+h[1]-1)*10,text:ht}); return; }
++      if(tag==="p"||tag==="div"){
++        /* A paragraph that only wraps a list is scaffolding, not an item. */
++        if(!ch.querySelector("ul,ol")){
++          var pt=textOf(ch);
++          if(pt) items.push({indent:depth*10,text:pt});
++          return;
++        }
++      }
++      walk(ch,depth);
++    });
++  }
++  walk(doc.body,0);
++  return items.length?items:null;
++}
++/* Whichever flavour recovered more structure wins. A copy with real nesting in
++   its html beats flattened text; a plain-text copy with no html beats nothing. */
++function levelCount(items){
++  var m={}; (items||[]).forEach(function(x){ m[x.indent]=1; });
++  return Object.keys(m).length;
++}
++function bestOutline(html,text){
++  var t=parseOutline(text||"");
++  var h=(html&&/<li|<ul|<ol/i.test(html))?parseOutlineHtml(html):null;
++  if(h && h.length>1 && levelCount(h)>levelCount(t)) return h;
++  return t;
++}
+ function parseOutline(text){
+   var rows=[];
+   text.replace(/\r/g,"").split("\n").forEach(function(raw){
+@@ -1724,13 +1783,15 @@ function currentOutline(){
+   return toOutline([VR()]);
+ }
+ document.addEventListener("paste",function(e){
+-  var txt=(e.clipboardData||window.clipboardData).getData("text/plain")||"";
+-  if(!txt.trim()) return;
+-  var multi=/\n/.test(txt.trim());
++  var cd=e.clipboardData||window.clipboardData;
++  var txt=cd.getData("text/plain")||"", html="";
++  try{ html=cd.getData("text/html")||""; }catch(err){ html=""; }
++  if(!txt.trim()&&!html.trim()) return;
++  var multi=/\n/.test(txt.trim())||/<li|<ul|<ol/i.test(html);
+   if(editing&&!multi) return;
+   e.preventDefault();
+   if(editing) commitEdit();
+-  flashSave(insertOutline(parseOutline(txt))+" added");
++  flashSave(insertOutline(bestOutline(html,txt))+" added");
+ });
+ document.addEventListener("copy",function(e){
+   if(editing||editFrame) return;
+@@ -2471,12 +2532,27 @@ document.getElementById("filePicker").onchange=function(e){
+ };
+ document.getElementById("btnPaste").onclick=function(){
+   if(editing) commitEdit();
+-  if(navigator.clipboard&&navigator.clipboard.readText){
+-    navigator.clipboard.readText().then(function(t){
+-      var n=insertOutline(parseOutline(t));
+-      flashSave(n?n+" added":"nothing to add");
+-    },function(){ flashSave("press ⌘V instead"); });
+-  } else flashSave("press ⌘V instead");
++  function done(html,txt){
++    var n=insertOutline(bestOutline(html,txt));
++    flashSave(n?n+" added":"nothing to add");
++  }
++  function fallback(){ flashSave("press ⌘V instead"); }
++  /* clipboard.read() gives every flavour; readText() only ever gives the
++     flattened one, so try the richer call first. */
++  if(navigator.clipboard&&navigator.clipboard.read){
++    navigator.clipboard.read().then(function(list){
++      var it=list&&list[0]; if(!it) return fallback();
++      var want=function(type){
++        return it.types.indexOf(type)>=0 ? it.getType(type).then(function(b){ return b.text(); }) : Promise.resolve("");
++      };
++      return Promise.all([want("text/html"),want("text/plain")]).then(function(pair){ done(pair[0],pair[1]); });
++    }).catch(function(){
++      if(navigator.clipboard.readText) navigator.clipboard.readText().then(function(t){ done("",t); },fallback);
++      else fallback();
++    });
++  } else if(navigator.clipboard&&navigator.clipboard.readText){
++    navigator.clipboard.readText().then(function(t){ done("",t); },fallback);
++  } else fallback();
+ };
+ document.getElementById("btnSelect").onclick=function(){
+   selectMode=!selectMode;
+@@ -2582,6 +2658,7 @@ window.__mf={
+   tab:function(b){ var x=cycleLevel(N(selected),b); if(x) select(x); return x; },
+   focusIn:enterFocus, focusOut:exitFocus,
+   outline:currentOutline, paste:function(t){ return insertOutline(parseOutline(t)); },
++  pasteRich:function(html,text){ return insertOutline(bestOutline(html,text||"")); },
+   svg:function(){ var t=exportTargets(); return buildSvg(t.ids,t.frame); },
+   png:function(cb){ var t=exportTargets(); svgToPng(buildSvg(t.ids,t.frame),2,cb); },
+   panel:function(on){ toggleStyle(on); },
+diff --git a/tests/smoke.mjs b/tests/smoke.mjs
+index 48097ed..b53c05a 100644
+--- a/tests/smoke.mjs
++++ b/tests/smoke.mjs
+@@ -322,6 +322,40 @@ group("outlines from rendered documents");
+   // glyph rule, even when its glyphs vary.
+   await fresh("Top\n* A\n   - A1\n      + A1a");
+   ok("indentation wins over mixed glyphs", (await depthOf()) === 3);
++
++  // Some pages put every line flush left with no bullets at all, which leaves
++  // the plain text with nothing to recover. The html flavour still has the real
++  // list nesting, so that is what should be read.
++  const RICH = '<p>Top</p><ul><li>A<ul><li>A1<ul><li>A1a</li></ul></li></ul></li><li>B<ul><li>B1</li></ul></li></ul>';
++  const FLAT = "Top\nA\nA1\nA1a\nB\nB1";
++  await M(() => document.getElementById("btnMaps").click());
++  await M(() => document.getElementById("btnNewMap").click());
++  await page.waitForTimeout(200);
++  await M((a) => __mf.pasteRich(a.html, a.txt), { html: RICH, txt: FLAT });
++  await page.waitForTimeout(150);
++  ok("html nesting is used when the text is flat", (await shape()) === WANT, await shape());
++
++  // And it must go through the real paste event, both flavours, as a browser
++  // delivers them.
++  await M(() => document.getElementById("btnMaps").click());
++  await M(() => document.getElementById("btnNewMap").click());
++  await page.waitForTimeout(200);
++  await M((a) => {
++    const dt = new DataTransfer();
++    dt.setData("text/html", a.html);
++    dt.setData("text/plain", a.txt);
++    document.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }));
++  }, { html: RICH, txt: FLAT });
++  await page.waitForTimeout(300);
++  ok("the paste event reads the html flavour", (await shape()) === WANT, await shape());
++
++  // A copy with no list in its html must still fall back to the text.
++  await M(() => document.getElementById("btnMaps").click());
++  await M(() => document.getElementById("btnNewMap").click());
++  await page.waitForTimeout(200);
++  await M(() => __mf.pasteRich("<p>just a paragraph</p>", "Top\n- A\n  - A1\n    - A1a\n- B\n  - B1"));
++  await page.waitForTimeout(150);
++  ok("plain text still wins when the html has no list", (await shape()) === WANT, await shape());
+ }
+ 
+ group("focus by right-click");

@@ -3,6 +3,20 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.8.2] - 2026-09-15
+
+### Fixed
+- Pasting an outline copied out of a rendered page now reads the clipboard's
+  html flavour, not just its text. 0.8.1 taught the text parser about invisible
+  indentation and bullet glyphs, which was not enough: some pages hand over
+  every line flush left with no bullets at all, leaving the plain text with no
+  record of depth to recover. The same copy's `text/html` still carries the real
+  `<ul>`/`<li>` nesting. Both flavours are now parsed and whichever recovered
+  more structure is used, so a genuine plain-text outline is never overridden by
+  scaffolding html. The `Paste outline` button reads both flavours too, which
+  needed `clipboard.read()` in place of `readText()`, since `readText` can only
+  ever return the flattened version.
+
 ## [0.8.1] - 2026-09-15
 
 ### Added

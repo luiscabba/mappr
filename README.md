@@ -163,7 +163,10 @@ Mouse: right-click a node to focus into it, right-click empty canvas to step
 back out. On a Mac that is a two-finger click or ctrl-click. Double-click a node
 to retype it.
 
-Pasted outlines: indentation by spaces, tabs or the invisible Unicode spaces
+Pasted outlines: both clipboard flavours are parsed and whichever recovered more
+structure wins. The `text/html` flavour is the reliable one, because it keeps
+real `<ul>`/`<li>` nesting that the plain text often loses entirely. Falling back
+to text: indentation by spaces, tabs or the invisible Unicode spaces
 rich-text copies use; `-` `*` `+` `>` `•` `◦` `▪` and numbered bullets; markdown
 headings. A copy that arrives with no indentation at all, which is what Word and
 Google Docs produce, is nested by bullet glyph instead, in their documented
