@@ -2,8 +2,20 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Mappr</title>
+<meta name="description" content="A keyboard-first mindmap app. Everything is a key, the layout tidies itself, the camera follows you.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#faf7f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#14141c" media="(prefers-color-scheme: dark)">
+<!-- The favicon is the SVG mark, inlined so it works from a file:// URL too. It
+     carries its own prefers-color-scheme rule, so it stays legible in a dark tab
+     strip. The PNGs and the manifest below only resolve when the app is served. -->
+<link rel="icon" href="data:image/svg+xml;base64,__ICON_B64__" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mappr">
 <style>
   /* Excalifont, the hand-drawn face Excalidraw ships. SIL Open Font License. */
   @font-face{
@@ -148,6 +160,8 @@
     border:1px solid transparent;background:transparent;color:var(--ink);
     padding:6px 10px;border-radius:8px;cursor:pointer;white-space:nowrap;
   }
+  button.tb.accent{ border-color:var(--sel);color:var(--sel); }
+  button.tb[hidden]{ display:none; }
   button.tb:hover{background:var(--panel-hover)}
   button.tb.on{background:var(--sel-soft);border-color:var(--sel)}
   #saveState{font-size:11px;color:var(--muted);padding:0 8px;min-width:66px;text-align:right}
@@ -338,6 +352,8 @@
   <span class="sep"></span>
   <button class="tb" id="btnStyle" title="Style panel (⌘,)">Style</button>
   <button class="tb" id="btnHelp">Keys ?</button>
+  <button class="tb accent" id="btnInstall" title="Install Mappr on this device" hidden>Install</button>
+  <button class="tb accent" id="btnUpdate" title="A newer version is ready" hidden>Update ready</button>
   <span id="saveState">saved</span>
 </div>
 
@@ -533,7 +549,10 @@ function nid(){ uid+=1; return "n"+uid+"_"+Math.random().toString(36).slice(2,7)
 var state=null, selected=null, editing=null, focusId=null;
 var marked={}, selFrame=null, editFrame=null, selectMode=false;
 var view={x:0,y:0,z:1};
-var undoStack=[], redoStack=[];
+/* Undo snapshots are whole-state JSON, so in a big map each one is large. The
+   stack is capped by BYTES as well as by steps: 140 steps of a 2000-node map
+   would otherwise sit on tens of MB of strings. */
+var undoStack=[], redoStack=[], undoBytes=0, UNDO_STEPS=140, UNDO_BYTES=6e6;
 var OPP={L:"R",R:"L",U:"D",D:"U"}, KEYDIR={ArrowLeft:"L",ArrowRight:"R",ArrowUp:"U",ArrowDown:"D"};
 function horiz(d){ return d==="L"||d==="R"; }
 
@@ -574,9 +593,16 @@ function paletteFor(n){
 /* ============================================================
    MUTATIONS
    ============================================================ */
+function shot(){ return JSON.stringify({s:state,sel:selected,f:focusId}); }
+function undoPush(j){
+  undoStack.push(j); undoBytes+=j.length;
+  while(undoStack.length>UNDO_STEPS || (undoBytes>UNDO_BYTES && undoStack.length>1))
+    undoBytes-=undoStack.shift().length;
+}
+function undoPop(){ var j=undoStack.pop(); if(j!=null) undoBytes-=j.length; return j; }
+function clearUndo(){ undoStack.length=0; redoStack.length=0; undoBytes=0; }
 function snap(){
-  undoStack.push(JSON.stringify({s:state,sel:selected,f:focusId}));
-  if(undoStack.length>140) undoStack.shift();
+  undoPush(shot());
   redoStack.length=0;
 }
 function restore(j){
@@ -587,8 +613,8 @@ function restore(j){
   if(!N(selected)) selected=VR();
   marked={}; selFrame=null;
 }
-function undo(){ if(!undoStack.length) return; redoStack.push(JSON.stringify({s:state,sel:selected,f:focusId})); restore(undoStack.pop()); hardRender(); save(); }
-function redo(){ if(!redoStack.length) return; undoStack.push(JSON.stringify({s:state,sel:selected,f:focusId})); restore(redoStack.pop()); hardRender(); save(); }
+function undo(){ if(!undoStack.length) return; redoStack.push(shot()); if(redoStack.length>UNDO_STEPS) redoStack.shift(); restore(undoPop()); hardRender(); saveSoon(); }
+function redo(){ if(!redoStack.length) return; undoPush(shot()); restore(redoStack.pop()); hardRender(); saveSoon(); }
 
 function addNode(parentId,dir,index){
   var n={id:nid(),parent:parentId,children:[],text:"",dir:dir};
@@ -637,6 +663,10 @@ function cycleLevel(node,back){
    LAYOUT
    ============================================================ */
 var box={}, pos={};
+/* Measured DOM sizes, cached per node. Reading offsetWidth for every node on
+   every keystroke is the second most expensive thing a render does, and a
+   node's size only changes when its text, its classes or a setting change. */
+var meas={};
 function gapMain(){ return GAPS[CFG.gap][0]; }
 function gapCross(){ return GAPS[CFG.gap][1]; }
 function mainSize(id,d){ return horiz(d)?box[id].w:box[id].h; }
@@ -683,6 +713,14 @@ function layout(){
 /* ============================================================
    HAND-DRAWN DRAWING
    ============================================================ */
+/* Hand-drawn geometry is the expensive part of a repaint: every node box and
+   every edge is regenerated with seeded wobble on each render. The seeds are
+   per element id, so the same inputs always produce the same string, which
+   makes the output safe to cache. Keys carry everything a shape depends on
+   (position, measured size, colour) plus a generation counter bumped whenever
+   a setting or the theme changes. Entries for nodes that went away are dropped
+   by rebuilding the maps each paint. */
+var SC={gen:0, body:{}, edge:{}};
 function seedOf(s){ var h=2166136261; for(var i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
 function rngFrom(seed){
   var a=seed>>>0;
@@ -790,6 +828,7 @@ var elBadges=document.getElementById("badges");
 var els={}, ftEls={}, bdEls={};
 
 function applyCss(){
+  SC.gen++; SC.body={}; SC.edge={}; meas={};
   var R=document.documentElement, s=R.style;
   R.setAttribute("data-theme",CFG.theme);
   R.setAttribute("data-paper",CFG.paper);
@@ -803,6 +842,7 @@ function applyCss(){
   s.setProperty("--node-minh",(CFG.minSize?Math.round(SIZES[CFG.size]*3.4):0)+"px");
 }
 function hardRender(){
+  paintReset();
   Object.keys(els).forEach(function(id){ els[id].remove(); delete els[id]; });
   Object.keys(ftEls).forEach(function(id){ ftEls[id].remove(); delete ftEls[id]; });
   Object.keys(bdEls).forEach(function(id){ bdEls[id].remove(); delete bdEls[id]; });
@@ -846,7 +886,19 @@ function render(keepView,lead){
   Object.keys(els).forEach(function(id){ if(!showing[id]){ els[id].remove(); delete els[id]; } });
 
   box={};
-  Object.keys(els).forEach(function(id){ box[id]={w:els[id].offsetWidth,h:els[id].offsetHeight}; });
+  var stale=[];
+  Object.keys(els).forEach(function(id){
+    var el=els[id], m=meas[id], k=el.className+"\u0001"+el.textContent;
+    /* The node being typed in changes size as you type, so never trust a cached
+       measurement for it. */
+    if(m && m.k===k && id!==editing) box[id]={w:m.w,h:m.h};
+    else { stale.push(id); box[id]=null; }
+  });
+  stale.forEach(function(id){
+    var el=els[id], w=el.offsetWidth, h=el.offsetHeight;
+    box[id]={w:w,h:h};
+    meas[id]={k:el.className+"\u0001"+el.textContent, w:w, h:h};
+  });
 
   layout(); reposition(); paint(); drawBadges(); drawFrameTitles(); drawCrumbs(); drawFrameBar();
   if(!keepView && CFG.follow) cameraTo(selected,lead);
@@ -934,6 +986,15 @@ function shapes(ids, opt){
   var dattr=da?' stroke-dasharray="'+da+'"':"";
   var inSet={}; ids.forEach(function(i){ inSet[i]=1; });
   var defs=[], body=[];
+  /* The cache is only used for the on-screen repaint. Export builds its own
+     one-off shapes so nothing export-specific can ever land in it. */
+  var cache=!!opt.cache, nBody=cache?{}:null, nEdge=cache?{}:null;
+  /* When caching, every piece is also recorded in order with its key, so the
+     painter can reuse the DOM elements it already has instead of reparsing the
+     whole drawing. */
+  var items=cache?[]:null;
+  function emit(k,h){ body.push(h); if(cache) items.push({k:k,h:h}); }
+  function geo(i){ var q=pos[i], z=box[i]; return q.cx+","+q.cy+","+z.w+","+z.h; }
 
   if(opt.frames !== false){
     state.frames.forEach(function(f){
@@ -942,7 +1003,8 @@ function shapes(ids, opt){
       if(!b.ids.every(function(i){ return inSet[i]; })) return;
       var r=rngFrom(seedOf(f.id+"fr"));
       var on=(f.id===selFrame && !opt.exporting);
-      body.push('<path d="'+(amp?roughRect(b.x,b.y,b.w,b.h,16,r,amp*.8):smoothRect(b.x,b.y,b.w,b.h,16))+
+      emit("fr"+f.id+"|"+SC.gen+"|"+b.x+","+b.y+","+b.w+","+b.h+"|"+(on?1:0),
+        '<path d="'+(amp?roughRect(b.x,b.y,b.w,b.h,16,r,amp*.8):smoothRect(b.x,b.y,b.w,b.h,16))+
         '" fill="'+(dark()?"rgba(255,255,255,.028)":"rgba(30,30,30,.022)")+
         '" stroke="'+(on?(dark()?"#a5a1ff":"#6965db"):(dark()?"#5a5a5a":"#c9ccd1"))+
         '" stroke-width="'+(on?2:1.5)+'" stroke-linecap="round"/>');
@@ -952,77 +1014,165 @@ function shapes(ids, opt){
   ids.forEach(function(id){
     N(id).children.forEach(function(cid){
       if(!pos[cid] || !inSet[cid]) return;
-      var d=N(cid).dir, pts=connectorPts(id,cid,d), col=paletteFor(N(cid)).line;
+      var d=N(cid).dir, col=paletteFor(N(cid)).line, key=null;
+      if(cache){
+        key=cid+"|"+SC.gen+"|"+geo(id)+"|"+geo(cid)+"|"+d+"|"+col;
+        var hit=SC.edge[key];
+        if(hit!==undefined){ nEdge[key]=hit; emit(key,hit); return; }
+      }
+      var out=[], pts=connectorPts(id,cid,d);
       for(var k=0;k<passes;k++){
         var r=rngFrom(seedOf(cid+"e"+k));
-        body.push('<path d="'+roughPoly(pts,r,amp)+'" fill="none" stroke="'+col+'" stroke-width="'+sw+
+        out.push('<path d="'+roughPoly(pts,r,amp)+'" fill="none" stroke="'+col+'" stroke-width="'+sw+
           '" stroke-linecap="round" stroke-linejoin="round"'+dattr+' opacity="'+(amp?.6:.68)+'"/>');
       }
       if(CFG.head!=="none"){
         var last=pts[pts.length-1], prev=pts[pts.length-3]||pts[0];
         var ang=Math.atan2(last[1]-prev[1],last[0]-prev[0]);
-        if(CFG.head==="dot") body.push('<circle cx="'+last[0]+'" cy="'+last[1]+'" r="'+(2+sw)+'" fill="'+col+'" opacity=".75"/>');
+        if(CFG.head==="dot") out.push('<circle cx="'+last[0]+'" cy="'+last[1]+'" r="'+(2+sw)+'" fill="'+col+'" opacity=".75"/>');
         else {
           var L=6+sw*1.6,S=.46,r2=rngFrom(seedOf(cid+"h"));
-          body.push('<path d="'+
+          out.push('<path d="'+
             wline(last[0]-L*Math.cos(ang-S),last[1]-L*Math.sin(ang-S),last[0],last[1],r2,amp)+" "+
             wline(last[0],last[1],last[0]-L*Math.cos(ang+S),last[1]-L*Math.sin(ang+S),r2,amp)+
             '" fill="none" stroke="'+col+'" stroke-width="'+sw+'" stroke-linecap="round" opacity=".75"/>');
         }
       }
+      var str=out.join("");
+      if(cache) nEdge[key]=str;
+      emit(key,str);
     });
   });
 
   ids.forEach(function(id){
-    var n=N(id), b=box[id], p=pos[id];
-    var x=p.cx-b.w/2, y=p.cy-b.h/2, P=paletteFor(n);
+    var n=N(id), P=paletteFor(n), key=null;
+    if(cache){
+      key=id+"|"+SC.gen+"|"+geo(id)+"|"+P.line+"|"+(P.fill||"")+"|"+(n.mark||"")+"|"+(isVR(n)?1:0);
+      var hit=SC.body[key];
+      if(hit!==undefined){ nBody[key]=hit; emit(key,hit.b); if(hit.d) defs.push(hit.d); return; }
+    }
+    var b=box[id], p=pos[id], out=[], def="";
+    var x=p.cx-b.w/2, y=p.cy-b.h/2;
     var rad=CFG.edges==="round"?(isVR(n)?14:11):1;
     if(CFG.fillStyle==="solid" && P.fill)
-      body.push('<path d="'+smoothRect(x,y,b.w,b.h,rad)+'" fill="'+P.fill+'" stroke="none"/>');
+      out.push('<path d="'+smoothRect(x,y,b.w,b.h,rad)+'" fill="'+P.fill+'" stroke="none"/>');
     else if(CFG.fillStyle==="hachure"){
       var rh=rngFrom(seedOf(id+"f"));
-      defs.push('<clipPath id="cl'+id+'"><path d="'+smoothRect(x,y,b.w,b.h,rad)+'"/></clipPath>');
-      body.push('<g clip-path="url(#cl'+id+')"><path d="'+hachure(x,y,b.w,b.h,rh,amp||.7)+
+      def='<clipPath id="cl'+id+'"><path d="'+smoothRect(x,y,b.w,b.h,rad)+'"/></clipPath>';
+      out.push('<g clip-path="url(#cl'+id+')"><path d="'+hachure(x,y,b.w,b.h,rh,amp||.7)+
         '" fill="none" stroke="'+P.line+'" stroke-width="'+Math.max(1,sw*.6)+'" opacity=".4" stroke-linecap="round"/></g>');
     }
     if(n.mark==="flag"){
       var fx=x+b.w-9, fy=y+7;
-      body.push('<path d="M'+fx+','+(fy+7)+' L'+(fx+4)+','+(fy-4)+' L'+(fx+8)+','+(fy+7)+' Z" fill="'+P.line+'" opacity=".85" stroke="none"/>');
+      out.push('<path d="M'+fx+','+(fy+7)+' L'+(fx+4)+','+(fy-4)+' L'+(fx+8)+','+(fy+7)+' Z" fill="'+P.line+'" opacity=".85" stroke="none"/>');
     }
     var bsw=isVR(n)?sw*1.25:sw;
     for(var k=0;k<passes;k++){
       var r=rngFrom(seedOf(id+"b"+k));
-      body.push('<path d="'+(amp?roughRect(x,y,b.w,b.h,rad,r,amp):smoothRect(x,y,b.w,b.h,rad))+
+      out.push('<path d="'+(amp?roughRect(x,y,b.w,b.h,rad,r,amp):smoothRect(x,y,b.w,b.h,rad))+
         '" fill="none" stroke="'+P.line+'" stroke-width="'+bsw+'" stroke-linecap="round"'+dattr+
         ' opacity="'+(amp?(k?.5:.95):1)+'"/>');
     }
+    var rec={b:out.join(""), d:def};
+    if(cache) nBody[key]=rec;
+    emit(key,rec.b); if(rec.d) defs.push(rec.d);
   });
-  return {defs:defs, body:body};
+  if(cache){ SC.body=nBody; SC.edge=nEdge; }
+  return {defs:defs, body:body, items:items};
 }
 
+/* The drawing is split into three layers inside #paintLayer: <defs>, a main
+   group holding one <g> per shape, and a top group for the selection ring and
+   marquee marks. Rewriting the main group's innerHTML meant the browser
+   reparsed every path on every keystroke, which was ~90% of a repaint in a big
+   map. Now each shape's <g> is keyed and reused, so a repaint touches only the
+   shapes that actually moved. */
+var SVGNS="http://www.w3.org/2000/svg";
+var pDefs=null, pMain=null, pTop=null, pKeys=[], pEls=[], pCache={}, pDefsHtml=null, pTopHtml=null;
+function svgNode(tag){ return document.createElementNS(SVGNS,tag); }
+function paintLayers(){
+  if(pMain) return;
+  pDefs=svgNode("defs"); pMain=svgNode("g"); pTop=svgNode("g");
+  elPaint.appendChild(pDefs); elPaint.appendChild(pMain); elPaint.appendChild(pTop);
+}
+function paintReset(){
+  pKeys=[]; pEls=[]; pCache={}; pDefsHtml=null; pTopHtml=null;
+  if(pMain) pMain.textContent="";
+  if(pDefs) pDefs.textContent="";
+  if(pTop) pTop.textContent="";
+}
+function shapeNode(html){ var g=svgNode("g"); g.innerHTML=html; return g; }
+function reindex(){ pCache={}; for(var i=0;i<pKeys.length;i++) pCache[pKeys[i]]=pEls[i]; }
+function reconcile(items){
+  var i, n=items.length;
+  if(n===pKeys.length){
+    var diff=[];
+    for(i=0;i<n;i++) if(items[i].k!==pKeys[i]) diff.push(i);
+    if(!diff.length) return;
+    /* A few shapes moved: swap just those elements in place. */
+    if(diff.length*8 < n){
+      for(i=0;i<diff.length;i++){
+        var at=diff[i], it=items[at], el=pCache[it.k]||shapeNode(it.h);
+        pMain.replaceChild(el,pEls[at]);
+        pEls[at]=el; pKeys[at]=it.k;
+      }
+      reindex(); return;
+    }
+  }
+  /* Shapes were added or removed, or most of them moved: rebuild the order,
+     reusing every element whose key survived. */
+  var frag=document.createDocumentFragment(), nEls=[], nKeys=[];
+  for(i=0;i<n;i++){
+    var t=items[i], e=pCache[t.k];
+    if(!e) e=shapeNode(t.h);
+    frag.appendChild(e); nEls.push(e); nKeys.push(t.k);
+  }
+  pMain.replaceChildren(frag);
+  pEls=nEls; pKeys=nKeys; reindex();
+}
 function paint(){
+  paintLayers();
   var ids=Object.keys(pos);
-  var s=shapes(ids,{});
+  var s=shapes(ids,{cache:true});
   var amp=SLOP[CFG.slop];
   var accent=dark()?"#a5a1ff":"#6965db";
 
-  var mset=markedSet();
-  Object.keys(mset).forEach(function(id){
-    if(!pos[id]) return;
-    var b=box[id], p=pos[id], m=4;
+  var top=[];
+  /* Drag-select needs to be unmissable, because the next keystroke acts on
+     whatever is marked. Each marked node gets a tinted halo AND an accent
+     outline, and the whole selection gets one dashed box around it, so it reads
+     as a set rather than as a few slightly shaded boxes. */
+  var mset=markedSet(), mids=Object.keys(mset).filter(function(id){ return !!pos[id]; });
+  var mx0=Infinity,my0=Infinity,mx1=-Infinity,my1=-Infinity;
+  mids.forEach(function(id){
+    var b=box[id], p=pos[id], m=5;
+    var x=p.cx-b.w/2-m, y=p.cy-b.h/2-m, w=b.w+m*2, h=b.h+m*2;
+    mx0=Math.min(mx0,x); my0=Math.min(my0,y); mx1=Math.max(mx1,x+w); my1=Math.max(my1,y+h);
     var r=rngFrom(seedOf(id+"mk"));
-    s.body.push('<path d="'+(amp?roughRect(p.cx-b.w/2-m,p.cy-b.h/2-m,b.w+m*2,b.h+m*2,13,r,1):smoothRect(p.cx-b.w/2-m,p.cy-b.h/2-m,b.w+m*2,b.h+m*2,13))+
-      '" fill="'+accent+'" opacity=".12" stroke="none"/>');
+    var d=amp?roughRect(x,y,w,h,13,r,1):smoothRect(x,y,w,h,13);
+    top.push('<path d="'+d+'" fill="'+accent+'" opacity=".2" stroke="none"/>');
+    top.push('<path d="'+d+'" fill="none" stroke="'+accent+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity=".95"/>');
   });
+  if(mids.length>1){
+    var gp=14, gx=mx0-gp, gy=my0-gp, gw=(mx1-mx0)+gp*2, gh=(my1-my0)+gp*2;
+    var gr=rngFrom(seedOf("markbox"));
+    top.push('<path class="ants" d="'+(amp?roughRect(gx,gy,gw,gh,16,gr,1.2):smoothRect(gx,gy,gw,gh,16))+
+      '" fill="none" stroke="'+accent+'" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="9 6" opacity=".75"/>');
+  }
 
   if(pos[selected] && !selFrame){
     var b2=box[selected], p2=pos[selected], m2=6;
     var sr=rngFrom(seedOf(selected+"sel"));
     var srad=CFG.edges==="round"?15:3;
-    s.body.push('<path d="'+(amp?roughRect(p2.cx-b2.w/2-m2,p2.cy-b2.h/2-m2,b2.w+m2*2,b2.h+m2*2,srad,sr,1.1):smoothRect(p2.cx-b2.w/2-m2,p2.cy-b2.h/2-m2,b2.w+m2*2,b2.h+m2*2,srad))+
+    top.push('<path d="'+(amp?roughRect(p2.cx-b2.w/2-m2,p2.cy-b2.h/2-m2,b2.w+m2*2,b2.h+m2*2,srad,sr,1.1):smoothRect(p2.cx-b2.w/2-m2,p2.cy-b2.h/2-m2,b2.w+m2*2,b2.h+m2*2,srad))+
       '" fill="none" stroke="'+accent+'" stroke-width="1.6" stroke-dasharray="7 5" stroke-linecap="round" opacity=".9"/>');
   }
-  elPaint.innerHTML=(s.defs.length?"<defs>"+s.defs.join("")+"</defs>":"")+s.body.join("");
+
+  var dh=s.defs.join("");
+  if(dh!==pDefsHtml){ pDefs.innerHTML=dh; pDefsHtml=dh; }
+  reconcile(s.items);
+  var th=top.join("");
+  if(th!==pTopHtml){ pTop.innerHTML=th; pTopHtml=th; }
 }
 
 /* ---------- marquee ---------- */
@@ -1147,19 +1297,19 @@ elCrumbs.addEventListener("click",function(e){
   if(b.dataset.out){ exitFocus(); return; }
   var id=b.dataset.go;
   focusId=(id===state.rootId)?null:id;
-  selected=id; editing=null; hardRender(); fit(); save();
+  selected=id; editing=null; hardRender(); fit(); saveSoon();
 });
 function enterFocus(){
   var n=N(selected);
   if(!n.children.length){ flash(selected); return; }
   focusId=isRoot(n)?null:n.id;
-  editing=null; hardRender(); fit(); save();
+  editing=null; hardRender(); fit(); saveSoon();
 }
 function exitFocus(){
   if(!focusId) return;
   var was=focusId,p=N(was).parent;
   focusId=(p&&p!==state.rootId)?p:null;
-  selected=was; editing=null; hardRender(); fit(); save();
+  selected=was; editing=null; hardRender(); fit(); saveSoon();
 }
 function flash(id){ var el=els[id]; if(!el) return; el.classList.remove("nudge"); void el.offsetWidth; el.classList.add("nudge"); }
 
@@ -1171,7 +1321,10 @@ function beginEdit(id,selectAll){
   editing=id;
   var el=els[id];
   el.className="node"+(isVR(N(id))?" root":"")+" editing";
-  el.contentEditable="true"; el.textContent=N(id).text; el.focus();
+  el.contentEditable="true"; el.textContent=N(id).text;
+  /* preventScroll: the camera does all the moving here, with a transform, so a
+     browser scroll-into-view would only fight it. */
+  try{ el.focus({preventScroll:true}); }catch(e){ el.focus(); }
   var r=document.createRange(); r.selectNodeContents(el);
   if(!selectAll) r.collapse(false);
   var s=getSelection(); s.removeAllRanges(); s.addRange(r);
@@ -1183,7 +1336,7 @@ function commitEdit(){
     N(editing).text=el.innerText.replace(/ /g," ").replace(/\n{3,}/g,"\n\n").trim();
     el.contentEditable="false";
   }
-  editing=null; save();
+  editing=null; saveSoon();
 }
 function pruneIfBlank(id){
   var n=N(id);
@@ -1204,7 +1357,7 @@ function commitFrameEdit(){
   if(!editFrame) return;
   var el=ftEls[editFrame], f=frameById(editFrame);
   if(el&&f){ f.title=el.innerText.replace(/\n/g," ").trim()||"Frame"; el.contentEditable="false"; }
-  editFrame=null; render(true); save();
+  editFrame=null; render(true); saveSoon();
 }
 function frameById(id){ return state.frames.filter(function(f){ return f.id===id; })[0]; }
 
@@ -1220,10 +1373,10 @@ function select(id){
 function doBranch(pressed){
   var node=N(selected); snap();
   var made=branch(node,pressed);
-  if(!made){ undoStack.pop(); flash(selected); return; }
+  if(!made){ undoPop(); flash(selected); return; }
   clearMarks(); selected=made.id; render(false,pressed);
   if(CFG.autoEdit) beginEdit(made.id,true);
-  save();
+  saveSoon();
 }
 function doSibling(){
   var node=N(selected); snap();
@@ -1231,7 +1384,7 @@ function doSibling(){
   if(isVR(node)) made=addNode(node.id,isRoot(node)?"R":node.dir,null);
   else { var p=N(node.parent); made=addNode(p.id,node.dir,p.children.indexOf(node.id)+1); }
   clearMarks(); selected=made.id; render(false,made.dir);
-  beginEdit(made.id,true); save();
+  beginEdit(made.id,true); saveSoon();
 }
 /* Shift+Enter: same level, but over in the next branch along */
 function doNextBranch(){
@@ -1252,7 +1405,7 @@ function doNextBranch(){
     made=addNode(q,N(q).dir,null);
   }
   clearMarks(); selected=made.id; render(false,made.dir);
-  beginEdit(made.id,true); save();
+  beginEdit(made.id,true); saveSoon();
 }
 function doChild(){ var n=N(selected); doBranch(isRoot(n)?"R":n.dir); }
 /* hold Tab + arrow: slide a node in between */
@@ -1268,7 +1421,7 @@ function insertBetween(dir){
     n.parent=mid.id; mid.children.push(n.id);
     state.frames.forEach(function(f){ f.roots=f.roots.map(function(r){ return r===n.id?mid.id:r; }); });
     clearMarks(); selected=mid.id; render(false,dir);
-    beginEdit(mid.id,true); save();
+    beginEdit(mid.id,true); saveSoon();
     return;
   }
   if(forward){
@@ -1280,7 +1433,7 @@ function insertBetween(dir){
       N(c).parent=mid2.id; N(c).dir=dir; mid2.children.push(c);
     });
     clearMarks(); selected=mid2.id; render(false,dir);
-    beginEdit(mid2.id,true); save();
+    beginEdit(mid2.id,true); saveSoon();
     return;
   }
   flash(selected);
@@ -1290,7 +1443,7 @@ function doDelete(){
   if(isRoot(n)||isVR(n)){ flash(selected); return; }
   snap();
   clearMarks(); selected=removeNode(n.id)||VR();
-  render(); save();
+  render(); saveSoon();
 }
 function setDirDeep(id,d){ N(id).dir=d; N(id).children.forEach(function(c){ setDirDeep(c,d); }); }
 
@@ -1323,7 +1476,7 @@ function moveNode(dir){
     var a=p.children.indexOf(g2[i2]), b=p.children.indexOf(g2[j]);
     p.children[a]=g2[j]; p.children[b]=g2[i2];
   }
-  clearMarks(); render(); save();
+  clearMarks(); render(); saveSoon();
 }
 
 function toggleCollapse(id){
@@ -1332,14 +1485,14 @@ function toggleCollapse(id){
   snap();
   n.collapsed=!n.collapsed;
   if(n.collapsed && subtree(n.id).indexOf(selected)>0) selected=n.id;
-  render(); save();
+  render(); saveSoon();
   flashSave(n.collapsed ? "folded "+descCount(n.id) : "unfolded");
 }
 function toggleMark(kind){
   var n=N(selected);
   snap();
   n.mark = (n.mark===kind) ? null : kind;
-  render(true); save();
+  render(true); saveSoon();
 }
 function duplicateBranch(){
   var src=N(selected);
@@ -1355,7 +1508,7 @@ function duplicateBranch(){
   }
   var copy=clone(src.id,p.id);
   p.children.splice(idx+1,0,copy.id);
-  clearMarks(); selected=copy.id; render(); save();
+  clearMarks(); selected=copy.id; render(); saveSoon();
   flashSave("branch duplicated");
 }
 
@@ -1369,14 +1522,14 @@ function makeFrame(){
           title:(N(roots[0]).text||"Frame").split("\n")[0], roots:roots };
   state.frames.push(f);
   marked={}; selFrame=f.id; editing=null;
-  render(true); save();
+  render(true); saveSoon();
   beginFrameEdit(f.id);
 }
 function ungroup(){
   if(!selFrame) return;
   snap();
   state.frames=state.frames.filter(function(f){ return f.id!==selFrame; });
-  selFrame=null; render(true); save();
+  selFrame=null; render(true); saveSoon();
   flashSave("frame removed");
 }
 function selectAllVisible(){
@@ -1436,7 +1589,7 @@ function insertOutline(items){
     stack.push({indent:it.indent,id:n.id,dir:dir});
   });
   if(last) selected=last;
-  editing=null; clearMarks(); hardRender(); fit(); save();
+  editing=null; clearMarks(); hardRender(); fit(); saveSoon();
   return made;
 }
 var flashTimer=null;
@@ -1645,7 +1798,7 @@ function jumpTo(id){
   clearMarks(); selected=id; editing=null;
   if(changed) hardRender(); else render(true);
   centerOn(id);
-  save();
+  saveSoon();
 }
 elJumpIn.addEventListener("input",function(){ jumpRows=jumpSearch(elJumpIn.value.trim()); jumpAt=0; drawJump(); });
 elJumpIn.addEventListener("keydown",function(e){
@@ -1664,16 +1817,60 @@ document.getElementById("btnJump").onclick=function(){ openJump(); };
 /* ============================================================
    MAP LIBRARY
    ============================================================ */
-var LIB="mappr.lib", curDoc=null;
-function libRead(){ try{ return JSON.parse(localStorage.getItem(LIB))||null; }catch(e){ return null; } }
-function libWrite(l){ try{ localStorage.setItem(LIB,JSON.stringify(l)); }catch(e){ document.getElementById("saveState").textContent="not saved"; } }
+/* Storage is one small index plus one key per map, so saving the map you are
+   editing never touches the others. The old single `mappr.lib` blob is split on
+   first read and then removed. */
+var LIB="mappr.lib", IDX="mappr.index", DOCP="mappr.doc.", curDoc=null;
+
+function storeFail(why){ var e=document.getElementById("saveState"); if(e) e.textContent=why||"not saved"; }
+function isQuota(e){
+  return e && (e.name==="QuotaExceededError" || e.name==="NS_ERROR_DOM_QUOTA_REACHED" || e.code===22 || e.code===1014);
+}
+function idxRead(){
+  var l=null;
+  try{ l=JSON.parse(localStorage.getItem(IDX)); }catch(e){ l=null; }
+  if(l&&l.docs) return l;
+  return splitOldLib();
+}
+function idxWrite(l){
+  try{ localStorage.setItem(IDX,JSON.stringify(l)); return true; }
+  catch(e){ storeFail(isQuota(e)?"storage full":"not saved"); return false; }
+}
+/* Migration: `mappr.lib` held every map in one value. Split it into per-map keys. */
+function splitOldLib(){
+  var old=null;
+  try{ old=JSON.parse(localStorage.getItem(LIB)); }catch(e){ return null; }
+  if(!old||!old.docs) return null;
+  var l={current:old.current||null,docs:{}};
+  var ok=true;
+  Object.keys(old.docs).forEach(function(id){
+    var d=old.docs[id]; if(!d) return;
+    if(!docWriteRaw(id,d)) ok=false;
+    l.docs[id]={id:id,name:d.name||"Untitled",count:d.count||0,updated:d.updated||Date.now()};
+  });
+  if(!l.current||!l.docs[l.current]) l.current=Object.keys(l.docs)[0]||null;
+  if(!idxWrite(l)) return l;
+  if(ok){ try{ localStorage.removeItem(LIB); }catch(e){} }
+  return l;
+}
+function docWriteRaw(id,doc){
+  try{ localStorage.setItem(DOCP+id,JSON.stringify(doc)); return true; }
+  catch(e){ storeFail(isQuota(e)?"storage full":"not saved"); return false; }
+}
+function docRead(id){
+  try{ return JSON.parse(localStorage.getItem(DOCP+id))||null; }catch(e){ return null; }
+}
+function docDrop(id){ try{ localStorage.removeItem(DOCP+id); }catch(e){} }
+/* Kept for the call sites that only ever wanted the list of maps. */
+function libRead(){ return idxRead(); }
+function libWrite(l){ return idxWrite(l); }
 function docId(){ return "d"+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
 function nodeCount(st){ return Object.keys(st.nodes).length; }
 function docName(st){ return (st.nodes[st.rootId].text||"Untitled").split("\n")[0]; }
 
 var elMaps=document.getElementById("maps"), elMapsList=document.getElementById("mapsList");
 function drawMaps(){
-  var lib=libRead(); if(!lib) return;
+  var lib=idxRead(); if(!lib) return;
   var ids=Object.keys(lib.docs).sort(function(a,b){ return (lib.docs[b].updated||0)-(lib.docs[a].updated||0); });
   elMapsList.innerHTML=ids.map(function(id){
     var d=lib.docs[id];
@@ -1696,27 +1893,27 @@ function toggleMaps(on){
 }
 function switchDoc(id){
   save();
-  var lib=libRead(); if(!lib||!lib.docs[id]) return;
-  var d=lib.docs[id];
-  curDoc=id; lib.current=id; libWrite(lib);
+  var lib=idxRead(); if(!lib||!lib.docs[id]) return;
+  var d=docRead(id); if(!d) return;
+  curDoc=id; lib.current=id; idxWrite(lib);
   state=d.state; state.frames=state.frames||[];
   uid=d.uid||100000; selected=d.selected; focusId=d.focusId||null;
   if(focusId&&!N(focusId)) focusId=null;
   if(!N(selected)) selected=VR();
   if(d.view) view=d.view;
   if(d.cfg) CFG=Object.assign({},DEFAULTS,d.cfg);
-  editing=null; clearMarks(); undoStack.length=0; redoStack.length=0;
+  editing=null; clearMarks(); clearUndo();
   applyCss(); drawPanel(); hardRender(); fit(); drawMaps();
   flashSave("opened");
 }
 function newDoc(st){
   save();
-  var lib=libRead()||{current:null,docs:{}};
+  var lib=idxRead()||{current:null,docs:{}};
   var id=docId();
   state=st||freshState(); state.frames=state.frames||[];
   uid=1; selected=state.rootId; focusId=null; editing=null; clearMarks();
-  undoStack.length=0; redoStack.length=0;
-  curDoc=id; lib.current=id; libWrite(lib);
+  clearUndo();
+  curDoc=id; lib.current=id; idxWrite(lib);
   save(); hardRender(); center(); drawMaps();
 }
 document.getElementById("btnMaps").onclick=function(){ toggleMaps(); };
@@ -1725,15 +1922,15 @@ elMaps.addEventListener("mousedown",function(e){ e.preventDefault(); });
 elMaps.addEventListener("click",function(e){
   var dup=e.target.closest("[data-dup]"), del=e.target.closest("[data-del]");
   if(dup){
-    var lib=libRead(); var src=lib.docs[dup.dataset.dup];
+    var src=docRead(dup.dataset.dup); if(!src) return;
     var copy=JSON.parse(JSON.stringify(src.state));
     copy.nodes[copy.rootId].text=(copy.nodes[copy.rootId].text||"Untitled")+" copy";
     newDoc(copy); toggleMaps(false); return;
   }
   if(del){
-    var lib2=libRead();
+    var lib2=idxRead();
     if(Object.keys(lib2.docs).length<2) return;
-    delete lib2.docs[del.dataset.del]; libWrite(lib2);
+    delete lib2.docs[del.dataset.del]; idxWrite(lib2); docDrop(del.dataset.del);
     if(del.dataset.del===curDoc) switchDoc(Object.keys(lib2.docs)[0]);
     else drawMaps();
     return;
@@ -2067,19 +2264,33 @@ function zoomBy(f,ox,oy){
    SAVE / LOAD
    ============================================================ */
 var saveTimer=null, elSave=document.getElementById("saveState");
+/* Every edit used to write the whole map to localStorage synchronously, which
+   in a large map cost more than the render it followed. Edits now coalesce on a
+   400ms debounce; switching map, importing and `beforeunload` still flush
+   synchronously, so nothing is lost on close or reload. */
 function saveSoon(){ clearTimeout(saveTimer); saveTimer=setTimeout(save,400); }
 function save(){
   clearTimeout(saveTimer);
   if(!state) return;
   try{
-    var lib=libRead()||{current:null,docs:{}};
-    if(!curDoc){ curDoc=docId(); lib.current=curDoc; }
-    lib.docs[curDoc]={
-      id:curDoc, name:docName(state), count:nodeCount(state), updated:Date.now(),
+    var lib=idxRead()||{current:null,docs:{}};
+    if(!curDoc) curDoc=docId();
+    var name=docName(state), count=nodeCount(state), now=Date.now();
+    /* Only this map's key is rewritten; the others are never read or touched. */
+    if(!docWriteRaw(curDoc,{
+      id:curDoc, name:name, count:count, updated:now,
       uid:uid, state:state, selected:selected, focusId:focusId, view:view, cfg:CFG
-    };
-    lib.current=curDoc;
-    libWrite(lib);
+    })) return;
+    /* The index is tiny, but skip rewriting it when nothing in it changed. */
+    var m=lib.docs[curDoc];
+    if(!m || m.name!==name || m.count!==count || lib.current!==curDoc){
+      lib.docs[curDoc]={id:curDoc,name:name,count:count,updated:now};
+      lib.current=curDoc;
+      if(!idxWrite(lib)) return;
+    } else if(m.updated!==now){
+      m.updated=now;
+      if(!idxWrite(lib)) return;
+    }
     if(!flashTimer) elSave.textContent="saved";
   }catch(err){ elSave.textContent="not saved"; }
 }
@@ -2093,11 +2304,14 @@ function adopt(o){
 }
 function load(){
   try{
-    var lib=libRead();
+    var lib=idxRead();
     if(lib&&lib.docs&&Object.keys(lib.docs).length){
       var id=(lib.current&&lib.docs[lib.current])?lib.current:Object.keys(lib.docs)[0];
-      curDoc=id; adopt(lib.docs[id]);
-      return true;
+      var d=docRead(id);
+      if(d){ curDoc=id; adopt(d); return true; }
+      /* The index names a map whose key is gone: drop it and try the next one. */
+      delete lib.docs[id]; lib.current=Object.keys(lib.docs)[0]||null; idxWrite(lib);
+      if(lib.current){ var d2=docRead(lib.current); if(d2){ curDoc=lib.current; adopt(d2); return true; } }
     }
     /* first run after the rename: carry the old single map across */
     var raw=localStorage.getItem(KEY)||localStorage.getItem(OLDKEY);
@@ -2188,6 +2402,42 @@ function boot(){ render(true); restored?applyView():center(); }
 if(document.fonts&&document.fonts.load) document.fonts.load('17px "Excalifont"').then(boot,boot);
 else boot();
 
+/* ============================================================
+   INSTALL / OFFLINE
+   ============================================================
+   Only relevant when Mappr is served over http(s). Opened as a local file it is
+   already one self-contained file with nothing to cache and nothing to install,
+   so this whole block stands down. */
+(function(){
+  if(location.protocol!=="http:" && location.protocol!=="https:") return;
+  var btnI=document.getElementById("btnInstall"), btnU=document.getElementById("btnUpdate");
+  var deferred=null;
+
+  if("serviceWorker" in navigator){
+    addEventListener("load",function(){
+      navigator.serviceWorker.register("sw.js").catch(function(){});
+    });
+    navigator.serviceWorker.addEventListener("message",function(e){
+      /* The worker fetched a newer build in the background. Never reload out from
+         under someone mid-sentence: offer it and let them choose. */
+      if(e.data && e.data.type==="mappr-update" && btnU) btnU.hidden=false;
+    });
+  }
+  if(btnU) btnU.onclick=function(){ save(); location.reload(); };
+
+  /* Chromium fires this when the app qualifies to be installed. Safari and iOS
+     have no equivalent; there it is Share, then Add to Home Screen. */
+  addEventListener("beforeinstallprompt",function(e){
+    e.preventDefault(); deferred=e; if(btnI) btnI.hidden=false;
+  });
+  if(btnI) btnI.onclick=function(){
+    if(!deferred) return;
+    deferred.prompt();
+    deferred.userChoice.then(function(){ deferred=null; btnI.hidden=true; });
+  };
+  addEventListener("appinstalled",function(){ deferred=null; if(btnI) btnI.hidden=true; });
+})();
+
 window.__mf={
   version:VERSION,
   get state(){ return state; }, get selected(){ return selected; }, get focus(){ return focusId; },
@@ -2207,6 +2457,7 @@ window.__mf={
   png:function(cb){ var t=exportTargets(); svgToPng(buildSvg(t.ids,t.frame),2,cb); },
   panel:function(on){ toggleStyle(on); },
   boxes:function(){ return box; }, pos:function(){ return pos; }, fit:fit,
+  get undoBytes(){ return undoBytes; }, get undoSteps(){ return undoStack.length; },
   bounds:function(f){ return frameBounds(f); },
   onScreen:function(id){
     var p=pos[id],b=box[id]; if(!p||!b) return false;

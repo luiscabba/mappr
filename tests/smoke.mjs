@@ -224,6 +224,59 @@ await M(() => { document.getElementById("btnMaps").click(); const rows = [...doc
 await page.waitForTimeout(300);
 ok("switching back restores the first map", (await M(() => Object.keys(__mf.state.nodes).length)) === beforeSwitch);
 
+group("storage");
+const keys = await M(() => Object.keys(localStorage).filter((k) => k.indexOf("mappr.") === 0).sort());
+ok("maps are stored one key each", keys.filter((k) => k.indexOf("mappr.doc.") === 0).length >= 2, keys);
+ok("there is a separate index", keys.includes("mappr.index"));
+ok("the old single blob is gone", !keys.includes("mappr.lib"));
+const idxSize = await M(() => localStorage.getItem("mappr.index").length);
+const docSize = await M(() => {
+  const id = JSON.parse(localStorage.getItem("mappr.index")).current;
+  return localStorage.getItem("mappr.doc." + id).length;
+});
+ok("the index holds metadata, not maps", idxSize < docSize, { idxSize, docSize });
+// Saving the open map must not rewrite the other maps' keys.
+const otherBefore = await M(() => {
+  const idx = JSON.parse(localStorage.getItem("mappr.index"));
+  const other = Object.keys(idx.docs).filter((k) => k !== idx.current)[0];
+  return { id: other, raw: localStorage.getItem("mappr.doc." + other) };
+});
+await M(() => { __mf.child(); });
+await page.waitForTimeout(600);
+const otherAfter = await M((id) => localStorage.getItem("mappr.doc." + id), otherBefore.id);
+ok("editing one map leaves the others untouched", otherAfter === otherBefore.raw);
+
+group("migration from mappr.lib");
+{
+  const lib = await M(() => {
+    // Rebuild the pre-0.8 shape: every map inside one value.
+    const idx = JSON.parse(localStorage.getItem("mappr.index"));
+    const docs = {};
+    Object.keys(idx.docs).forEach((id) => { docs[id] = JSON.parse(localStorage.getItem("mappr.doc." + id)); });
+    Object.keys(localStorage).filter((k) => k.indexOf("mappr.") === 0).forEach((k) => localStorage.removeItem(k));
+    localStorage.setItem("mappr.lib", JSON.stringify({ current: idx.current, docs }));
+    return { count: Object.keys(docs).length, nodes: Object.keys(docs[idx.current].state.nodes).length };
+  });
+  await page.reload();
+  await page.waitForFunction(() => !!window.__mf);
+  await page.waitForTimeout(400);
+  ok("the old map opens after the split", (await M(() => Object.keys(__mf.state.nodes).length)) === lib.nodes);
+  const after = await M(() => Object.keys(localStorage).filter((k) => k.indexOf("mappr.doc.") === 0).length);
+  ok("every old map got its own key", after === lib.count, { after, expected: lib.count });
+  ok("mappr.lib is removed once split", (await M(() => localStorage.getItem("mappr.lib"))) === null);
+}
+
+group("painter");
+// The painter reuses DOM elements between renders; it must land in the same
+// place as a render that rebuilds everything from scratch.
+{
+  await M(() => __mf.paste("- Painter check\n  - one\n  - two\n    - three"));
+  const incremental = await M(() => document.getElementById("paintLayer").innerHTML);
+  await M(() => __mf.set("slop", __mf.cfg.slop)); // forces a full rebuild
+  const rebuilt = await M(() => document.getElementById("paintLayer").innerHTML);
+  ok("incremental paint matches a full rebuild", incremental === rebuilt);
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 

@@ -3,6 +3,55 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.8.0] - 2026-09-15
+
+### Added
+- An icon. The mark is a six-stroke spark drawn in the app's own hand-drawn
+  style, inlined into `index.html` as an SVG favicon that follows the tab
+  strip's colour scheme, with PNGs for install surfaces that cannot.
+- Mappr installs. A web app manifest and a service worker make the hosted app
+  installable to a dock or home screen and fully usable offline after the first
+  visit, still saving to that device's own browser. An `Install` button appears
+  in the bar when the browser offers it, and an `Update ready` button appears
+  when a newer build has been fetched in the background, so a reload is never
+  forced mid-sentence. Opened as a local file, none of this is active and the
+  app is the same single self-contained file it always was.
+- `tests/pwa.mjs`: serves the repo and checks the manifest, the icons, that the
+  worker takes control, and that the app boots with the network switched off.
+- `tests/bench.mjs`: a performance benchmark covering render cost, the save
+  round-trip, the cost of creating a node and how much the undo stack holds.
+- `tools/make-icons.mjs`: rasterises `assets/icon.svg` into the PNG sizes the
+  manifest and iOS need.
+
+### Changed
+- Storage is one small index plus one key per map, rather than every map inside
+  a single `mappr.lib` value. Saving the map you are editing no longer reads,
+  re-serialises and rewrites every other map you have. With 30 maps of ~600
+  nodes a save went from 35ms to under 1ms, and it no longer grows with the
+  number of maps. Existing `mappr.lib` libraries are split on first open and the
+  old key is removed.
+- Repainting reuses the drawing it already has. Hand-drawn geometry is cached
+  per shape, and each shape keeps its own SVG element, so a repaint touches only
+  what actually moved instead of regenerating and reparsing the whole drawing. A
+  full render of a 1200-node map went from 158ms to about 8ms.
+- Node sizes are measured once and cached until the text, the classes or a
+  setting change.
+- Edits save on a 400ms debounce rather than synchronously on every keystroke.
+  Switching map, importing and closing the tab still flush immediately.
+- Creating a node in a 1500-node map went from 176ms to about 65ms overall.
+- The undo stack is capped by memory as well as by steps: 140 snapshots of a
+  large map could hold tens of MB of strings, and it now stops at roughly 6MB.
+
+### Changed
+- Drag-select is much louder. A marked node now carries an accent outline as
+  well as a tint, and the whole selection gets one dashed box around it, so it
+  reads as a set. The next keystroke acts on whatever is marked, so it should
+  not be possible to miss what that is.
+
+### Fixed
+- Starting to edit a node no longer lets the browser scroll the stage; the
+  camera owns that.
+
 ## [0.7.0] - 2026-09-15
 
 ### Added

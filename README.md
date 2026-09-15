@@ -18,37 +18,71 @@ open index.html
 ```
 
 That is the whole thing. It works from a `file://` URL, offline, with the font
-embedded. Your maps live in that browser's `localStorage` under `mappr.lib`.
+and the icon embedded. Your maps live in that browser's `localStorage`.
+
+## Give it to someone else
+
+Send them the hosted link. On first visit the service worker caches the app, so
+it keeps working with no network, and the browser offers to install it: an
+`Install` button appears in the bar on Chromium, and on iOS it is Share, then
+Add to Home Screen. Installed, it opens in its own window with no browser
+chrome. Their maps are saved in their own browser and never leave their device;
+there is no account and no server holding anything.
+
+When a new version is deployed, the worker fetches it in the background and an
+`Update ready` button appears. Nothing reloads until they press it, so an update
+can never interrupt a sentence.
+
+Sending the `index.html` file itself still works too, and needs no server at
+all. That copy just will not update.
 
 ## Build it
 
-`index.html` is generated. Do not edit it by hand.
+`index.html` and `sw.js` are generated. Do not edit them by hand.
 
 ```
-python3 build.py        # src/app.html + assets/Excalifont-Regular.woff2 -> index.html
+python3 build.py        # src/app.html + assets/ -> index.html, src/sw.js -> sw.js
 ```
 
-The build does two substitutions and nothing else:
+The build only substitutes tokens:
 
 | token | becomes |
 | --- | --- |
 | `__FONT_B64__` | base64 of `assets/Excalifont-Regular.woff2` |
-| `__VERSION__` | contents of `VERSION` |
+| `__ICON_B64__` | base64 of `assets/icon.svg` |
+| `__VERSION__` | contents of `VERSION` (in the app, and as the worker's cache name) |
 
 Edit `src/app.html`, run `python3 build.py`, reload the browser.
+
+The PNG icons are generated too, but only when the mark itself changes:
+
+```
+node tools/make-icons.mjs     # assets/icon.svg -> icons/*.png
+```
 
 ## Test it
 
 ```
-npm install playwright        # once
-node tests/smoke.mjs
+npm install                   # once: playwright
+npm test                      # behaviour
+npm run test:pwa              # install and offline
+npm run bench                 # performance
 ```
 
-The suite drives real key events in headless Chromium and checks the resulting
+`smoke.mjs` drives real key events in headless Chromium and checks the resulting
 tree shape, the layout (no overlapping nodes at any setting), the camera, the
-outline round-trip, frames and the SVG/PNG export. It prints a summary and exits
-non-zero on failure. Run it before every commit; it has caught several real bugs
-that were invisible on screen.
+outline round-trip, frames, the SVG/PNG export, the storage layout and its
+migration, and that the incremental painter lands in the same place as a full
+rebuild. It prints a summary and exits non-zero on failure. Run it before every
+commit; it has caught several real bugs that were invisible on screen.
+
+`pwa.mjs` serves the repo over http, then checks the manifest and icons, that
+the service worker takes control, and that the app still boots offline.
+
+`bench.mjs` reports render cost, the save round-trip, the cost of creating one
+node and how much the undo stack holds, at several map sizes. Run it before and
+after anything that touches rendering or storage; `--json out.json` writes the
+numbers out so two runs can be compared.
 
 If Chromium is not where Playwright expects it, set `CHROMIUM` first:
 
@@ -74,9 +108,10 @@ One file, one IIFE, no dependencies. Roughly in reading order:
 | **Frames** | A frame is just `{id, title, roots[]}`. Its rectangle is recomputed from its members' positions every render, so it can never go stale. |
 | **Export** | `shapes()` is shared by the screen and the exporter. `textSvgFor` walks DOM ranges to recover wrapped line boxes and emits real `<text>`, so exported SVG keeps live text. |
 | **Panels** | Style panel is generated from the `PANEL` array. Jump palette, map library, export menu. |
-| **Persistence** | `mappr.lib` in `localStorage`: `{current, docs:{id:{name,count,updated,state,cfg,...}}}`. A map is named after its centre node. |
+| **Persistence** | `localStorage`: `mappr.index` holds `{current, docs:{id:{name,count,updated}}}` and each map is its own `mappr.doc.<id>` key, so saving one map never touches the others. A map is named after its centre node. Pre-0.8 `mappr.lib` libraries are split on first open. |
+| **Install** | Manifest, service worker registration, the `Install` and `Update ready` buttons. Inert on `file://`. |
 
-### Two rules worth knowing before you change anything
+### Three rules worth knowing before you change anything
 
 1. **The panels must never take the keyboard.** Every floating panel calls
    `preventDefault()` on `mousedown`. Break this and clicking a setting
@@ -85,6 +120,13 @@ One file, one IIFE, no dependencies. Roughly in reading order:
    branches in four directions. `layout()` passes one direction down a whole
    subtree, so a node whose stored `dir` disagrees with its branch will render in
    the wrong place. `setDirDeep` exists for exactly this.
+3. **Anything a shape's appearance depends on belongs in its cache key.** Drawing
+   is cached per shape and each shape keeps its own SVG element, keyed on
+   position, measured size, colour, mark and a generation counter that `applyCss`
+   bumps on every settings or theme change. Add a new visual input without adding
+   it to the key and the old shape will quietly stay on screen. `tests/smoke.mjs`
+   checks the incremental paint against a full rebuild, which is the cheapest way
+   to catch that.
 
 ### Node size and layout
 
@@ -129,14 +171,20 @@ Not built yet, roughly in the order worth doing:
 - [ ] Presentation mode: step through branches one at a time
 - [ ] Speed instrumentation (nodes per minute, keystrokes per node) to actually
       measure the thing this app exists to test
+- [ ] Cheaper `beginEdit`. Since 0.8 it is the single most expensive step in
+      creating a node in a large map (~40ms at 1500 nodes), more than the render
+      it follows; the cost is in activating `contenteditable` and moving the
+      selection, not in the layout
 - [ ] Images inside nodes
 - [ ] A real file format and cross-device sync, if this ever ships
 
 ## Versioning
 
-Semver, tagged. `VERSION` is the single source of truth and the build stamps it
-into the app; you can see it in the corner of the keys dialog. Bump `VERSION`,
-rebuild, update `CHANGELOG.md`, commit, then tag:
+Semver, tagged. `VERSION` is the single source of truth: the build stamps it into
+the app (visible in the corner of the keys dialog) and uses it as the service
+worker's cache name, so a release invalidates the old cache and installed copies
+pick the new build up. Bump `VERSION`, rebuild, update `CHANGELOG.md`, commit,
+then tag:
 
 ```
 git tag -a v0.8.0 -m "…"

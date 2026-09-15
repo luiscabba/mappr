@@ -1,0 +1,17 @@
+{
+  "name": "mappr",
+  "version": "0.8.0",
+  "private": true,
+  "description": "A keyboard-first mindmap app in one HTML file.",
+  "license": "MIT",
+  "scripts": {
+    "build": "python3 build.py",
+    "test": "node tests/smoke.mjs",
+    "test:pwa": "node tests/pwa.mjs",
+    "bench": "node tests/bench.mjs",
+    "icons": "node tools/make-icons.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}
