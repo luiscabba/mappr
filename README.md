@@ -178,6 +178,22 @@ Not built yet, roughly in the order worth doing:
 - [ ] Images inside nodes
 - [ ] A real file format and cross-device sync, if this ever ships
 
+## Deploying
+
+The repo root is the site. `vercel.json` sets `buildCommand` to `python3 build.py`
+and `outputDirectory` to `.` explicitly: without them Vercel picks up the `build`
+script in `package.json`, runs it, then fails looking for a `public/` directory
+that this project does not have.
+
+The headers in the same file are what make the installable app work in
+production. `sw.js` and the manifest are served `max-age=0, must-revalidate`,
+which matters more than it looks: a service worker cached by a CDN pins every
+visitor to that version permanently, with no way to push a fix.
+
+Connect the GitHub repo in Vercel rather than deploying from the CLI. The CLI
+uploads a snapshot and keeps serving it, so the site silently goes stale behind
+`main`.
+
 ## Versioning
 
 Semver, tagged. `VERSION` is the single source of truth: the build stamps it into
