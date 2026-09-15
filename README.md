@@ -98,6 +98,7 @@ One file, one IIFE, no dependencies. Roughly in reading order:
 
 | Section | What lives there |
 | --- | --- |
+| **Spread** | `SPREAD` maps each mode to the list of directions handed to the root's children in order. `spreadDirs()` derives `edir` for the whole tree each layout and `dirOf()` is the single source of truth everywhere else. Nothing is written into the nodes until `takeOverSpread()`, which fires only when a branch is placed against the mode. |
 | **Settings** | `DEFAULTS` / `CFG`, the palettes, and the size / spacing tables. Every visual choice in the app is a key on `CFG`. |
 | **Model** | `state = { rootId, nodes, frames }`. A node is `{id, parent, children[], text, dir, collapsed, mark}`. `dir` is `L`/`R`/`U`/`D` and governs which way its subtree grows. |
 | **Mutations** | `addNode`, `removeNode`, `branch`, `navigate`, undo/redo snapshots. |

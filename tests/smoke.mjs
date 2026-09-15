@@ -358,6 +358,66 @@ group("outlines from rendered documents");
   ok("plain text still wins when the html has no list", (await shape()) === WANT, await shape());
 }
 
+group("spread");
+{
+  const newMap = async () => {
+    await M(() => document.getElementById("btnMaps").click());
+    await M(() => document.getElementById("btnNewMap").click());
+    await page.waitForTimeout(200);
+  };
+  const rootDirs = () => M(() => __mf.state.nodes[__mf.state.rootId].children.map((c) => __mf.dir(c)).join(","));
+  const setSpread = async (v) => { await M((x) => __mf.spread(x), v); await page.waitForTimeout(200); };
+
+  await newMap();
+  await M(() => __mf.paste("Map\n- A\n- B\n- C\n- D\n- E"));
+  await page.waitForTimeout(250);
+  ok("a new map spreads as placed", (await M(() => __mf.spread())) === "manual");
+  const asPlaced = await rootDirs();
+  const outline0 = await M(() => __mf.outline());
+  const count0 = await M(() => Object.keys(__mf.state.nodes).length);
+
+  for (const [mode, want] of [
+    ["sides", "R,L,R,L,R"],
+    ["updown", "D,U,D,U,D"],
+    ["around", "R,L,D,U,R"],
+    ["right", "R,R,R,R,R"],
+    ["down", "D,D,D,D,D"],
+  ]) {
+    await setSpread(mode);
+    ok("spread " + mode + " fans the branches", (await rootDirs()) === want, await rootDirs());
+    ok("spread " + mode + " lays every node out", (await M(() => Object.keys(__mf.pos()).length)) === count0);
+  }
+
+  // The whole point of deriving rather than applying: it is a view, not an edit.
+  ok("no spread changed the map", (await M(() => __mf.outline())) === outline0);
+  ok("no spread added or lost a node", (await M(() => Object.keys(__mf.state.nodes).length)) === count0);
+  await setSpread("manual");
+  ok("going back restores the original placement", (await rootDirs()) === asPlaced, { now: await rootDirs(), was: asPlaced });
+
+  // Branching against the mode hands control back; branching with it does not.
+  await setSpread("right");
+  await M(() => __mf.select(__mf.state.rootId));
+  await M(() => __mf.branch("R"));
+  await key("Escape");
+  await page.waitForTimeout(150);
+  ok("branching with the mode keeps it", (await M(() => __mf.spread())) === "right");
+  await M(() => __mf.select(__mf.state.rootId));
+  await M(() => __mf.branch("U"));
+  await key("Escape");
+  await page.waitForTimeout(150);
+  ok("branching against the mode drops to as placed", (await M(() => __mf.spread())) === "manual");
+  ok("the takeover keeps everything else where it was",
+    (await rootDirs()).split(",").slice(0, 5).join(",") === "R,R,R,R,R", await rootDirs());
+
+  // A single-direction spread must survive a reload, like any other setting.
+  await setSpread("down");
+  await page.waitForTimeout(600);
+  await page.reload();
+  await page.waitForFunction(() => !!window.__mf);
+  await page.waitForTimeout(300);
+  ok("spread is saved with the map", (await M(() => __mf.spread())) === "down");
+}
+
 group("copying an outline");
 {
   const newMap = async () => {

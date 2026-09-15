@@ -3,6 +3,27 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.9.0] - 2026-09-15
+
+### Added
+- **Spread**, in the style panel: how the root's branches fan out. Six modes.
+  `As placed` is every previous version's behaviour and stays the default, so no
+  existing map changes shape. `Right and left`, `Top and bottom` and `All around`
+  give the classic mindmap shapes; `All right` and `All bottom` turn the same map
+  into a left-to-right tree or a top-down org chart.
+
+  It is derived, not applied. The directions are computed at layout time rather
+  than written into the nodes, so flipping between modes is a view change you can
+  do freely and reverse: going back to `As placed` returns the map to exactly the
+  placement you gave it. Branching *against* the current mode (pressing `⌘↑` in
+  `All right`, say) hands control back: the directions on screen are written in,
+  the map drops to `As placed`, nothing moves, and your placement lands.
+  Branching *with* the mode is not a takeover.
+
+  Direction now has one source of truth for the whole app, so navigation,
+  `Tab` cycling, `⌥`+arrow moves and insert-between all follow what is on
+  screen rather than what was once stored.
+
 ## [0.8.3] - 2026-09-15
 
 ### Added
