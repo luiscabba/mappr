@@ -280,6 +280,50 @@ group("painter");
   ok("incremental paint matches a full rebuild", incremental === rebuilt);
 }
 
+group("outlines from rendered documents");
+{
+  // What the clipboard actually carries when an outline is copied out of a
+  // rendered page rather than a plain-text editor.
+  const NB = "\u00A0", TAB = "\t";
+  const depthOf = () => M(() => {
+    const s = __mf.state; let m = 0;
+    (function w(id, d) { m = Math.max(m, d); s.nodes[id].children.forEach((x) => w(x, d + 1)); })(s.rootId, 0);
+    return m;
+  });
+  const shape = () => M(() => {
+    const s = __mf.state, out = [];
+    (function w(id, d) { out.push("  ".repeat(d) + s.nodes[id].text); s.nodes[id].children.forEach((x) => w(x, d + 1)); })(s.rootId, 0);
+    return out.join("\n");
+  });
+  const fresh = async (txt) => {
+    await M(() => document.getElementById("btnMaps").click());
+    await M(() => document.getElementById("btnNewMap").click());
+    await page.waitForTimeout(200);
+    await M((t) => __mf.paste(t), txt);
+    await page.waitForTimeout(150);
+  };
+  const WANT = "Top\n  A\n    A1\n      A1a\n  B\n    B1";
+
+  for (const [name, txt] of [
+    ["three spaces and stars", "Top\n* A\n   * A1\n      * A1a\n* B\n   * B1"],
+    ["two spaces and dashes", "Top\n- A\n  - A1\n    - A1a\n- B\n  - B1"],
+    ["tabs", ["Top", "- A", TAB + "- A1", TAB + TAB + "- A1a", "- B", TAB + "- B1"].join("\n")],
+    // Rich-text copies indent with non-breaking spaces, which are invisible.
+    ["non-breaking spaces", ["Top", "* A", NB.repeat(3) + "* A1", NB.repeat(6) + "* A1a", "* B", NB.repeat(3) + "* B1"].join("\n")],
+    // Word and Docs drop the indentation entirely and nest by bullet glyph.
+    ["bullet glyphs, no indent", "Top\n\u2022 A\n\u25e6 A1\n\u25aa A1a\n\u2022 B\n\u25e6 B1"],
+    ["blank lines between items", "Top\n\n* A\n\n   * A1\n\n      * A1a\n\n* B\n\n   * B1"],
+  ]) {
+    await fresh(txt);
+    ok("nests correctly: " + name, (await shape()) === WANT, await shape());
+  }
+
+  // An outline that does carry indentation must not be second-guessed by the
+  // glyph rule, even when its glyphs vary.
+  await fresh("Top\n* A\n   - A1\n      + A1a");
+  ok("indentation wins over mixed glyphs", (await depthOf()) === 3);
+}
+
 group("focus by right-click");
 {
   const newMap = async () => {

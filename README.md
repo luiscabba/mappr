@@ -160,7 +160,15 @@ Press `?` in the app for the full list. The ones that matter:
 | `⌘,` | style panel |
 
 Mouse: right-click a node to focus into it, right-click empty canvas to step
-back out. Double-click a node to retype it.
+back out. On a Mac that is a two-finger click or ctrl-click. Double-click a node
+to retype it.
+
+Pasted outlines: indentation by spaces, tabs or the invisible Unicode spaces
+rich-text copies use; `-` `*` `+` `>` `•` `◦` `▪` and numbered bullets; markdown
+headings. A copy that arrives with no indentation at all, which is what Word and
+Google Docs produce, is nested by bullet glyph instead, in their documented
+order. Glyphs are only consulted when indentation says nothing, so an indented
+outline is never overridden.
 
 ---
 

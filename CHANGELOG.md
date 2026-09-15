@@ -6,7 +6,17 @@ All notable changes to Mappr. Format loosely follows
 ## [0.8.1] - 2026-09-15
 
 ### Added
-- Right-click focuses, as the mouse equivalent of `⌘/`. On a node it focuses
+- Outlines copied out of rendered documents now paste with their structure
+  intact. Three things arrive in the clipboard that the parser used to throw
+  away: indentation made of non-breaking and other invisible Unicode spaces,
+  which flattened everything to one level; the `•` `◦` `▪` bullet glyphs Word
+  and Google Docs nest with, which were neither stripped nor understood; and
+  copies that carry no indentation at all, where the glyph is the only record of
+  depth left. Depth is now read off the glyphs, in their documented order, but
+  only when the indentation says nothing, so a properly indented outline is
+  never second-guessed.
+- Right-click focuses, as the mouse equivalent of `⌘/`. Two-finger click and
+  ctrl-click are the same gesture on a Mac and all three work. On a node it focuses
   into that branch; on empty canvas it steps back out a level, the same as
   `Esc`. The native menu is suppressed across the stage so the gesture is
   consistent, except inside the node you are typing in, where the browser's own
