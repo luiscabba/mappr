@@ -3,6 +3,22 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.8.1] - 2026-09-15
+
+### Added
+- A guide on an untouched map: the first two moves, set above and below the
+  centre node in the app's own hand, with the paste shortcut underneath. It is
+  anchored to the node rather than the window, so it sits with it at any zoom,
+  and it disappears the moment the map has any content, so there is nothing to
+  dismiss. Being DOM rather than SVG, it can never end up in an export.
+
+### Fixed
+- Pasting a whole map into a new one left the pasted centre hanging off the
+  "Central idea" placeholder. On a map nobody has touched yet, a pasted outline
+  with a single top-level line now becomes the centre node. An outline with
+  several top-level lines has no one centre to promote, so the placeholder stays
+  and they branch off it as before.
+
 ## [0.8.0] - 2026-09-15
 
 ### Added

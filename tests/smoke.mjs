@@ -62,8 +62,10 @@ const added = await M((t) => __mf.paste(t), OUTLINE);
 ok("pasted 8 nodes", added === 8, added);
 ok("bullets nest under a flush title", (await node("Marketing")).parent === "Launch");
 const round = await M(() => __mf.outline());
+ok("the centre node took the outline's title", round.split("\n")[0].trim() === "Launch");
 const beforeRound = await M(() => Object.keys(__mf.state.nodes).length);
-ok("outline round-trips", (await M((t) => __mf.paste(t), round.split("\n").slice(1).join("\n"))) === 8);
+// Everything below the title, re-pasted under the selected node: 7 lines, 7 nodes.
+ok("children re-paste under the selection", (await M((t) => __mf.paste(t), round.split("\n").slice(1).join("\n"))) === 7);
 await M(() => __mf.undo());
 ok("undo unwinds the paste", (await M(() => Object.keys(__mf.state.nodes).length)) === beforeRound);
 
@@ -82,7 +84,8 @@ await page.keyboard.down("Tab"); await page.keyboard.press("ArrowLeft"); await p
 await page.keyboard.type("Channels"); await key("Escape");
 ok("Tab+back inserts a parent", (await node("Paid ads")).parent === "Channels" && (await node("Channels")).parent === "Marketing");
 await pick("Product");
-await page.keyboard.down("Tab"); await page.keyboard.press("ArrowRight"); await page.keyboard.up("Tab");
+const outward = { L: "ArrowLeft", R: "ArrowRight", U: "ArrowUp", D: "ArrowDown" }[(await node("Product")).dir];
+await page.keyboard.down("Tab"); await page.keyboard.press(outward); await page.keyboard.up("Tab");
 await page.keyboard.type("Phase 1"); await key("Escape");
 ok("Tab+out adopts the children", (await node("Product")).kids.join() === "Phase 1" && (await node("Phase 1")).kids.includes("Onboarding"));
 await pick("Marketing");
@@ -275,6 +278,62 @@ group("painter");
   await M(() => __mf.set("slop", __mf.cfg.slop)); // forces a full rebuild
   const rebuilt = await M(() => document.getElementById("paintLayer").innerHTML);
   ok("incremental paint matches a full rebuild", incremental === rebuilt);
+}
+
+group("pasting into an empty map");
+{
+  const newMap = async () => {
+    await M(() => document.getElementById("btnMaps").click());
+    await M(() => document.getElementById("btnNewMap").click());
+    await page.waitForTimeout(200);
+  };
+  const MAP = "Roadmap\n- Now\n  - Ship v0.8\n- Next\n  - Node notes\n  - Presenting";
+
+  // Build a map, then export it the way Cmd+C does.
+  await newMap();
+  ok("a new map starts on the placeholder", (await M(() => __mf.state.nodes[__mf.state.rootId].text)) === "Central idea");
+  await M((t) => __mf.paste(t), MAP);
+  const exported = await M(() => __mf.outline());
+  ok("the centre took the outline's title", exported.split("\n")[0].trim() === "Roadmap");
+
+  // Paste that export into a second empty map: it should come out identical.
+  await newMap();
+  const n = await M((t) => __mf.paste(t), exported);
+  ok("the pasted centre replaces the placeholder", (await M(() => __mf.state.nodes[__mf.state.rootId].text)) === "Roadmap");
+  ok("no orphan placeholder is left behind",
+    !(await M(() => Object.values(__mf.state.nodes).some((x) => x.text === "Central idea"))));
+  ok("every node came across", (await M(() => Object.keys(__mf.state.nodes).length)) === 6, n);
+  ok("the whole map round-trips", (await M(() => __mf.outline())) === exported);
+
+  // Several top-level lines have no single centre, so the placeholder stays.
+  await newMap();
+  await M(() => __mf.paste("- One\n- Two\n- Three"));
+  ok("a multi-root outline keeps the placeholder",
+    (await M(() => __mf.state.nodes[__mf.state.rootId].text)) === "Central idea");
+  ok("its lines branch off the centre",
+    (await M(() => __mf.state.nodes[__mf.state.rootId].children.length)) === 3);
+}
+
+group("empty-map guide");
+{
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(250);
+  const hint = () => M(() => {
+    const el = document.getElementById("startHint");
+    const top = el.querySelector('[data-sh="top"]').getBoundingClientRect();
+    const bot = el.querySelector('[data-sh="bottom"]').getBoundingClientRect();
+    const root = document.querySelector(".node.root").getBoundingClientRect();
+    return { on: el.classList.contains("on"), top, bot, root };
+  });
+  const h = await hint();
+  ok("the guide shows on an untouched map", h.on);
+  ok("one block sits above the centre node", h.top.bottom <= h.root.top + 1, { hint: h.top.bottom, node: h.root.top });
+  ok("the other sits below it", h.bot.top >= h.root.bottom - 1, { hint: h.bot.top, node: h.root.bottom });
+  await M(() => __mf.child());
+  await page.waitForTimeout(150);
+  ok("it goes away once the map has content", !(await M(() => document.getElementById("startHint").classList.contains("on"))));
+  ok("the guide never reaches an export", !(await M(() => __mf.svg())).includes("branch out"));
 }
 
 group("console");

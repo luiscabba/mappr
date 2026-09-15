@@ -121,6 +121,26 @@
 
   /* collapse badges live in world space */
   #badges{position:absolute;left:0;top:0;width:0;height:0}
+  /* The empty-map guide. Anchored to the centre node inside #world, so it sits
+     with the node at any zoom and pans with it, and it is DOM rather than SVG so
+     it can never reach an export. */
+  #startHint{
+    position:absolute;left:0;top:0;width:0;height:0;
+    pointer-events:none;opacity:0;transition:opacity .22s ease;
+  }
+  #startHint.on{opacity:1}
+  #startHint .sh{
+    position:absolute;left:0;top:0;
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    white-space:nowrap;
+    font-family:var(--font-sketch);font-size:16px;line-height:1.45;
+    color:var(--muted);
+  }
+  #startHint .shline b{font-weight:400;color:var(--ink);opacity:.72}
+  #startHint .shline.dim{font-size:14px;opacity:.62}
+  #startHint .sharrow{color:var(--muted);opacity:.55}
+  #startHint .sh[data-sh="top"] .sharrow{margin-top:2px}
+  #startHint .sh[data-sh="bottom"] .sharrow{margin-bottom:2px;transform:scaleX(-1)}
   .badge{
     position:absolute;left:0;top:0;
     min-width:24px;height:20px;padding:0 6px;
@@ -335,6 +355,23 @@
     <div id="frames"></div>
     <div id="badges"></div>
     <div id="nodes"></div>
+    <div id="startHint" aria-hidden="true">
+      <div class="sh" data-sh="top">
+        <span class="shline">Type to name it</span>
+        <svg class="sharrow" viewBox="0 0 36 44" width="36" height="44" aria-hidden="true">
+          <path d="M7 5 C 4.4 17, 9.6 29.4, 18.4 37" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M11.4 31.6 L 19 38.2 L 22.6 29.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="sh" data-sh="bottom">
+        <svg class="sharrow" viewBox="0 0 36 44" width="36" height="44" aria-hidden="true">
+          <path d="M7 39 C 4.4 27, 9.6 14.6, 18.4 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M11.4 12.4 L 19 5.8 L 22.6 14.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="shline">Then <b>&#8984;</b> and an arrow key to branch out</span>
+        <span class="shline dim">or paste an outline with <b>&#8984;V</b></span>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -824,6 +861,7 @@ function connectorPts(pid,cid,d){
 var elStage=document.getElementById("stage"), elWorld=document.getElementById("world");
 var elNodes=document.getElementById("nodes"), elPaint=document.getElementById("paintLayer");
 var elOverlay=document.getElementById("overlayLayer"), elFrames=document.getElementById("frames");
+var elHint=document.getElementById("startHint");
 var elBadges=document.getElementById("badges");
 var els={}, ftEls={}, bdEls={};
 
@@ -900,7 +938,7 @@ function render(keepView,lead){
     meas[id]={k:el.className+"\u0001"+el.textContent, w:w, h:h};
   });
 
-  layout(); reposition(); paint(); drawBadges(); drawFrameTitles(); drawCrumbs(); drawFrameBar();
+  layout(); reposition(); paint(); drawBadges(); drawFrameTitles(); drawCrumbs(); drawFrameBar(); drawStartHint();
   if(!keepView && CFG.follow) cameraTo(selected,lead);
   applyView();
 }
@@ -918,6 +956,22 @@ function edgePoint(id,d,outward){
   return [p.cx,p.cy-b.h/2];
 }
 
+/* Shown only on a map nobody has touched yet: the first two moves, above and
+   below the centre node. It goes away the moment the map has any content, so it
+   never has to be dismissed. */
+function drawStartHint(){
+  if(!elHint) return;
+  var show=pristine() && !editing && !!pos[state.rootId];
+  elHint.className=show?"on":"";
+  if(!show) return;
+  var p=pos[state.rootId], b=box[state.rootId];
+  var top=elHint.querySelector('[data-sh="top"]');
+  var bot=elHint.querySelector('[data-sh="bottom"]');
+  /* translateX(-50%) is a share of each block's own width and translateY(-100%)
+     of its own height, so neither block has to be measured. */
+  top.style.transform="translate("+p.cx+"px,"+(p.cy-b.h/2-26)+"px) translate(-50%,-100%)";
+  bot.style.transform="translate("+p.cx+"px,"+(p.cy+b.h/2+26)+"px) translateX(-50%)";
+}
 function drawBadges(){
   var live={};
   Object.keys(pos).forEach(function(id){
@@ -1573,11 +1627,40 @@ function parseOutline(text){
   });
   return items;
 }
+/* A map you have not touched yet is a placeholder, not content: one root node
+   still carrying the default label, nothing hanging off it. */
+function pristine(){
+  if(focusId) return false;
+  var r=N(state.rootId);
+  return !!r && !r.children.length && !(state.frames||[]).length &&
+         (!r.text || r.text==="Central idea");
+}
 function insertOutline(items){
   if(!items.length) return 0;
   var base=N(selected); snap();
-  var balance=isRoot(base), flip=0, made=0, last=null;
-  var stack=[{indent:-1,id:base.id,dir:base.dir}];
+  var baseIndent=-1, made=0;
+
+  /* Pasting a whole map into an untouched one should make the pasted centre the
+     centre, rather than hanging it off "Central idea". Only when the outline has
+     a single top-level line: several top-level lines have no one centre to
+     promote, so the placeholder stays and they branch off it. */
+  if(pristine() && base.id===state.rootId){
+    var min=Infinity;
+    items.forEach(function(it){ if(it.indent<min) min=it.indent; });
+    var tops=items.filter(function(it){ return it.indent===min; });
+    if(tops.length===1 && items[0].indent===min){
+      base.text=items[0].text;
+      baseIndent=min; made++;
+      items=items.slice(1);
+    }
+  }
+  if(!items.length){
+    editing=null; clearMarks(); selected=base.id; hardRender(); fit(); saveSoon();
+    return made;
+  }
+
+  var balance=isRoot(base), flip=0, last=null;
+  var stack=[{indent:baseIndent,id:base.id,dir:base.dir}];
   items.forEach(function(it){
     while(stack.length>1&&stack[stack.length-1].indent>=it.indent) stack.pop();
     var parent=stack[stack.length-1],dir;
