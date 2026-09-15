@@ -3,6 +3,17 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.10.1] - 2026-09-15
+
+### Fixed
+- **Selecting a row is `⇧` + click, not `⇧` + right-click.** The gesture 0.10.0
+  shipped never fired: Chrome and Firefox both reserve shift + right-click for
+  their own native menu and hand it to the browser before the page sees the
+  event, `preventDefault` included. There is no way for a page to be given that
+  chord, so it moves to the left button, where nothing else was using it. Plain
+  right-click still focuses a branch and plain click still selects a single
+  node; only the modifier is new.
+
 ## [0.10.0] - 2026-09-15
 
 ### Added

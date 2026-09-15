@@ -376,7 +376,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v0.10.0">Mappr</span>
+  <span class="brand" id="brand" title="Mappr v0.10.1">Mappr</span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -446,7 +446,7 @@
   <span><b>Jump</b> <kbd>⌘</kbd><kbd>K</kbd></span>
   <span><b>Move node</b> <kbd>⌥</kbd><kbd>←↑→↓</kbd></span>
   <span><b>Fold</b> <kbd>⌘</kbd><kbd>E</kbd></span>
-  <span><b>Select a level</b> <kbd>⇧</kbd>+right-click</span>
+  <span><b>Select a level</b> <kbd>⇧</kbd>+click</span>
   <span><b>Whole map</b> <kbd>⌘</kbd><kbd>0</kbd></span>
   <span><b>All keys</b> <kbd>?</kbd></span>
 </div>
@@ -460,7 +460,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.10.0</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.10.1</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <h3>Create</h3>
@@ -504,7 +504,7 @@
     <h3>Select and frames</h3>
     <table class="keys">
       <tr><td><kbd>⇧</kbd> + drag</td><td>Lasso part of the map. Select a node and its whole branch comes with it. The <b>Select</b> button makes plain dragging do this too.</td></tr>
-      <tr><td><kbd>⇧</kbd> + right-click</td><td>Select a node's whole sibling row: every child of its parent, in one gesture. This is how you get a level in hand to fold or delete it.</td></tr>
+      <tr><td><kbd>⇧</kbd> + click</td><td>Select a node's whole sibling row: every child of its parent, in one gesture. This is how you get a level in hand to fold or delete it.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>A</kbd></td><td>Select everything on screen.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>G</kbd></td><td>Wrap the selection in a frame and name it. Frames resize themselves as the map underneath grows.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>G</kbd></td><td>Ungroup the selected frame.</td></tr>
@@ -539,7 +539,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="0.10.0";
+var VERSION="0.10.1";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid",
   width:2, dash:"solid", slop:1, edges:"round",
@@ -1471,7 +1471,7 @@ function frameById(id){ return state.frames.filter(function(f){ return f.id===id
    ACTIONS
    ============================================================ */
 function clearMarks(){ marked={}; selFrame=null; }
-/* Shift + right-click marks a node's whole sibling row: every child of its
+/* Shift + click marks a node's whole sibling row: every child of its
    parent, the node itself included. One gesture puts a level in hand, which is
    the unit Fold and Delete then act on. The root of the current view has no
    siblings on screen, so it flashes rather than marking something you cannot
@@ -2544,7 +2544,13 @@ elNodes.addEventListener("input",function(){
 elNodes.addEventListener("mousedown",function(e){
   var el=e.target.closest(".node"); if(!el) return;
   if(editing===el.dataset.id) return;
-  e.stopPropagation(); select(el.dataset.id);
+  e.stopPropagation();
+  /* Shift + click marks the row. Left button only: the same chord on the right
+     button is the one gesture a page cannot have, since Chrome and Firefox both
+     read shift + right-click as "show me the real menu" and hand it to the
+     browser before the page ever sees it. */
+  if(e.button===0 && e.shiftKey){ e.preventDefault(); markSiblings(el.dataset.id); return; }
+  select(el.dataset.id);
 });
 elNodes.addEventListener("dblclick",function(e){
   var el=e.target.closest(".node"); if(!el) return;
@@ -2562,7 +2568,6 @@ elStage.addEventListener("contextmenu",function(e){
   e.preventDefault();
   if(el){
     if(editing) commitEdit();
-    if(e.shiftKey){ markSiblings(el.dataset.id); return; }
     selected=el.dataset.id; clearMarks(); selFrame=null;
     enterFocus();
     return;

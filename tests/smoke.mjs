@@ -448,25 +448,39 @@ group("selecting a level");
   await M(() => __mf.paste("Plan\n- A\n  - A1\n  - A2\n- B\n  - B1\n  - B2\n- C"));
   await page.waitForTimeout(250);
 
-  // Shift + right-click marks the sibling row, not the depth and not the branch.
+  // Shift + click marks the sibling row, not the depth and not the branch.
   // Driven as a real gesture, so the modifier and the handler are both covered.
-  const shiftRightClick = async (text) => {
+  const shiftClick = async (text) => {
     const box = await M((t) => {
       const el = [...document.querySelectorAll(".node")].find((n) => n.textContent.trim() === t);
       const r = el.getBoundingClientRect();
       return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
     }, text);
     await page.keyboard.down("Shift");
-    await page.mouse.click(box.x, box.y, { button: "right" });
+    await page.mouse.click(box.x, box.y);
     await page.keyboard.up("Shift");
     await page.waitForTimeout(150);
   };
-  await shiftRightClick("A1");
-  ok("shift+right-click marks the sibling row", (await names(await M(() => __mf.rawMarked))) === "A1,A2");
-  ok("and does not focus the way a plain right-click does", (await M(() => __mf.focus)) === null);
-  await shiftRightClick("A2");
+  await shiftClick("A1");
+  ok("shift+click marks the sibling row", (await names(await M(() => __mf.rawMarked))) === "A1,A2");
+  ok("and does not focus the way a right-click does", (await M(() => __mf.focus)) === null);
+  // Without the modifier the same click is the old one: it selects that node
+  // alone and drops whatever row was in hand.
+  const plainClick = async (text) => {
+    const box = await M((t) => {
+      const el = [...document.querySelectorAll(".node")].find((n) => n.textContent.trim() === t);
+      const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    }, text);
+    await page.mouse.click(box.x, box.y);
+    await page.waitForTimeout(150);
+  };
+  await plainClick("A1");
+  ok("a plain click drops the row", (await M(() => __mf.rawMarked.length)) === 0);
+  ok("and selects just that node", (await textOf()) === "A1");
+  await shiftClick("A2");
   ok("marking a new row replaces the old one", (await names(await M(() => __mf.rawMarked))) === "A1,A2");
-  await M(async (id) => __mf.markSibs(id), await idOf("B"));
+  await shiftClick("B");
   await page.waitForTimeout(150);
   ok("a top-level node's row is the root's children", (await names(await M(() => __mf.rawMarked))) === "A,B,C");
   const rootId = await M(() => __mf.state.rootId);
@@ -475,8 +489,7 @@ group("selecting a level");
   ok("the centre node has no row to mark", (await M(() => __mf.rawMarked)).length === 0);
 
   // Fold folds each selected node's own children; the row itself stays visible.
-  await M(async (id) => __mf.markSibs(id), await idOf("A"));
-  await page.waitForTimeout(150);
+  await shiftClick("A");
   await M(() => __mf.fold());
   await page.waitForTimeout(200);
   ok("fold folds every selected node", (await node("A")).collapsed && (await node("B")).collapsed);
