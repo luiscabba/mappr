@@ -3,6 +3,18 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.8.3] - 2026-09-15
+
+### Added
+- Copying an outline now puts a nested bullet list on the clipboard as well as
+  the text. Pasting into a document, a wiki or another mindmap gives real nested
+  bullets instead of lines of text, because the copy carries a `text/html`
+  flavour with the `<ul>`/`<li>` structure alongside the plain text. This is the
+  other half of 0.8.2: the same nesting Mappr now reads on the way in, it writes
+  on the way out. Both flavours round-trip back into an empty map as the same
+  map. `⌘C` and the Export menu's `Copy outline` both do it, and a frame still
+  copies only itself.
+
 ## [0.8.2] - 2026-09-15
 
 ### Fixed

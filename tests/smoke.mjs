@@ -358,6 +358,54 @@ group("outlines from rendered documents");
   ok("plain text still wins when the html has no list", (await shape()) === WANT, await shape());
 }
 
+group("copying an outline");
+{
+  const newMap = async () => {
+    await M(() => document.getElementById("btnMaps").click());
+    await M(() => document.getElementById("btnNewMap").click());
+    await page.waitForTimeout(200);
+  };
+  const SRC = "Core Metrics\n* Efficiency\n   * Manual minutes\n      * Unit A\n* Decision Support";
+  await newMap();
+  await M((t) => __mf.paste(t), SRC);
+  await page.waitForTimeout(200);
+
+  // A real copy event must carry both flavours.
+  const copied = await M(() => {
+    const dt = new DataTransfer();
+    document.dispatchEvent(new ClipboardEvent("copy", { clipboardData: dt, bubbles: true, cancelable: true }));
+    return { text: dt.getData("text/plain"), html: dt.getData("text/html") };
+  });
+  ok("copy puts plain text on the clipboard", copied.text.split("\n")[0] === "Core Metrics", copied.text);
+  ok("copy bullets every line below the centre", copied.text.split("\n").slice(1).every((l) => /^\s*- /.test(l)), copied.text);
+  ok("copy also puts nested html on the clipboard", /^<ul><li>Core Metrics<ul>/.test(copied.html), copied.html);
+  ok("the html nests as deep as the map", (copied.html.match(/<ul>/g) || []).length === 4, copied.html);
+
+  // Both flavours must come back as the same map.
+  const before = await M(() => __mf.outline());
+  await newMap();
+  await M((t) => __mf.paste(t), copied.text);
+  await page.waitForTimeout(150);
+  ok("the text flavour round-trips", (await M(() => __mf.outline())) === before);
+  await newMap();
+  await M((h) => __mf.pasteRich(h, ""), copied.html);
+  await page.waitForTimeout(150);
+  ok("the html flavour round-trips", (await M(() => __mf.outline())) === before);
+
+  // Copying a frame copies only that frame, in both flavours.
+  await newMap();
+  await M((t) => __mf.paste(t), SRC);
+  await page.waitForTimeout(200);
+  await M(() => { __mf.mark([Object.values(__mf.state.nodes).find((n) => n.text === "Efficiency").id]); __mf.frame(); });
+  await page.waitForTimeout(250);
+  const frameCopy = await M(() => {
+    const dt = new DataTransfer();
+    document.dispatchEvent(new ClipboardEvent("copy", { clipboardData: dt, bubbles: true, cancelable: true }));
+    return { text: dt.getData("text/plain"), html: dt.getData("text/html") };
+  });
+  ok("a framed copy leaves the rest out", !frameCopy.text.includes("Decision Support") && !frameCopy.html.includes("Decision Support"), frameCopy.text);
+}
+
 group("focus by right-click");
 {
   const newMap = async () => {

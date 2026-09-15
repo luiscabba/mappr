@@ -163,6 +163,10 @@ Mouse: right-click a node to focus into it, right-click empty canvas to step
 back out. On a Mac that is a two-finger click or ctrl-click. Double-click a node
 to retype it.
 
+Copied outlines carry both flavours too: plain text as an indented bullet list,
+and html as real `<ul>`/`<li>` nesting, so a paste into a document or a wiki
+lands as nested bullets rather than flat lines.
+
 Pasted outlines: both clipboard flavours are parsed and whichever recovered more
 structure wins. The `text/html` flavour is the reliable one, because it keeps
 real `<ul>`/`<li>` nesting that the plain text often loses entirely. Falling back

@@ -376,7 +376,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v0.8.2">Mappr</span>
+  <span class="brand" id="brand" title="Mappr v0.8.3">Mappr</span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -459,7 +459,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.8.2</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.8.3</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <h3>Create</h3>
@@ -537,7 +537,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="0.8.2";
+var VERSION="0.8.3";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid",
   width:2, dash:"solid", slop:1, edges:"round",
@@ -1766,7 +1766,7 @@ function flashSave(msg){
   el.textContent=msg; clearTimeout(flashTimer);
   flashTimer=setTimeout(function(){ flashTimer=null; el.textContent="saved"; },1600);
 }
-function copyText(txt,label){
+function copyText(txt,label,html){
   function ok(){ flashSave(label||"copied"); }
   function fb(){
     var ta=document.createElement("textarea");
@@ -1775,8 +1775,47 @@ function copyText(txt,label){
     try{ document.execCommand("copy"); ok(); }catch(e){ flashSave("copy failed"); }
     ta.remove();
   }
-  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok,fb);
-  else fb();
+  function plain(){
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok,fb);
+    else fb();
+  }
+  /* Writing both flavours needs ClipboardItem; without it the text alone still
+     pastes fine, just without the nesting. */
+  if(html&&window.ClipboardItem&&navigator.clipboard&&navigator.clipboard.write){
+    try{
+      navigator.clipboard.write([new ClipboardItem({
+        "text/plain":new Blob([txt],{type:"text/plain"}),
+        "text/html":new Blob([html],{type:"text/html"})
+      })]).then(ok,plain);
+      return;
+    }catch(e){ /* fall through */ }
+  }
+  plain();
+}
+/* The html flavour of a copy. Pasting into a document, a wiki or another
+   mindmap gives a real nested bullet list rather than lines of text, and it
+   survives the round trip back into Mappr, since the html parser reads the same
+   <ul>/<li> nesting. */
+function toOutlineHtml(rootIds){
+  var out=[];
+  function walk(id){
+    var n=N(id);
+    out.push("<li>"+esc((n.text||"").replace(/\n/g," ")));
+    if(n.children.length){
+      out.push("<ul>");
+      n.children.forEach(walk);
+      out.push("</ul>");
+    }
+    out.push("</li>");
+  }
+  out.push("<ul>");
+  (rootIds||[VR()]).forEach(walk);
+  out.push("</ul>");
+  return out.join("");
+}
+function currentOutlineHtml(){
+  if(selFrame){ var f=frameById(selFrame); if(f) return toOutlineHtml(f.roots); }
+  return toOutlineHtml([VR()]);
 }
 function currentOutline(){
   if(selFrame){ var f=frameById(selFrame); if(f) return toOutline(f.roots); }
@@ -1797,6 +1836,7 @@ document.addEventListener("copy",function(e){
   if(editing||editFrame) return;
   e.preventDefault();
   e.clipboardData.setData("text/plain",currentOutline());
+  e.clipboardData.setData("text/html",currentOutlineHtml());
   flashSave(selFrame?"frame outline copied":"outline copied");
 });
 
@@ -1897,7 +1937,7 @@ function doExport(kind){
     download(JSON.stringify({v:4,state:state,cfg:CFG},null,2),"application/json",fileName(N(state.rootId).text||"map","json"));
     flashSave("JSON saved"); return;
   }
-  if(kind==="outline"){ copyText(currentOutline(), selFrame?"frame outline copied":"outline copied"); return; }
+  if(kind==="outline"){ copyText(currentOutline(), selFrame?"frame outline copied":"outline copied", currentOutlineHtml()); return; }
   var t=exportTargets();
   var svgText=buildSvg(t.ids,t.frame);
   if(!svgText){ flashSave("nothing to export"); return; }
@@ -2657,7 +2697,8 @@ window.__mf={
   navigate:function(d){ var t=navigate(N(selected),d); if(t) select(t); return t; },
   tab:function(b){ var x=cycleLevel(N(selected),b); if(x) select(x); return x; },
   focusIn:enterFocus, focusOut:exitFocus,
-  outline:currentOutline, paste:function(t){ return insertOutline(parseOutline(t)); },
+  outline:currentOutline, outlineHtml:currentOutlineHtml,
+  paste:function(t){ return insertOutline(parseOutline(t)); },
   pasteRich:function(html,text){ return insertOutline(bestOutline(html,text||"")); },
   svg:function(){ var t=exportTargets(); return buildSvg(t.ids,t.frame); },
   png:function(cb){ var t=exportTargets(); svgToPng(buildSvg(t.ids,t.frame),2,cb); },
