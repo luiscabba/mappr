@@ -6,6 +6,12 @@ All notable changes to Mappr. Format loosely follows
 ## [0.8.1] - 2026-09-15
 
 ### Added
+- Right-click focuses, as the mouse equivalent of `⌘/`. On a node it focuses
+  into that branch; on empty canvas it steps back out a level, the same as
+  `Esc`. The native menu is suppressed across the stage so the gesture is
+  consistent, except inside the node you are typing in, where the browser's own
+  cut and paste menu is the useful thing. Double-click is untouched and still
+  retypes a node.
 - A guide on an untouched map: the first two moves, set above and below the
   centre node in the app's own hand, with the paste shortcut underneath. It is
   anchored to the node rather than the window, so it sits with it at any zoom,

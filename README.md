@@ -159,6 +159,9 @@ Press `?` in the app for the full list. The ones that matter:
 | `⌘C` / `⇧⌘C` | copy as outline / as an image |
 | `⌘,` | style panel |
 
+Mouse: right-click a node to focus into it, right-click empty canvas to step
+back out. Double-click a node to retype it.
+
 ---
 
 ## Roadmap

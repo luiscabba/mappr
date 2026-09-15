@@ -2275,6 +2275,26 @@ elNodes.addEventListener("dblclick",function(e){
   var el=e.target.closest(".node"); if(!el) return;
   e.stopPropagation(); selected=el.dataset.id; clearMarks(); render(); beginEdit(el.dataset.id,true);
 });
+/* Right-click is the mouse equivalent of Cmd+/ : on a node it focuses into that
+   branch, on empty canvas it steps back out one level, the same as Escape. The
+   native menu is suppressed across the stage either way, since a menu that
+   appears on some of the surface and not the rest reads as a bug. The one
+   exception is the node you are currently typing in, where the browser's own
+   cut/copy/paste menu is the useful thing. */
+elStage.addEventListener("contextmenu",function(e){
+  var el=e.target.closest(".node");
+  if(el && editing===el.dataset.id) return;
+  e.preventDefault();
+  if(el){
+    if(editing) commitEdit();
+    selected=el.dataset.id; clearMarks(); selFrame=null;
+    enterFocus();
+    return;
+  }
+  if(e.target.closest(".ftitle")) return;
+  if(editing) commitEdit();
+  if(focusId) exitFocus();
+});
 elFrames.addEventListener("mousedown",function(e){
   var el=e.target.closest(".ftitle"); if(!el) return;
   e.stopPropagation();

@@ -280,6 +280,48 @@ group("painter");
   ok("incremental paint matches a full rebuild", incremental === rebuilt);
 }
 
+group("focus by right-click");
+{
+  const newMap = async () => {
+    await M(() => document.getElementById("btnMaps").click());
+    await M(() => document.getElementById("btnNewMap").click());
+    await page.waitForTimeout(200);
+  };
+  await newMap();
+  await M(() => __mf.paste("Tree\n- Trunk\n  - Leaf one\n  - Leaf two"));
+  await page.waitForTimeout(250);
+
+  const rightClick = async (text) => {
+    const box = await M((t) => {
+      const el = [...document.querySelectorAll(".node")].find((n) => n.textContent === t);
+      const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    }, text);
+    await page.mouse.click(box.x, box.y, { button: "right" });
+    await page.waitForTimeout(250);
+  };
+
+  await rightClick("Trunk");
+  ok("right-click on a node focuses into it", (await M(() => __mf.focus)) !== null);
+  ok("it focuses the node that was clicked", (await M(() => __mf.state.nodes[__mf.focus].text)) === "Trunk");
+
+  // Empty canvas steps back out, the same as Escape.
+  await page.mouse.click(40, 620, { button: "right" });
+  await page.waitForTimeout(250);
+  ok("right-click on empty canvas steps back out", (await M(() => __mf.focus)) === null);
+
+  // A node with nothing under it has nothing to focus into.
+  await rightClick("Leaf one");
+  ok("a childless node does not focus", (await M(() => __mf.focus)) === null);
+
+  // The browser's own menu stays available inside the text you are typing.
+  await M(() => { __mf.select(Object.values(__mf.state.nodes).find((n) => n.text === "Trunk").id); });
+  await key("Space");
+  await rightClick("Trunk");
+  ok("right-click while typing does not focus", (await M(() => __mf.focus)) === null);
+  await key("Escape");
+}
+
 group("pasting into an empty map");
 {
   const newMap = async () => {
