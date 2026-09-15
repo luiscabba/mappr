@@ -379,7 +379,6 @@ group("spread");
   for (const [mode, want] of [
     ["sides", "R,L,R,L,R"],
     ["updown", "D,U,D,U,D"],
-    ["around", "R,L,D,U,R"],
     ["right", "R,R,R,R,R"],
     ["down", "D,D,D,D,D"],
   ]) {
@@ -416,6 +415,104 @@ group("spread");
   await page.waitForFunction(() => !!window.__mf);
   await page.waitForTimeout(300);
   ok("spread is saved with the map", (await M(() => __mf.spread())) === "down");
+
+  // `All around` was removed in 0.10. A map saved in it bakes into the shape it
+  // was showing rather than jumping into another mode.
+  await setSpread("manual");
+  const legacy = await M(() => {
+    __mf.set("spread", "around");
+    return __mf.state.rootId;
+  });
+  await page.waitForTimeout(200);
+  await page.waitForTimeout(600);
+  await page.reload();
+  await page.waitForFunction(() => !!window.__mf);
+  await page.waitForTimeout(300);
+  ok("all around is no longer offered", !(await M(() => !!document.querySelector('[data-k="spread"] .opt[data-v="around"]'))));
+  ok("a map saved in all around drops to as placed", (await M(() => __mf.spread())) === "manual");
+  ok("and it is baked into the fan it was showing", (await rootDirs()) === "R,L,D,U,R", await rootDirs());
+  void legacy;
+}
+
+group("selecting a level");
+{
+  const newMap = async () => {
+    await M(() => document.getElementById("btnMaps").click());
+    await M(() => document.getElementById("btnNewMap").click());
+    await page.waitForTimeout(200);
+  };
+  const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const names = (ids) => M((ids) => ids.map((i) => __mf.state.nodes[i].text).sort().join(","), ids);
+
+  await newMap();
+  await M(() => __mf.paste("Plan\n- A\n  - A1\n  - A2\n- B\n  - B1\n  - B2\n- C"));
+  await page.waitForTimeout(250);
+
+  // Shift + right-click marks the sibling row, not the depth and not the branch.
+  // Driven as a real gesture, so the modifier and the handler are both covered.
+  const shiftRightClick = async (text) => {
+    const box = await M((t) => {
+      const el = [...document.querySelectorAll(".node")].find((n) => n.textContent.trim() === t);
+      const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    }, text);
+    await page.keyboard.down("Shift");
+    await page.mouse.click(box.x, box.y, { button: "right" });
+    await page.keyboard.up("Shift");
+    await page.waitForTimeout(150);
+  };
+  await shiftRightClick("A1");
+  ok("shift+right-click marks the sibling row", (await names(await M(() => __mf.rawMarked))) === "A1,A2");
+  ok("and does not focus the way a plain right-click does", (await M(() => __mf.focus)) === null);
+  await shiftRightClick("A2");
+  ok("marking a new row replaces the old one", (await names(await M(() => __mf.rawMarked))) === "A1,A2");
+  await M(async (id) => __mf.markSibs(id), await idOf("B"));
+  await page.waitForTimeout(150);
+  ok("a top-level node's row is the root's children", (await names(await M(() => __mf.rawMarked))) === "A,B,C");
+  const rootId = await M(() => __mf.state.rootId);
+  await M((id) => __mf.markSibs(id), rootId);
+  await page.waitForTimeout(150);
+  ok("the centre node has no row to mark", (await M(() => __mf.rawMarked)).length === 0);
+
+  // Fold folds each selected node's own children; the row itself stays visible.
+  await M(async (id) => __mf.markSibs(id), await idOf("A"));
+  await page.waitForTimeout(150);
+  await M(() => __mf.fold());
+  await page.waitForTimeout(200);
+  ok("fold folds every selected node", (await node("A")).collapsed && (await node("B")).collapsed);
+  ok("the selected row is still on screen", (await M(() => Object.keys(__mf.pos()).length)) === 4, await M(() => Object.keys(__mf.pos()).length));
+  await M(() => __mf.fold());
+  await page.waitForTimeout(200);
+  ok("the same press opens it again", !(await node("A")).collapsed && !(await node("B")).collapsed);
+
+  // Delete takes exactly what was selected; survivors move up a level.
+  await M(async (ids) => __mf.mark(ids), [await idOf("A"), await idOf("B1")]);
+  await page.waitForTimeout(150);
+  await M(() => __mf.del());
+  await page.waitForTimeout(250);
+  ok("the selected nodes are gone", !(await node("A")) && !(await node("B1")));
+  ok("an unselected child survives its parent", !!(await node("A1")) && !!(await node("A2")));
+  ok("and reattaches to the nearest survivor", (await node("A1")).parent === "Plan" && (await node("A2")).parent === "Plan");
+  ok("a sibling that was not selected is untouched", (await node("B2")).parent === "B");
+  ok("the rest of the map is intact", !!(await node("C")));
+  await M(() => __mf.undo());
+  await page.waitForTimeout(200);
+  ok("undo puts the branch back", (await node("A")).kids.join() === "A1,A2" && (await node("B1")).parent === "B");
+
+  // A survivor that lands on the centre node keeps the direction it was drawn
+  // with, so nothing jumps across the map.
+  const dirWas = (await node("A1")).dir;
+  await M(async (ids) => __mf.mark(ids), [await idOf("A")]);
+  await M(() => __mf.del());
+  await page.waitForTimeout(250);
+  ok("a promoted survivor keeps its direction", (await node("A1")).dir === dirWas, { now: (await node("A1")).dir, was: dirWas });
+
+  // Deleting with nothing selected is still the old single-node delete.
+  await pick("C");
+  await M(() => __mf.mark([]));
+  await key("Backspace");
+  await page.waitForTimeout(200);
+  ok("plain delete still takes one node and its branch", !(await node("C")));
 }
 
 group("copying an outline");

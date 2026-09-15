@@ -376,7 +376,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v0.9.0">Mappr</span>
+  <span class="brand" id="brand" title="Mappr v0.10.0">Mappr</span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -446,6 +446,7 @@
   <span><b>Jump</b> <kbd>⌘</kbd><kbd>K</kbd></span>
   <span><b>Move node</b> <kbd>⌥</kbd><kbd>←↑→↓</kbd></span>
   <span><b>Fold</b> <kbd>⌘</kbd><kbd>E</kbd></span>
+  <span><b>Select a level</b> <kbd>⇧</kbd>+right-click</span>
   <span><b>Whole map</b> <kbd>⌘</kbd><kbd>0</kbd></span>
   <span><b>All keys</b> <kbd>?</kbd></span>
 </div>
@@ -459,7 +460,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.9.0</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.10.0</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <h3>Create</h3>
@@ -486,7 +487,7 @@
     <h3>Reshape</h3>
     <table class="keys">
       <tr><td><kbd>⌥</kbd><kbd>←↑→↓</kbd></td><td>Move the node itself. Sideways reorders it among its siblings, outward tucks it under the sibling before it, back toward the centre promotes it a level. The whole branch travels with it.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>E</kbd></td><td>Fold or unfold a branch. A folded node wears a badge with the number hidden underneath; click the badge to open it.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>E</kbd></td><td>Fold or unfold a branch. A folded node wears a badge with the number hidden underneath; click the badge to open it. With a selection up it folds every selected node at once, so a whole level goes away in one press.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag (a small pennant).</td></tr>
     </table>
@@ -496,13 +497,14 @@
       <tr><td><kbd>Space</kbd> or any letter</td><td>Retype the selected node, replacing its text.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>⏎</kbd></td><td>Line break inside a node.</td></tr>
       <tr><td><kbd>Esc</kbd></td><td>Stop typing. A node left blank is dropped.</td></tr>
-      <tr><td><kbd>⌫</kbd></td><td>Delete the node and everything under it.</td></tr>
+      <tr><td><kbd>⌫</kbd></td><td>Delete the node and everything under it. With a selection up it deletes <em>exactly</em> what is selected: anything underneath that you did not select survives and moves up to the nearest node that did.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>Z</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>Z</kbd></td><td>Undo / redo.</td></tr>
     </table>
 
-    <h3>Frames</h3>
+    <h3>Select and frames</h3>
     <table class="keys">
       <tr><td><kbd>⇧</kbd> + drag</td><td>Lasso part of the map. Select a node and its whole branch comes with it. The <b>Select</b> button makes plain dragging do this too.</td></tr>
+      <tr><td><kbd>⇧</kbd> + right-click</td><td>Select a node's whole sibling row: every child of its parent, in one gesture. This is how you get a level in hand to fold or delete it.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>A</kbd></td><td>Select everything on screen.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>G</kbd></td><td>Wrap the selection in a frame and name it. Frames resize themselves as the map underneath grows.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>G</kbd></td><td>Ungroup the selected frame.</td></tr>
@@ -537,7 +539,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="0.9.0";
+var VERSION="0.10.0";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid",
   width:2, dash:"solid", slop:1, edges:"round",
@@ -739,7 +741,6 @@ var SPREAD={
   manual:null,
   sides:["R","L"],
   updown:["D","U"],
-  around:["R","L","D","U"],
   right:["R"],
   down:["D"]
 };
@@ -757,6 +758,18 @@ function spreadDirs(){
   });
 }
 function dirOf(id){ var d=edir[id]; return d||(N(id)||{}).dir; }
+/* `All around` was a spread mode until 0.10. A map saved in it is baked into
+   the shape it is already showing rather than reshaped into another mode: the
+   directions it was deriving are written in and the map drops to `As placed`,
+   so the picture does not move. Same trade as takeOverSpread, for a mode that
+   no longer exists. */
+var GONE_SPREAD={ around:["R","L","D","U"] };
+function migrateSpread(){
+  var list=GONE_SPREAD[CFG.spread]; if(!list) return;
+  var root=N(VR());
+  if(root) root.children.forEach(function(c,i){ setDirDeep(c,list[i%list.length]); });
+  CFG.spread="manual";
+}
 /* Branching against the current mode hands control back: the derived
    directions are written into the nodes and the map drops to `As placed`, so
    the picture does not move and the hand-placement lands. */
@@ -1458,6 +1471,21 @@ function frameById(id){ return state.frames.filter(function(f){ return f.id===id
    ACTIONS
    ============================================================ */
 function clearMarks(){ marked={}; selFrame=null; }
+/* Shift + right-click marks a node's whole sibling row: every child of its
+   parent, the node itself included. One gesture puts a level in hand, which is
+   the unit Fold and Delete then act on. The root of the current view has no
+   siblings on screen, so it flashes rather than marking something you cannot
+   see. */
+function markSiblings(id){
+  var n=N(id); if(!n) return;
+  if(!n.parent || isVR(n)){ clearMarks(); selected=id; render(true); flash(id); return; }
+  var row=N(n.parent).children.slice();
+  marked={}; selFrame=null;
+  row.forEach(function(c){ marked[c]=1; });
+  selected=id;
+  render(true);
+  flashSave(row.length+" selected");
+}
 function select(id){
   if(!id||!N(id)) return;
   if(editing&&editing!==id) commitEdit();
@@ -1535,7 +1563,52 @@ function insertBetween(dir){
   }
   flash(selected);
 }
+/* Deleting a selection removes exactly the nodes that were selected and nothing
+   else. Anything underneath them that was NOT selected survives and reattaches
+   to the nearest surviving ancestor, in place, so a lasso never takes a branch
+   it did not cover. Survivors that move inherit their new parent's direction,
+   as children do everywhere else; one that lands on the root keeps the
+   direction it was drawn with, so the picture stays put. */
+function deleteMarked(ids){
+  var D={};
+  ids.forEach(function(i){ var n=N(i); if(n && n.parent && !isVR(n)) D[i]=1; });
+  var dead=Object.keys(D);
+  if(!dead.length){ flash(selected); return; }
+  snap();
+  var rid=VR(), was=pathTo(selected);
+  var dsnap={}; Object.keys(state.nodes).forEach(function(i){ dsnap[i]=dirOf(i); });
+  /* A dying node hands its surviving descendants up to whoever outlives it. */
+  function keep(id){
+    var out=[];
+    N(id).children.forEach(function(c){
+      if(D[c]) out=out.concat(keep(c));
+      else { N(c).children=keep(c); out.push(c); }
+    });
+    return out;
+  }
+  N(rid).children=keep(rid);
+  (function relink(id,d){
+    N(id).children.forEach(function(c){
+      N(c).parent=id;
+      var nd=(id===rid)?(dsnap[c]||N(c).dir):d;
+      N(c).dir=nd;
+      relink(c,nd);
+    });
+  })(rid,null);
+  dead.forEach(function(i){ delete state.nodes[i]; });
+  state.frames=(state.frames||[]).filter(function(f){
+    f.roots=f.roots.filter(function(r){ return !D[r]; });
+    return f.roots.length;
+  });
+  if(D[selected]){
+    selected=was.slice().reverse().filter(function(i){ return !D[i] && N(i); })[0]||rid;
+  }
+  clearMarks(); render(); saveSoon();
+  flashSave("deleted "+dead.length);
+}
 function doDelete(){
+  var mr=Object.keys(marked).filter(function(i){ return N(i); });
+  if(mr.length){ deleteMarked(mr); return; }
   var n=N(selected);
   if(isRoot(n)||isVR(n)){ flash(selected); return; }
   snap();
@@ -1576,7 +1649,26 @@ function moveNode(dir){
   clearMarks(); render(); saveSoon();
 }
 
+/* With a selection up, Fold acts on every selected node at once. Each one folds
+   its OWN children, so the selected nodes stay on screen and everything under
+   them goes; that is the level you selected, hidden. A mixed selection resolves
+   one way rather than flip-flopping: if any of them is open, the whole set
+   folds. The selection survives, so the same key opens it again. */
+function foldMarked(ids){
+  var real=ids.filter(function(i){ return N(i) && N(i).children.length; });
+  if(!real.length){ flash(selected); return; }
+  var fold=real.some(function(i){ return !N(i).collapsed; });
+  snap();
+  real.forEach(function(i){ N(i).collapsed=fold; });
+  if(fold) real.forEach(function(i){ if(subtree(i).indexOf(selected)>0) selected=i; });
+  render(); saveSoon();
+  flashSave((fold?"folded ":"unfolded ")+real.length+" branches");
+}
 function toggleCollapse(id){
+  if(id==null){
+    var mr=markedRoots();
+    if(mr.length){ foldMarked(mr); return; }
+  }
   var n=N(id||selected);
   if(!n.children.length){ flash(n.id); return; }
   snap();
@@ -2155,6 +2247,7 @@ function switchDoc(id){
   if(!N(selected)) selected=VR();
   if(d.view) view=d.view;
   if(d.cfg) CFG=Object.assign({},DEFAULTS,d.cfg);
+  migrateSpread();
   editing=null; clearMarks(); clearUndo();
   applyCss(); drawPanel(); hardRender(); fit(); drawMaps();
   flashSave("opened");
@@ -2205,7 +2298,6 @@ var I={
   spman:svg('<circle cx="10" cy="10" r="1.9" fill="currentColor" stroke="none"/><path d="M8.3 9.2 4.6 7.4M11.7 10.8 15.6 12.6M10.4 8.2 11.6 4.4"/>'),
   spsides:svg('<circle cx="10" cy="10" r="1.9" fill="currentColor" stroke="none"/><path d="M8.1 9.2 4.6 6.6M8.1 10.8 4.6 13.4M11.9 9.2 15.4 6.6M11.9 10.8 15.4 13.4"/>'),
   spud:svg('<circle cx="10" cy="10" r="1.9" fill="currentColor" stroke="none"/><path d="M9.2 8.1 6.6 4.6M10.8 8.1 13.4 4.6M9.2 11.9 6.6 15.4M10.8 11.9 13.4 15.4"/>'),
-  spall:svg('<circle cx="10" cy="10" r="1.9" fill="currentColor" stroke="none"/><path d="M8.1 10H4.4M11.9 10h3.7M10 8.1V4.4M10 11.9v3.7"/>'),
   spr:svg('<circle cx="10" cy="10" r="1.9" fill="currentColor" stroke="none"/><path d="M11.9 10h3.7M11.9 9.6 15.6 6.2M11.9 10.4 15.6 13.8"/>'),
   spd:svg('<circle cx="10" cy="10" r="1.9" fill="currentColor" stroke="none"/><path d="M10 11.9v3.7M9.6 11.9 6.2 15.6M10.4 11.9 13.8 15.6"/>'),
   depth:svg('<circle cx="4" cy="10" r="2.2" fill="currentColor" stroke="none" opacity=".95"/><circle cx="10" cy="10" r="2.2" fill="currentColor" stroke="none" opacity=".6"/><circle cx="16" cy="10" r="2.2" fill="currentColor" stroke="none" opacity=".3"/>'),
@@ -2243,7 +2335,6 @@ var PANEL=[
     ["manual",I.spman,"As placed"],
     ["sides",I.spsides,"Right and left"],
     ["updown",I.spud,"Top and bottom"],
-    ["around",I.spall,"All around"],
     ["right",I.spr,"All right"],
     ["down",I.spd,"All bottom"]
   ]},
@@ -2471,6 +2562,7 @@ elStage.addEventListener("contextmenu",function(e){
   e.preventDefault();
   if(el){
     if(editing) commitEdit();
+    if(e.shiftKey){ markSiblings(el.dataset.id); return; }
     selected=el.dataset.id; clearMarks(); selFrame=null;
     enterFocus();
     return;
@@ -2588,6 +2680,7 @@ function adopt(o){
   if(o.view) view=o.view;
   if(o.cfg) CFG=Object.assign({},DEFAULTS,o.cfg);
   if(!N(selected)) selected=VR();
+  migrateSpread();
 }
 function load(){
   try{
@@ -2621,6 +2714,7 @@ document.getElementById("filePicker").onchange=function(e){
       if(!s.nodes||!s.rootId) throw new Error("bad");
       if(o.cfg) CFG=Object.assign({},DEFAULTS,o.cfg);
       newDoc(s);
+      migrateSpread();
       applyCss(); drawPanel(); hardRender(); fit(); save();
       flashSave("imported");
     }catch(err){ alert("That file does not look like a Mappr map."); }
@@ -2750,6 +2844,8 @@ window.__mf={
   branch:doBranch, sibling:doSibling, nextBranch:doNextBranch, child:doChild,
   between:insertBetween, del:doDelete, select:select,
   mark:function(ids){ marked={}; ids.forEach(function(i){ marked[i]=1; }); render(true); },
+  markSibs:markSiblings, fold:toggleCollapse,
+  get rawMarked(){ return Object.keys(marked); },
   frame:makeFrame, ungroup:ungroup, pickFrame:function(id){ selFrame=id; render(true); },
   navigate:function(d){ var t=navigate(N(selected),d); if(t) select(t); return t; },
   tab:function(b){ var x=cycleLevel(N(selected),b); if(x) select(x); return x; },

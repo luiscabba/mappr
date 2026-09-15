@@ -3,6 +3,37 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.10.0] - 2026-09-15
+
+### Added
+- **Shift + right-click selects a sibling row.** Every child of that node's
+  parent, the node itself included, in one gesture. Plain right-click still
+  focuses; the modifier is the difference. It is the row, not the depth: two
+  branches can both have a third level and selecting one does not reach into
+  the other. The centre node of the current view has no siblings on screen, so
+  it flashes rather than marking something you cannot see.
+- **Fold acts on a selection.** With a row in hand, `⌘E` folds every selected
+  node at once. Each one folds its own children, so the row stays on screen and
+  everything under it goes: that is the level you picked, hidden. A mixed
+  selection resolves one way rather than flip-flopping, folding if any of them
+  is open, and the selection survives so the same key opens it again.
+
+### Changed
+- **Delete now takes exactly what was selected.** With a selection up, `⌫`
+  removes those nodes and nothing else: anything underneath them that you did
+  *not* select survives and reattaches to the nearest node that did, in place.
+  A lasso can no longer take a branch it did not cover. Survivors that move
+  inherit their new parent's direction, as children do everywhere else, and one
+  that lands on the centre node keeps the direction it was already drawn with,
+  so the picture does not jump. With nothing selected, `⌫` is unchanged: the
+  node and its whole branch.
+
+### Removed
+- **`All around`**, from Spread. Five modes remain. A map saved in it is baked
+  into the shape it was already showing rather than reshaped into a neighbour:
+  the directions it was deriving are written in and the map drops to
+  `As placed`, the same trade as branching against a mode. Nothing moves.
+
 ## [0.9.0] - 2026-09-15
 
 ### Added
