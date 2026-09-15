@@ -3,6 +3,17 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.10.2] - 2026-09-15
+
+### Changed
+- **Deleting a map asks once.** It was a single unconfirmed click that removed
+  the map's storage key outright, with no undo: the node undo stack does not
+  reach map-level operations, so a slip lost the map for good. The button now
+  arms on the first click, reading `Sure?`, and only the second click on that
+  same map deletes it. It disarms itself after a few seconds, when the panel
+  closes, and when anything else in the panel is clicked, so an armed button is
+  never left waiting for a click that meant something else.
+
 ## [0.10.1] - 2026-09-15
 
 ### Fixed

@@ -31,6 +31,7 @@
     --ink:#1e1e1e;
     --muted:#868e96;
     --sel:#6965db;
+    --danger:#c0392b;
     --sel-soft:#e0dfff;
     --panel:#ffffff;
     --panel-line:#e9ecef;
@@ -55,6 +56,7 @@
     --ink:#e3e3e3;
     --muted:#8d949b;
     --sel:#a5a1ff;
+    --danger:#ff8b7a;
     --sel-soft:#2a2856;
     --panel:#1e1e1e;
     --panel-line:#343434;
@@ -297,6 +299,7 @@
   }
   .mrow:hover .mx{opacity:1}
   .mrow .mx:hover{background:var(--panel);color:var(--ink)}
+  .mrow .mx.arm{opacity:1;color:var(--danger);box-shadow:0 0 0 1px var(--danger) inset}
   #mapsFoot{border-top:1px solid var(--panel-line);margin-top:5px;padding-top:6px}
   #mapsFoot button{font:inherit;font-size:12px;width:100%;text-align:left;background:none;border:0;color:var(--ink);padding:7px 8px;border-radius:7px;cursor:pointer}
   #mapsFoot button:hover{background:var(--panel-hover)}
@@ -376,7 +379,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v0.10.1">Mappr</span>
+  <span class="brand" id="brand" title="Mappr v0.10.2">Mappr</span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -460,7 +463,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.10.1</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.10.2</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <h3>Create</h3>
@@ -539,7 +542,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="0.10.1";
+var VERSION="0.10.2";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid",
   width:2, dash:"solid", slop:1, edges:"round",
@@ -2214,6 +2217,25 @@ function nodeCount(st){ return Object.keys(st.nodes).length; }
 function docName(st){ return (st.nodes[st.rootId].text||"Untitled").split("\n")[0]; }
 
 var elMaps=document.getElementById("maps"), elMapsList=document.getElementById("mapsList");
+/* Deleting a map cannot be undone: the key is removed outright, and the node
+   undo stack does not reach map-level operations. So the button asks once.
+   The first click arms it, a second click on the SAME map does it, and it
+   disarms itself after a few seconds, when the panel closes, or when anything
+   else in the panel is clicked, so an armed button is never left lying in wait
+   for a click that meant something else. */
+var delArm=null, delTimer=null;
+function disarmDelete(redraw){
+  if(delTimer){ clearTimeout(delTimer); delTimer=null; }
+  if(delArm===null) return;
+  delArm=null;
+  if(redraw!==false) drawMaps();
+}
+function armDelete(id){
+  delArm=id;
+  if(delTimer) clearTimeout(delTimer);
+  delTimer=setTimeout(function(){ delTimer=null; disarmDelete(); },3500);
+  drawMaps();
+}
 function drawMaps(){
   var lib=idxRead(); if(!lib) return;
   var ids=Object.keys(lib.docs).sort(function(a,b){ return (lib.docs[b].updated||0)-(lib.docs[a].updated||0); });
@@ -2223,12 +2245,13 @@ function drawMaps(){
       '<span class="mn">'+esc(d.name||"Untitled")+'</span>'+
       '<span class="mm">'+d.count+'</span>'+
       '<button class="mx" data-dup="'+id+'">Copy</button>'+
-      (ids.length>1?'<button class="mx" data-del="'+id+'">Delete</button>':"")+
+      (ids.length>1?'<button class="mx'+(delArm===id?" arm":"")+'" data-del="'+id+'">'+(delArm===id?"Sure?":"Delete")+'</button>':"")+
     '</div>';
   }).join("");
 }
 function toggleMaps(on){
   var want=(on==null)?!elMaps.classList.contains("on"):on;
+  disarmDelete(false);
   if(want){
     var r=document.getElementById("btnMaps").getBoundingClientRect();
     elMaps.style.left=r.left+"px"; elMaps.style.top=(r.bottom+6)+"px";
@@ -2268,25 +2291,30 @@ elMaps.addEventListener("mousedown",function(e){ e.preventDefault(); });
 elMaps.addEventListener("click",function(e){
   var dup=e.target.closest("[data-dup]"), del=e.target.closest("[data-del]");
   if(dup){
+    disarmDelete(false);
     var src=docRead(dup.dataset.dup); if(!src) return;
     var copy=JSON.parse(JSON.stringify(src.state));
     copy.nodes[copy.rootId].text=(copy.nodes[copy.rootId].text||"Untitled")+" copy";
     newDoc(copy); toggleMaps(false); return;
   }
   if(del){
+    var did=del.dataset.del;
     var lib2=idxRead();
     if(Object.keys(lib2.docs).length<2) return;
-    delete lib2.docs[del.dataset.del]; idxWrite(lib2); docDrop(del.dataset.del);
-    if(del.dataset.del===curDoc) switchDoc(Object.keys(lib2.docs)[0]);
+    if(delArm!==did){ armDelete(did); return; }
+    disarmDelete(false);
+    delete lib2.docs[did]; idxWrite(lib2); docDrop(did);
+    if(did===curDoc) switchDoc(Object.keys(lib2.docs)[0]);
     else drawMaps();
     return;
   }
+  disarmDelete();
   var row=e.target.closest(".mrow"); if(!row) return;
   if(row.dataset.m!==curDoc) switchDoc(row.dataset.m);
   toggleMaps(false);
 });
 addEventListener("mousedown",function(e){
-  if(!elMaps.contains(e.target)&&e.target.id!=="btnMaps") elMaps.classList.remove("on");
+  if(!elMaps.contains(e.target)&&e.target.id!=="btnMaps"){ disarmDelete(false); elMaps.classList.remove("on"); }
 });
 
 /* ============================================================

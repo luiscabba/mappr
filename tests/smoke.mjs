@@ -674,6 +674,59 @@ group("empty-map guide");
   ok("the guide never reaches an export", !(await M(() => __mf.svg())).includes("branch out"));
 }
 
+group("deleting a map asks first");
+{
+  const openPanel = async () => { await M(() => document.getElementById("btnMaps").click()); await page.waitForTimeout(200); };
+  const newMap = async () => { await openPanel(); await M(() => document.getElementById("btnNewMap").click()); await page.waitForTimeout(250); };
+  const rows = () => M(() => document.querySelectorAll(".mrow").length);
+  // The Delete button of a row that is not the open map, so deleting it cannot
+  // be confused with the switch that follows.
+  const delBtn = () => M(() => {
+    const r = [...document.querySelectorAll(".mrow")].find((x) => !x.classList.contains("on"));
+    const b = r && r.querySelector("[data-del]");
+    return b ? { text: b.textContent, armed: b.classList.contains("arm") } : null;
+  });
+  const clickDel = async () => {
+    await M(() => {
+      const r = [...document.querySelectorAll(".mrow")].find((x) => !x.classList.contains("on"));
+      r.querySelector("[data-del]").click();
+    });
+    await page.waitForTimeout(200);
+  };
+
+  await newMap();
+  await newMap();
+  await openPanel();
+  const before = await rows();
+  ok("there are maps to delete", before >= 3, before);
+
+  await clickDel();
+  ok("one click does not delete", (await rows()) === before, await rows());
+  ok("the button asks instead", (await delBtn()).text === "Sure?");
+  ok("and marks itself armed", (await delBtn()).armed);
+
+  // Clicking anywhere else in the panel takes the safety back off.
+  await M(() => document.getElementById("maps").click());
+  await page.waitForTimeout(200);
+  ok("clicking elsewhere disarms it", (await delBtn()).text === "Delete");
+  ok("and still nothing was deleted", (await rows()) === before, await rows());
+
+  // Armed, a second click on the same row does it.
+  await clickDel();
+  await clickDel();
+  ok("the second click deletes", (await rows()) === before - 1, await rows());
+  ok("the next row is not left armed", (await delBtn()).text === "Delete");
+
+  // It also gives up on its own.
+  await clickDel();
+  ok("armed again", (await delBtn()).text === "Sure?");
+  await page.waitForTimeout(3800);
+  ok("it disarms itself after a few seconds", (await delBtn()).text === "Delete");
+  ok("and nothing went with it", (await rows()) === before - 1, await rows());
+  await M(() => document.getElementById("btnMaps").click());
+  await page.waitForTimeout(150);
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 
