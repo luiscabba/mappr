@@ -2040,6 +2040,126 @@ group("selecting, copying, moving and deleting several nodes");
   await M(() => __mf.set("typeOnCreate", false));
 }
 
+group("corners, Shift+Enter order, and selection extras");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(200); };
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  const overlaps = () => M(() => {
+    const p = __mf.pos(), ids = Object.keys(p), bad = [];
+    const r = (i) => { const e = document.querySelector('.node[data-id="' + i + '"]'); return { x: p[i].cx, y: p[i].cy, w: e.offsetWidth, h: e.offsetHeight }; };
+    for (let a = 0; a < ids.length; a++) for (let b = a + 1; b < ids.length; b++) {
+      const A = r(ids[a]), B = r(ids[b]);
+      if (Math.abs(A.x - B.x) < (A.w + B.w) / 2 - 1 && Math.abs(A.y - B.y) < (A.h + B.h) / 2 - 1) bad.push(__mf.state.nodes[ids[a]].text + "/" + __mf.state.nodes[ids[b]].text);
+    }
+    return bad;
+  });
+  // a tall sideways side and a wide downward branch, as in a real map
+  await M(() => __mf.spread("manual"));
+  await M(() => {
+    const s = __mf.state, root = s.rootId;
+    s.nodes[root].text = "Hub";
+    let k = 0;
+    const add = (parent, text, dir) => { const idn = "t" + (k++); s.nodes[idn] = { id: idn, parent, children: [], text, dir }; s.nodes[parent].children.push(idn); return idn; };
+    for (let i = 0; i < 7; i++) { const r = add(root, "Right " + i, "R"); add(r, "R" + i + " kid", "R"); }
+    const d = add(root, "Down", "D");
+    for (let i = 0; i < 6; i++) { const c = add(d, "Row " + i, "D"); add(c, "Deep " + i, "D"); }
+    const u = add(root, "Up", "U");
+    for (let i = 0; i < 6; i++) add(u, "Top " + i, "U");
+    for (let i = 0; i < 5; i++) { const l = add(root, "Left " + i, "L"); }
+    __mf.set("gap", __mf.cfg.gap);
+  });
+  await page.waitForTimeout(250);
+  const bad = await overlaps();
+  ok("sideways and up/down branches never overlap in the corners", bad.length === 0, bad.slice(0, 6));
+  ok("the downward branch stepped clear", await M((x) => __mf.pos()[x].cy > 0, await id("Down")));
+  // and nothing moves when there is no clash
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  await M(() => __mf.spread("manual"));
+  await M(() => { const s = __mf.state, root = s.rootId; s.nodes.x1 = { id: "x1", parent: root, children: [], text: "East", dir: "R" }; s.nodes.x2 = { id: "x2", parent: root, children: [], text: "South", dir: "D" }; s.nodes[root].children.push("x1", "x2"); __mf.set("gap", __mf.cfg.gap); });
+  await page.waitForTimeout(200);
+  const south = await M(() => { const p = __mf.pos(); const r = document.querySelector('.node[data-id="' + __mf.state.rootId + '"]'); const e = document.querySelector('.node[data-id="x2"]'); return p.x2.cy - (r.offsetHeight / 2 + e.offsetHeight / 2); });
+  ok("a lone down branch keeps its usual distance", south > 0 && south < 120, south);
+
+  // Shift+Enter goes to the next parent in screen order
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  await M(() => __mf.spread("updown"));
+  await M((t) => __mf.paste(t), "Hub\n- A\n  - a1\n- B\n  - b1\n- C\n  - c1\n- D\n  - d1");
+  await page.waitForTimeout(250);
+  // updown: A, C go down, B, D go up. Down row, left to right: A then C.
+  const downRow = await M(() => { const p = __mf.pos(); return ["A", "B", "C", "D"].map((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id).filter((i) => __mf.dir(i) === "D").sort((a, b) => p[a].cx - p[b].cx).map((i) => __mf.state.nodes[i].text); });
+  await pick("a1".replace("a1", downRow[0].toLowerCase() + "1"));
+  await press("Shift+Enter");
+  await page.keyboard.type("next"); await press("Escape");
+  ok("on a down branch, Shift+Enter goes to the parent on the right", (await node("next")).parent === downRow[1], [downRow, await node("next")]);
+  await pick(downRow[1].toLowerCase() + "1");
+  await press("Shift+Enter");
+  await page.keyboard.type("wrap"); await press("Escape");
+  ok("and wraps round to the leftmost, staying on its side", (await node("wrap")).parent === downRow[0], await node("wrap"));
+  await M(() => __mf.spread("sides"));
+  await page.waitForTimeout(150);
+  const rightCol = await M(() => { const p = __mf.pos(); return ["A", "B", "C", "D"].map((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id).filter((i) => __mf.dir(i) === "R").sort((a, b) => p[a].cy - p[b].cy).map((i) => __mf.state.nodes[i].text); });
+  await pick(rightCol[0].toLowerCase() + "1");
+  await press("Shift+Enter");
+  await page.keyboard.type("below"); await press("Escape");
+  ok("on a sideways branch it goes to the parent below", (await node("below")).parent === rightCol[1], [rightCol, await node("below")]);
+
+  // Cmd+A: level first, then everything
+  await pick("a1");
+  await press("Meta+a");
+  const lvl = await M(() => __mf.rawMarked.map((i) => __mf.state.nodes[i].text).sort().join());
+  ok("Cmd+A selects the whole level", lvl === "a1,b1,below,c1,d1,next,wrap" || /^a1,b1/.test(lvl) && !lvl.includes("A"), lvl);
+  await press("Meta+a");
+  ok("Cmd+A again selects everything on screen", (await M(() => __mf.rawMarked.length)) === (await M(() => Object.keys(__mf.pos()).length - 1)));
+  ok("the top bar shows the count", await M(() => !document.getElementById("selChip").hidden && document.getElementById("selCount").textContent === String(__mf.rawMarked.length)));
+  await M(() => document.querySelector('#selChip [data-sel="clear"]').click());
+  ok("its x clears the selection", (await M(() => __mf.rawMarked.length)) === 0 && await M(() => document.getElementById("selChip").hidden));
+
+  // Cmd+D on a selection
+  await M(async (ids) => __mf.mark(ids), [await id("a1"), await id("b1")]);
+  await press("Meta+d");
+  ok("Cmd+D duplicates every selected branch", (await M(() => Object.values(__mf.state.nodes).filter((n) => n.text === "a1" || n.text === "b1").length)) === 4);
+  ok("and the copies come out selected", (await M(() => __mf.rawMarked.length)) === 2 && await M(() => __mf.rawMarked.every((i) => !["a1", "b1"].includes(i))));
+  await press("Meta+z");
+  // the chip's buttons
+  await M(async (ids) => __mf.mark(ids), [await id("wrap")]);
+  await M(() => document.querySelector('#selChip [data-sel="del"]').click());
+  ok("the chip's Delete deletes the selection", !(await M(() => Object.values(__mf.state.nodes).some((n) => n.text === "wrap"))));
+
+  // deleting flashes the children that moved up
+  await pick("A");
+  await press("Backspace");
+  await page.waitForTimeout(80);
+  ok("children that moved up are flashed", await M(() => document.querySelectorAll(".node.nudge").length >= 1));
+  await press("Meta+z");
+
+  // pasting onto a blank new node puts the paste in its place
+  await pick("c1");
+  await press("Enter");
+  const u0 = await M(() => __mf.undoSteps);
+  await M(() => { const dt = new DataTransfer(); dt.setData("text/plain", "P1\n  P2\nP3"); document.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true })); });
+  await page.waitForTimeout(200);
+  ok("a paste replaces the blank node it lands on", await M(() => { const c = Object.values(__mf.state.nodes).find((n) => n.text === "C"); return c.children.map((k) => __mf.state.nodes[k].text).join().startsWith("c1,P1,P3,"); }), await M(() => { const c = Object.values(__mf.state.nodes).find((n) => n.text === "C"); return c.children.map((k) => __mf.state.nodes[k].text); }));
+  ok("no blank node is left behind", !(await M(() => Object.values(__mf.state.nodes).some((n) => n.text === ""))));
+  ok("P2 stays under P1", (await node("P2")).parent === "P1");
+  await press("Meta+z");
+  ok("one undo takes back the paste and the blank node", !(await M(() => Object.values(__mf.state.nodes).some((n) => n.text === "P1" || n.text === ""))) && (await M(() => __mf.undoSteps)) === u0 - 1, [await M(() => __mf.undoSteps), u0]);
+  // the same while typing in a new node
+  await pick("c1");
+  await press("Enter");
+  await page.keyboard.type("x"); await press("Backspace");
+  await M(() => { const dt = new DataTransfer(); dt.setData("text/plain", "Q1\nQ2"); document.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true })); });
+  await page.waitForTimeout(200);
+  ok("pasting while typing in a new blank node does the same", await M(() => { const c = Object.values(__mf.state.nodes).find((n) => n.text === "C"); return c.children.map((k) => __mf.state.nodes[k].text).join().startsWith("c1,Q1,Q2,"); }), await M(() => { const c = Object.values(__mf.state.nodes).find((n) => n.text === "C"); return c.children.map((k) => __mf.state.nodes[k].text); }));
+  await M(() => __mf.spread("sides"));
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 

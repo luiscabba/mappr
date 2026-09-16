@@ -216,6 +216,10 @@
   button.tb[hidden]{ display:none; }
   button.tb:hover{background:var(--panel-hover)}
   button.tb.on{background:var(--sel-soft);border-color:var(--sel)}
+  #selChip{display:flex;align-items:center;gap:2px;font-size:12px;color:var(--sel);background:var(--sel-soft);border-radius:9px;padding:2px 3px 2px 10px;margin-left:4px}
+  #selChip[hidden]{display:none}
+  #selChip b{font-weight:600;margin-right:3px}
+  #selChip .tb{color:var(--sel);padding:3px 7px}
   #saveState{font-size:11px;color:var(--muted);padding:0 8px;min-width:66px;text-align:right}
 
   #exportMenu{
@@ -493,6 +497,7 @@
   <button class="tb" id="btnHelp">Keys ?</button>
   <button class="tb accent" id="btnInstall" title="Install Mappr on this device" hidden>Install</button>
   <button class="tb accent" id="btnUpdate" title="A newer version is ready" hidden>Update ready</button>
+  <span id="selChip" hidden><b id="selCount">0</b> selected<button class="tb" data-sel="copy" title="Copy (⌘C)">Copy</button><button class="tb" data-sel="dup" title="Duplicate (⌘D)">Duplicate</button><button class="tb" data-sel="del" title="Delete (⌫)">Delete</button><button class="tb" data-sel="clear" title="Clear (Esc)">×</button></span>
   <span id="saveState">saved</span>
 </div>
 
@@ -562,7 +567,7 @@
     <section class="hpane" data-tab="create"><h3>Create</h3>
     <table class="keys">
       <tr><td><kbd>⏎</kbd></td><td>A new node beside this one, same level, same branch. Type, Enter, type, Enter lays down a whole level without stopping.</td></tr>
-      <tr><td><kbd>⇧</kbd><kbd>⏎</kbd></td><td>A new node at the same level but in the <em>next branch along</em>, so you can fill a level across the whole map without walking back to each parent.</td></tr>
+      <tr><td><kbd>⇧</kbd><kbd>⏎</kbd></td><td>A new node at the same level but in the <em>next branch along</em>, so you can fill a level across the whole map without walking back to each parent. It goes in the order you see: top to bottom on a sideways branch, left to right on an up or down one, and wraps round on the same side.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⏎</kbd></td><td>A child, one level deeper.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>←↑→↓</kbd></td><td>From the centre: start a branch that way. On a branch: the same direction again goes deeper, a sideways direction adds a sibling on that side.</td></tr>
       <tr><td>hold <kbd>Tab</kbd> + <kbd>←↑→↓</kbd></td><td>Insert a node <em>in between</em>. Point back toward the centre and the new node becomes this one's parent. Point outward and it slides in above this node's children, adopting them. This is how you backtrack and add a layer you did not plan for.</td></tr>
@@ -584,12 +589,12 @@
       <tr><td><kbd>Space</kbd> or any letter</td><td>Retype the selected node, replacing its text. A new node is ready the same way: it is selected rather than opened, so there is no cursor to look at, and your first letter starts it. Leave it blank and it goes. <em>Cursor in new nodes</em>, in the style panel, opens new nodes for typing instead.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>⏎</kbd></td><td>Line break inside a node.</td></tr>
       <tr><td><kbd>Esc</kbd></td><td>Stop typing. A node left blank is dropped.</td></tr>
-      <tr><td><kbd>⌫</kbd></td><td>Delete just the node. Its children move up and take its place. With a selection up it deletes <em>exactly</em> what is selected, and anything underneath that you did not select moves up the same way.</td></tr>
+      <tr><td><kbd>⌫</kbd></td><td>Delete just the node. Its children move up and take its place, and flash so you can see where they went. With a selection up it deletes <em>exactly</em> what is selected, and anything underneath that you did not select moves up the same way.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⌫</kbd></td><td>Delete the whole branch, or every selected branch. <kbd>⌘</kbd><kbd>Z</kbd> brings any delete back.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>Z</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>Z</kbd></td><td>Undo / redo. Retyping a node is a step of its own, so overwriting one by accident comes back with <kbd>⌘</kbd><kbd>Z</kbd>, even while you are still typing.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>←↑→↓</kbd></td><td>Move the node itself. Sideways reorders it among its siblings, outward tucks it under the sibling before it, back toward the centre promotes it a level. The whole branch travels with it. With a selection up, every selected branch moves together and stays selected, so you can keep pressing.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>E</kbd></td><td>Fold or unfold a branch. A folded node wears a badge with the number hidden underneath; click the badge to open it. With a selection up it folds every selected node at once, so a whole level goes away in one press.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself. With a selection up, every selected branch is duplicated and the copies come out selected.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag (a small pennant).</td></tr>
     </table></section>
     <section class="hpane" data-tab="frames"><h3>Select and frames</h3>
@@ -598,12 +603,12 @@
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>←↑→↓</kbd></td><td>Select whole branches that way. Outward: this node's branch. Sideways: this node and every sibling that way, with their branches. Back toward the centre: the parent's whole branch. From the centre: every branch on that side.</td></tr>
       <tr><td><kbd>⇧</kbd> + drag</td><td>Lasso part of the map. Select a node and its whole branch comes with it. The <b>Select</b> button makes plain dragging do this too.</td></tr>
       <tr><td><kbd>⇧</kbd> + click</td><td>Select a node's whole sibling row: every child of its parent, in one gesture. This is how you get a level in hand to fold or delete it.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>A</kbd></td><td>Select everything on screen.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>A</kbd></td><td>Select the selected node's whole level, across the map. Press it again for everything on screen. While anything is selected, the top bar shows how many, with Copy, Duplicate and Delete buttons.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>G</kbd></td><td>Wrap the selection in a frame and name it. Frames resize themselves as the map underneath grows.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>G</kbd></td><td>Ungroup the selected frame.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>C</kbd></td><td>Copy as an indented bullet list: exactly what is selected, each node under its nearest selected parent. With nothing selected, the selected node's branch (on the centre, the whole map), or the selected frame. Copies made here also keep done and flag marks, folds, and links between the copied nodes.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>X</kbd></td><td>Cut: copy, then delete what was copied.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>V</kbd> / <kbd>⇧</kbd><kbd>⌘</kbd><kbd>V</kbd></td><td>Paste as children of the selected node, or as siblings right after it. The pasted nodes come in selected, and point the way their new parent does.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>V</kbd> / <kbd>⇧</kbd><kbd>⌘</kbd><kbd>V</kbd></td><td>Paste as children of the selected node, or as siblings right after it. The pasted nodes come in selected, and point the way their new parent does. Pasting onto a blank node you just made puts the paste in its place, and one undo takes both back.</td></tr>
       <tr><td><kbd>⇧</kbd><kbd>⌘</kbd><kbd>C</kbd></td><td>Copy as an image, ready to paste into a deck or a doc.</td></tr>
       <tr><td>Double-click a frame name</td><td>Rename it.</td></tr>
       <tr><td>Frames in views</td><td>A frame follows what is on screen: in a focus it wraps the part you can see, while presenting it grows as its nodes are revealed, and in a network, where the tree is set aside, frames step out of the way.</td></tr>
@@ -1847,6 +1852,44 @@ function layout(){
       cursor+=ext+gapCross();
     });
   });
+  clearCorners(groups);
+}
+/* Each side is laid out on its own, so when the map branches both sideways and
+   up or down, a wide up/down branch can run into a tall sideways one in the
+   corner between them. The up and down groups then step away from the centre,
+   just far enough to clear. Measured in vertical strips, so a strip only
+   counts where both groups actually have something. */
+var CLEAR_SLAB=24;
+function clearCorners(groups){
+  if(!(groups.L||groups.R) || !(groups.U||groups.D)) return;
+  function nodesOf(list){
+    var out=[];
+    (list||[]).forEach(function(c){ (function w(x){ if(pos[x]) out.push(x); kids(N(x)).forEach(w); })(c); });
+    return out;
+  }
+  function edges(id){ var p=pos[id], b=box[id]; return {x0:p.cx-b.w/2, x1:p.cx+b.w/2, y0:p.cy-b.h/2, y1:p.cy+b.h/2}; }
+  var side=nodesOf(groups.L).concat(nodesOf(groups.R));
+  var low={}, high={};              /* per strip: lowest bottom, highest top of the sideways nodes */
+  side.forEach(function(id){
+    var e=edges(id);
+    for(var k=Math.floor(e.x0/CLEAR_SLAB); k<=Math.floor(e.x1/CLEAR_SLAB); k++){
+      if(low[k]==null || e.y1>low[k]) low[k]=e.y1;
+      if(high[k]==null || e.y0<high[k]) high[k]=e.y0;
+    }
+  });
+  var g=gapCross();
+  [["D",1],["U",-1]].forEach(function(pair){
+    var list=nodesOf(groups[pair[0]]); if(!list.length) return;
+    var need=0;
+    list.forEach(function(id){
+      var e=edges(id);
+      for(var k=Math.floor(e.x0/CLEAR_SLAB); k<=Math.floor(e.x1/CLEAR_SLAB); k++){
+        if(pair[1]>0 && low[k]!=null) need=Math.max(need, low[k]+g-e.y0);
+        if(pair[1]<0 && high[k]!=null) need=Math.max(need, e.y1+g-high[k]);
+      }
+    });
+    if(need>0) list.forEach(function(id){ pos[id].cy+=pair[1]*need; });
+  });
 }
 
 /* ============================================================
@@ -2651,7 +2694,14 @@ var HINTS={
 };
 var hintMin=false, hintSig="";
 try{ hintMin=localStorage.getItem("mappr.hint")==="min"; }catch(e){}
+function drawSelChip(){
+  var el=document.getElementById("selChip"); if(!el) return;
+  var n=pres?0:Object.keys(marked).filter(function(i){ return N(i); }).length;
+  el.hidden=!n;
+  if(n) document.getElementById("selCount").textContent=n;
+}
 function drawHint(){
+  drawSelChip();
   var el=document.getElementById("hint"); if(!el) return;
   var mode = pres ? (pres.arrange?"arrange":null) : (Object.keys(marked).length?"sel":(lensOne?"net":(lens?"dim":(focusId?"focus":"map"))));
   var sig=(mode||"")+"|"+hintMin;
@@ -2868,7 +2918,7 @@ function flash(id){ var el=els[id]; if(!el) return; el.classList.remove("nudge")
    cheaply here and only turned into an undo step at commit, and only when the
    text actually changed. A node that started blank was just made, and the
    step that made it already covers it. */
-var editOld=null;
+var editOld=null, editOldWasBlank=null;
 function beginEdit(id,selectAll){
   if(editing&&editing!==id) commitEdit();
   if(editing!==id) editOld={id:id,text:N(id).text||""};
@@ -3039,7 +3089,13 @@ function doNextBranch(){
     if(have.length>1){ var i=have.indexOf(dirOf(n.id)); nd=have[(i+1)%have.length]; }
     made=addNode(p.id,nd,null);
   } else {
-    var row=levelOrder(depthRel(p));
+    /* the next parent along, in the order they sit on screen: top to bottom
+       for sideways branches, left to right for up and down ones, staying on
+       this side of the map */
+    var pd=dirOf(p.id);
+    var row=levelOrder(depthRel(p)).filter(function(x){ return dirOf(x)===pd && pos[x]; });
+    row.sort(function(a,b){ return horiz(pd) ? pos[a].cy-pos[b].cy : pos[a].cx-pos[b].cx; });
+    if(row.length<2) row=levelOrder(depthRel(p));
     var i2=row.indexOf(p.id);
     var q=(i2<0)?p.id:row[(i2+1)%row.length];
     made=addNode(q,dirOf(q),null);
@@ -3126,6 +3182,8 @@ function deleteMarked(ids){
     selected=h0.length?h0[0]:(was.slice().reverse().filter(function(i){ return !D[i] && N(i); })[0]||rid);
   }
   clearMarks(); render(); saveSoon();
+  var landed=[]; Object.keys(heirs).forEach(function(k){ heirs[k].forEach(function(x){ if(!D[x] && N(x)) landed.push(x); }); });
+  setTimeout(function(){ landed.forEach(flash); },30);
   var kept=Object.keys(heirs).reduce(function(a,k){ return a+heirs[k].filter(function(x){ return !D[x]; }).length; },0);
   flashSave(dead.length===1?("deleted"+(kept?", "+kept+" moved up":"")):("deleted "+dead.length+(kept?", "+kept+" moved up":"")));
 }
@@ -3253,6 +3311,8 @@ function toggleMark(kind){
   render(true); saveSoon();
 }
 function duplicateBranch(){
+  var roots=markedRoots().filter(function(i){ return !isRoot(N(i)) && !isVR(N(i)); });
+  if(roots.length) return duplicateMany(roots);
   var src=N(selected);
   if(isRoot(src)||isVR(src)){ flash(selected); return; }
   snap();
@@ -3290,10 +3350,49 @@ function ungroup(){
   selFrame=null; render(true); saveSoon();
   flashSave("frame removed");
 }
+function cloneBranch(sid,parentId){
+  var o=N(sid);
+  var n={id:nid(),parent:parentId,children:[],text:o.text,dir:o.dir,collapsed:o.collapsed,mark:o.mark};
+  state.nodes[n.id]=n;
+  o.children.forEach(function(c){ n.children.push(cloneBranch(c,n.id).id); });
+  return n;
+}
+/* Every selected branch, each copied right below itself; the copies come
+   out selected so they can be moved on at once. */
+function duplicateMany(roots){
+  snap();
+  var made=[];
+  roots.forEach(function(r){
+    var p=N(N(r).parent);
+    var c=cloneBranch(r,p.id);
+    p.children.splice(p.children.indexOf(r)+1,0,c.id);
+    made.push(c.id);
+  });
+  clearMarks();
+  made.forEach(function(i){ marked[i]=1; });
+  selected=made[0]; render(); saveSoon();
+  flashSave(made.length+" branches duplicated");
+}
+/* Cmd+A: the selected node's whole level first, then everything on screen. */
+function selectLevel(){
+  var n=N(selected);
+  if(isVR(n)) return false;
+  var d=depthRel(n);
+  var row=levelOrder(d).filter(function(x){ return pos[x]; });
+  if(row.every(function(x){ return marked[x]; })) return false;
+  marked={}; selFrame=null;
+  row.forEach(function(x){ marked[x]=1; });
+  render(true);
+  flashSave("level "+d+" \u00b7 "+row.length+" selected \u00b7 \u2318A again for everything");
+  return true;
+}
 function selectAllVisible(){
+  if(selectLevel()) return;
+  var all=Object.keys(pos).filter(function(x){ return x!==VR() && N(x); });
+  if(all.length){ marked={}; selFrame=null; all.forEach(function(x){ marked[x]=1; }); render(true); flashSave(all.length+" selected"); return; }
   marked={}; selFrame=null;
   N(VR()).children.forEach(function(c){ marked[c]=1; });
-  if(!Object.keys(marked).length) marked[VR()]=1;
+  marked={}; marked[VR()]=1;
   render(true);
 }
 
@@ -3603,8 +3702,24 @@ document.addEventListener("paste",function(e){
   var mine=clip && txt===clip.txt;
   if(editing&&!multi&&!mine) return;
   e.preventDefault();
+  editOldWasBlank=(editing && !(N(editing).text||"").replace(/\u200b/g,"").trim() && editOld && editOld.text==="") ? editing : null;
   if(editing) commitEdit();
   var sibling=pasteSibling; pasteSibling=false;
+  /* a blank node you just made is a placeholder: the paste takes its place */
+  var ph=N(selected);
+  if(ph && !(ph.text||"").trim() && !ph.children.length && !isVR(ph) && !Object.keys(marked).length){
+    var phId=ph.id, wasFresh=(fresh===ph.id || editOldWasBlank===ph.id);
+    var got = mine ? insertOutline(clip.items.map(function(x){ return Object.assign({},x); }),{clip:true,sibling:true,links:clip.links})
+                   : insertOutline(bestOutline(html,txt),{sibling:true,clip:true});
+    if(got && N(phId)){
+      var keepSel=selected, keepMarks=Object.assign({},marked);
+      var pp=N(N(phId).parent); pp.children.splice(pp.children.indexOf(phId),1); delete state.nodes[phId];
+      selected=keepSel; marked=keepMarks; fresh=null;
+      if(wasFresh) undoPop();   /* one undo takes back the paste and the blank node together */
+      render(); saveSoon();
+    }
+    flashSave(got+" pasted"); return;
+  }
   if(mine){ flashSave(insertOutline(clip.items.map(function(x){ return Object.assign({},x); }),{clip:true,sibling:sibling,links:clip.links})+" pasted"); return; }
   if(sibling){ flashSave(insertOutline(bestOutline(html,txt),{sibling:true})+" added"); return; }
   flashSave(insertOutline(bestOutline(html,txt))+" added");
@@ -4662,6 +4777,18 @@ document.getElementById("filePicker").onchange=function(e){
   };
   r.readAsText(f); e.target.value="";
 };
+(function(){
+  var chip=document.getElementById("selChip");
+  chip.addEventListener("mousedown",function(e){ e.preventDefault(); e.stopPropagation(); });
+  chip.addEventListener("click",function(e){
+    var b=e.target.closest("button"); if(!b) return;
+    var a=b.dataset.sel;
+    if(a==="copy"){ var c=selectionCopy(); if(c){ clip=c; copyText(c.txt, c.ids.length+" nodes copied", c.html); } }
+    else if(a==="dup") duplicateBranch();
+    else if(a==="del") doDelete(false);
+    else { clearMarks(); render(true); }
+  });
+})();
 document.getElementById("btnSelect").onclick=function(){
   selectMode=!selectMode;
   document.body.classList.toggle("selectmode",selectMode);

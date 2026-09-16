@@ -3,6 +3,30 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.27.0] - 2026-09-16
+
+### Added
+- **`⌘A` selects a level.** The selected node's whole level, across the map;
+  press it again for everything on screen.
+- **`⌘D` duplicates a selection.** Every selected branch is copied right below
+  itself, and the copies come out selected.
+- **A selection chip in the top bar** shows how many nodes are selected, with
+  Copy, Duplicate and Delete buttons, and an `×` to clear.
+- **Paste into a blank node.** Make a node, then paste: the pasted nodes take
+  its place instead of hanging off an empty box, and one undo takes both back.
+- **Deleting shows where the children went.** They flash in their new place.
+
+### Fixed
+- **Branches no longer overlap in the corners.** When a map branches both
+  sideways and up or down, a wide up or down branch used to run into a tall
+  sideways one. It now steps just far enough away to clear.
+- **`⇧⏎` goes to the next parent you can see.** It used to follow the order
+  the branches were made in, which often meant the top of the map. It now
+  goes top to bottom on a sideways branch and left to right on an up or down
+  one, and wraps round without leaving that side.
+- **`⌘A` selects every node again**, not just the top level, now that a
+  selection shows exactly what is selected.
+
 ## [0.26.0] - 2026-09-16
 
 ### Added
