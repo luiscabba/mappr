@@ -1259,10 +1259,9 @@ group("story order");
   await press("Meta+3");
   await press("KeyR");
   ok("R arranges", await M(() => __mf.arranging));
-  ok("the whole walk is on screen while arranging", (await M(() => __mf.shown)) === 10);
+  ok("the whole map is on screen while arranging", (await M(() => __mf.shown)) === 10);
   ok("the bar says so", await M(() => /Arranging the story/.test(document.getElementById("crumbs").textContent)));
 
-  // mouse: Cmd+click from the root to Ask makes Ask open the top level
   const clickNode = async (id, mods) => {
     const r = await M((x) => { const b = document.querySelector('.node[data-id="' + x + '"]').getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; }, id);
     for (const m of mods || []) await page.keyboard.down(m);
@@ -1273,61 +1272,79 @@ group("story order");
   await clickNode(root);
   ok("a plain click selects while arranging", (await M(() => __mf.selected)) === root);
   await clickNode(Ask, ["Meta"]);
-  ok("Cmd+click from a parent sets where its level starts", (await walkText()).startsWith("Pitch,Ask,Problem"), await walkText());
+  ok("picking one child tells just that child", (await walkText()) === "Pitch,Ask", await walkText());
   await clickNode(Proof, ["Meta"]);
-  ok("Cmd+click to a sibling puts it next", (await walkText()).startsWith("Pitch,Ask,Proof,Problem"), await walkText());
-  ok("siblings nobody ordered follow after, in map order", (await walkText()) === "Pitch,Ask,Proof,Problem,Slow,Lost,Bet,Keys,Layout,Camera", await walkText());
-  ok("ordered nodes are numbered", await M(() => [...document.querySelectorAll(".badge.story:not(.def)")].map((b) => b.textContent).sort().join() === "1,2"));
-  ok("the rest carry their place too", await M(() => document.querySelectorAll(".badge.story.def").length === 2));
-  ok("arrows show the order", await M(() => document.querySelectorAll("#paintLayer path.story, svg path.story").length >= 2));
+  ok("siblings chain on after it", (await walkText()) === "Pitch,Ask,Proof", await walkText());
+  ok("picked nodes are numbered", await M(() => [...document.querySelectorAll(".badge.story")].map((b) => b.textContent).sort().join() === "1,2"));
+  ok("unpicked branches are marked skipped", await M(() => [...document.querySelectorAll(".badge.skip")].filter((b) => b.textContent === "skipped").length === 2));
+  ok("and look it", await M((x) => document.querySelector('.node[data-id="' + x + '"]').classList.contains("skipped"), Slow));
 
-  // order across levels is refused
   await clickNode(Slow);
   await clickNode(Cam, ["Meta"]);
   ok("order never crosses levels", !JSON.stringify(await M(() => __mf.story)).includes(Cam));
 
-  // keyboard: pick Camera, drop on Keys -> Camera before Keys
+  await clickNode(Proof);
+  await clickNode(Bet, ["Meta"]);
+  ok("a picked node with an untouched level brings all its children", (await walkText()) === "Pitch,Ask,Proof,Bet,Keys,Layout,Camera", await walkText());
+
+  // keyboard: pick Camera, drop on Keys -> Camera then Keys, Layout skipped
   await M((x) => __mf.select(x), Cam);
   await press("Space");
   await M((x) => __mf.select(x), Keys);
   await press("Space");
-  ok("Space picks and Space drops", (await walkText()).includes("Bet,Camera,Keys,Layout"), await walkText());
-  ok("ordering children keeps the level above in place", (await walkText()) === "Pitch,Ask,Proof,Problem,Slow,Lost,Bet,Camera,Keys,Layout", await walkText());
+  ok("Space picks and Space drops, and the rest of that level is skipped", (await walkText()) === "Pitch,Ask,Proof,Bet,Camera,Keys", await walkText());
 
-  // same pair again undoes
-  await M((x) => __mf.select(x), Cam);
-  await press("Space");
-  await M((x) => __mf.select(x), Keys);
-  await press("Space");
-  ok("the same pair again undoes", (await walkText()).includes("Bet,Keys,Layout,Camera"), await walkText());
+  // unpicking Bet resets everything arranged under it
+  await M((x) => __mf.select(x), Bet);
+  await press("Backspace");
+  ok("unpicking a node takes it out", (await walkText()) === "Pitch,Ask,Proof", await walkText());
+  ok("and resets every arrangement under it", !(await M((b) => !!__mf.story[b], Bet)));
+  await press("Meta+z");
+  ok("undo brings it all back", (await walkText()) === "Pitch,Ask,Proof,Bet,Camera,Keys", await walkText());
 
-  // backspace resets a node, undo brings it back
+  // unpicking from the middle of a chain keeps both sides joined
   await M((x) => __mf.select(x), Proof);
   await press("Backspace");
-  ok("Backspace puts a node back in map order", (await walkText()).startsWith("Pitch,Ask,Problem"), await walkText());
+  ok("unpicking mid-chain joins its neighbours", (await walkText()) === "Pitch,Ask,Bet,Camera,Keys", await walkText());
   await press("Meta+z");
-  ok("and undo restores it", (await walkText()).startsWith("Pitch,Ask,Proof"), await walkText());
-  ok("nothing was deleted", (await M(() => Object.keys(__mf.state.nodes).length)) === 10);
 
-  // R again presents in the new order
+  // unlinking by the same pair also resets what was under the unpicked node
+  await M((x) => __mf.select(x), Proof);
+  await clickNode(Bet, ["Meta"]);
+  ok("the same pair again unlinks", (await walkText()) === "Pitch,Ask,Proof", await walkText());
+  ok("and the unlinked node's arrangement is reset", !(await M((b) => !!__mf.story[b], Bet)));
+  await press("Meta+z");
+
   await press("KeyR");
   ok("R again presents", !(await M(() => __mf.arranging)) && (await M(() => __mf.pres.shown)) === 1);
+  ok("the progress line is up", await M(() => getComputedStyle(document.getElementById("presProgress")).display === "block"));
   await press("ArrowRight");
   ok("the walk follows the story", (await M(() => __mf.pres.here)) === Ask);
-  await press("ArrowRight");
-  ok("step by step", (await M(() => __mf.pres.here)) === Proof);
+  await clickNode(Ask);
+  ok("a click moves on too", (await M(() => __mf.pres.here)) === Proof);
+  await page.mouse.click(40, 400, { button: "right" });
+  await page.waitForTimeout(200);
+  ok("a right-click goes back", (await M(() => __mf.pres.here)) === Ask);
+  ok("the bar offers full screen", await M(() => [...document.querySelectorAll("#crumbs button")].some((b) => /Full screen/.test(b.textContent))));
+
+  // leave and come back: resume
+  await press("Escape");
+  await press("Meta+3");
+  ok("coming back resumes the talk", (await M(() => __mf.pres.here)) === Ask, await M(() => __mf.pres.here));
+  await press("Home");
+  ok("Home starts over", (await M(() => __mf.pres.shown)) === 1);
   await press("Escape");
 
-  // it is saved with the map, and a deleted node leaves no trace
+  // saved with the map; deleting heals
   await page.waitForTimeout(600);
   await page.reload();
   await page.waitForFunction(() => !!window.__mf);
   await page.waitForTimeout(300);
-  ok("the order survives a reload", (await walkText()).startsWith("Pitch,Ask,Proof,Problem"), await walkText());
+  ok("the order survives a reload", (await walkText()) === "Pitch,Ask,Proof,Bet,Camera,Keys", await walkText());
   await M((x) => __mf.select(x), Proof);
   await press("Backspace");
   await page.waitForTimeout(200);
-  ok("deleting an ordered node heals the order", (await walkText()).startsWith("Pitch,Ask,Problem") && !JSON.stringify(await M(() => __mf.story)).includes(Proof), await walkText());
+  ok("deleting an ordered node heals the order", !JSON.stringify(await M(() => __mf.story)).includes(Proof), await walkText());
   const svg = await M(() => __mf.svg());
   ok("an export shows no story arrows", !svg.includes('class="story"'));
 }

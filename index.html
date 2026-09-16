@@ -129,9 +129,15 @@
   .node.past{opacity:.38;transition:opacity .35s}
   /* not reached yet: invisible but still measured, so the layout is the real one */
   .node.preshide{visibility:hidden}
+  .node.skipped{opacity:.3;text-decoration:line-through;text-decoration-thickness:1px}
+  #presProgress{position:fixed;left:0;bottom:0;height:3px;width:0;background:var(--sel);z-index:30;
+    transition:width .45s ease;display:none}
+  body.presenting #presProgress{display:block}
+  body.presenting.arranging #presProgress{display:none}
+  .badge.skip{pointer-events:none;font-family:var(--font-ui);color:var(--muted);background:var(--panel);border-style:dashed}
   body.presenting #topbar, body.presenting #hint, body.presenting #zoombar,
   body.presenting #framebar, body.presenting #startHint{display:none}
-  body.presenting #nodes, body.presenting #frames{pointer-events:none}
+  body.presenting #frames{pointer-events:none}
   body.presenting.arranging #nodes{pointer-events:auto}
   .badge.story{pointer-events:none;color:#fff;background:var(--sel);border-color:var(--sel);font-family:var(--font-ui);font-weight:700}
   .badge.story.def{color:var(--muted);background:var(--panel);border-color:var(--panel-line)}
@@ -422,7 +428,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v0.20.0">Mappr</span>
+  <span class="brand" id="brand" title="Mappr v0.21.0">Mappr</span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -479,6 +485,7 @@
 </div>
 
 <div id="crumbs" class="bar"></div>
+<div id="presProgress"></div>
 
 <div id="hint" class="bar">
   <span><b>Branch</b> <kbd>⌘</kbd><kbd>←↑→↓</kbd></span>
@@ -510,7 +517,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.20.0</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.21.0</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <h3>Create</h3>
@@ -549,8 +556,8 @@
       <tr><td>The <b>∿</b> badge</td><td>How many links land on this node. Click it to walk to the other end, which is usually off screen; clicking again cycles through the rest. A folded branch carries the badge for everything tied up inside it, and walking there opens it.</td></tr>
       <tr><td>A hollow end</td><td>The node you actually tied is folded away inside the one the arc reaches. Better than a line running into nothing.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>1</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>1</kbd></td><td><b>Normal view.</b> The number keys are views, and 1 is the plain map. From any other view it puts you back where you were, focus and all. The <kbd>⌥</kbd> versions are there because a browser tab may keep <kbd>⌘</kbd> plus a number for itself.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>3</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>3</kbd></td><td><b>Present.</b> Walks the map (or the focused branch) one node at a time in reading order, showing nothing you have not reached yet. Each node lands where it will stay and the camera follows. <kbd>→</kbd> or <kbd>Space</kbd> next, <kbd>⇧</kbd><kbd>→</kbd> the whole level at once, <kbd>←</kbd> back, <kbd>O</kbd> a look at everything so far, <kbd>Home</kbd> from the top. <kbd>Esc</kbd>, <kbd>⌘</kbd><kbd>1</kbd> or <kbd>⌘</kbd><kbd>3</kbd> ends it and puts you back where you were. Folded branches stay folded.</td></tr>
-      <tr><td><kbd>R</kbd> while presenting</td><td><b>Arrange the story.</b> The whole walk comes up, numbered. <kbd>⌘</kbd>+click a sibling to say <em>this, then that</em>, or from a parent to one of its children to say which child that level opens with; the same pair again undoes. From the keyboard, <kbd>Space</kbd> picks a node up and <kbd>Space</kbd> on another puts the picked one before it. <kbd>⌫</kbd> puts a node back in map order. Order only ever changes things inside one level, and siblings you did not order follow after the ones you did. <kbd>R</kbd> again presents the new order from the top. It is saved with the map.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>3</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>3</kbd></td><td><b>Present.</b> Walks the map (or the focused branch) one node at a time in reading order, showing nothing you have not reached yet. Each node lands where it will stay and the camera follows. <kbd>→</kbd> or <kbd>Space</kbd> next, <kbd>⇧</kbd><kbd>→</kbd> the whole level at once, <kbd>←</kbd> back, <kbd>O</kbd> a look at everything so far, <kbd>Home</kbd> from the top. A click moves on too, and a right-click goes back. Leave and come back and it picks up where you were. The bar has a full screen button. <kbd>Esc</kbd>, <kbd>⌘</kbd><kbd>1</kbd> or <kbd>⌘</kbd><kbd>3</kbd> ends it and puts you back where you were. Folded branches stay folded.</td></tr>
+      <tr><td><kbd>R</kbd> while presenting</td><td><b>Arrange the story.</b> The whole walk comes up, numbered. <kbd>⌘</kbd>+click a sibling to say <em>this, then that</em>, or from a parent to one of its children to say which child that level opens with; the same pair again undoes. From the keyboard, <kbd>Space</kbd> picks a node up and <kbd>Space</kbd> on another puts the picked one before it. <kbd>⌫</kbd> unpicks a node and resets every arrangement underneath it; unlinking a node does the same. Order only ever changes things inside one level. A level you never touch is told in map order; once you pick any of its children, the ones you did not pick are skipped, and arrange mode marks them so nothing goes missing by accident. <kbd>R</kbd> again presents the new order from the top. It is saved with the map.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>2</kbd> / <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Dim to the links.</b> The whole map stays put and everything no link touches drops to a ghost, so you keep your bearings while the arcs come forward. Pressed while focused on a tied branch, it goes straight to that node's network. Press it again, or <kbd>Esc</kbd>, to turn it off: you land back where you were, focus and all.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>/</kbd> with a lens up</td><td>On a tied node, Focus shows <em>its whole network</em>: the node, everything tied to it, and everything tied to those, and nothing else. It is laid out <em>by the links</em> rather than by the tree, so a chain reads as a chain; nothing is moved for good. <kbd>Esc</kbd> steps back to dimmed. While dimmed, Focus on an untied node does what it always did.</td></tr>
       <tr><td>Moving in a network</td><td>The tree is hidden, so the keys follow what is on screen: arrows go to the nearest node that way, <kbd>Tab</kbd> walks the network nearest first, and anything you make with <kbd>Enter</kbd> or <kbd>⌘</kbd>+arrow is tied to the node you made it from, so it stays in view. Moving nodes and inserting between them are off until you leave.</td></tr>
@@ -605,9 +612,9 @@
      panel cannot drift from the record of what actually shipped. -->
 <div id="notes">
   <div id="notesCard">
-    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.20.0</span></h2>
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.21.0</span></h2>
     <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
-    <div id="notesBody"><h3 class="rel">0.20.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>Tell the story in your own order.</b> Press <code>R</code> while presenting to arrange it: the whole walk comes up with every ordered node numbered. <code>⌘</code>+click a sibling to say <em>this, then that</em>; <code>⌘</code>+click from a parent to one of its children to say which child that level opens with. The same pair again undoes. From the keyboard, <code>Space</code> picks a node up and <code>Space</code> on a sibling puts the picked one before it, and <code>⌫</code> puts a node back in map order. <code>R</code> again presents the new order from the top. Order only ever changes things inside one level. A branch is told in full before the level above carries on, so ordering a branch&#x27;s children never moves the branch itself. Siblings you did not order follow after the ones you did, in map order, so forgetting a link can never drop a point from a talk; folding a branch is still how you leave it out. The order is saved with the map and undo covers it. Deleting or moving a node quietly heals any order it was part of, and exports never show it.</li></ul><h3 class="rel">0.19.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>Presentation mode, on <code>⌘3</code></b> (or <code>⌥3</code>). Walk a story through your map without showing anything you have not said yet. It starts on the centre alone; each <code>→</code> or <code>Space</code> reveals the next node in reading order, and the camera glides to frame it with its parent. What you have already covered stays on screen, stepped back, so the shape of the argument builds up as you talk. The toolbar, badges and hints step aside while you present. Nodes appear exactly where they will stay. The map is laid out in full and the parts you have not reached are simply not drawn yet, so nothing shuffles around as the story unfolds.</li><li><b><code>⇧→</code> reveals a whole level at once</b>, for points that belong together: on a node with hidden children it shows them all; on a node without, it shows the rest of its siblings. The next <code>→</code> carries on to whatever is still hidden.</li><li><b><code>←</code> steps back</b> exactly one step, whole levels included. <code>O</code> shows everything covered so far and <code>O</code> again returns; <code>Home</code> starts over.</li><li><b><code>Esc</code>, <code>⌘1</code> or <code>⌘3</code> ends it</b> and puts you back where you were. Presenting from a focused branch tells just that branch, and folded branches stay folded, so folding is how you leave something out. Cross-links appear once both of their ends are on screen. While presenting, the keyboard and mouse cannot edit the map.</li></ul><h3 class="rel">0.18.0 <span>2026-09-16</span></h3><h4>Changed</h4><ul><li><b>The number row is views.</b> <code>⌘1</code> is the normal map, <code>⌘2</code> is connections, and <code>⌘3</code> is kept for a presentation view that is on its way. From any other view, <code>⌘1</code> puts you back where you were, focus and all; pressing a view&#x27;s own number again does the same.</li><li><b><code>⌥1</code>, <code>⌥2</code> and <code>⌥3</code> mirror them</b>, because a browser tab may keep <code>⌘</code> plus a number for switching tabs and never hand it to the page. They go by the physical key, so they work even though <code>⌥</code> changes what a digit types on a Mac, and they are off while you are typing, so a node can still hold a <code>£</code>. <code>⌥L</code> still works for connections.</li><li><b><code>⌘.</code> now takes you to the selection at 100%</b>, the job <code>⌘1</code> used to do. <code>⌘0</code> is unchanged: it fits the whole map, and <code>⌘⇧0</code> fits the focused branch.</li></ul><h3 class="rel">0.17.0 <span>2026-09-16</span></h3><h4>Changed</h4><ul><li><b>The keys follow what you can see in a network.</b> With the tree hidden, arrows used to keep walking it, straight onto nodes that were not on screen. Now an arrow goes to the nearest node that way, and <code>Tab</code> walks the network nearest first and wraps.</li><li><b>Anything you make in a network stays in it.</b> <code>Enter</code>, <code>⇧Enter</code> and <code>⌘</code>+arrow tie the new node to the one you made it from, so it appears in the network instead of vanishing the moment it exists. Undo takes the node and its tie together, and a node you abandon blank takes its tie with it.</li><li><b>The link badge admits what it cannot show.</b> When some of a node&#x27;s links end in a folded part of the network, the badge says so: <code>∿1 · 1 hidden</code>.</li><li><b>A bar says which view you are in</b>: the network&#x27;s centre, how many nodes it has and how many are folded, or that the links are dimmed, with a button to step back.</li></ul><h4>Fixed</h4><ul><li><code>Esc</code> while typing in a lens now finishes the node. It used to leave the lens instead, and in a network the new node&#x27;s text went with it.</li><li>Typing in a network no longer snaps every node back to the tree&#x27;s layout while you type.</li><li>Deleting the node a network is centred on falls back to dimmed rather than leaving an empty view.</li><li>Moving a node (<code>⌥</code>+arrow) and inserting between nodes (hold <code>Tab</code>+arrow) are off inside a network, where they would rearrange a tree you cannot see.</li></ul><h3 class="rel">0.16.0 <span>2026-09-16</span></h3><h4>Changed</h4><ul><li><b>Leaving a lens puts you back where you were.</b> Turning the lens off with <code>⌘2</code> (or <code>Esc</code> all the way out) used to drop you on the whole map. Now, if you were focused on a branch when the lens came up, you land back in that branch; if you were not, the camera returns to exactly where it was.</li><li><b>A focused network is always arranged by its links.</b> <code>⌘/</code> on a tied node, with the lens up, lays its network out by the links rather than leaving each node where the tree put it, so a chain that crosses the hierarchy reads as a chain.</li></ul><h4>Removed</h4><ul><li><b><code>⌘⇧2</code>, the whole-web view.</b> Focusing on a tied node shows its network, arranged the same way, which covers what the whole web was for with less to remember. The shortcut does nothing now.</li></ul><h3 class="rel">0.15.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>Focus follows the whole network.</b> With a lens up, <code>⌘/</code> on a tied node now shows everything it is connected to, however indirectly: if A is tied to B and B to C, focusing A brings all three. It follows links hop by hop and never runs down the tree, so the answer is &quot;what this relates to&quot;, not &quot;what sits under it&quot;.</li><li><b>Focus works in the web view too.</b> In <code>⌘⇧2</code>, <code>⌘/</code> narrows the web to that node&#x27;s network and keeps it arranged by its links. <code>Esc</code> goes back to the whole web.</li><li><b><code>⌘E</code> folds the network.</b> Inside a focused network, fold stops meaning the tree and starts meaning the links: everything reached only <em>through</em> the selected node goes, counting outward from the node you focused, and the node wears a badge with how many it is hiding. Click the badge or press <code>⌘E</code> again to bring them back. The tree itself is never touched, and the folds are forgotten when you leave, like everything else in a lens.</li><li><b>A lens picks up where focus left off.</b> Focused on a branch whose node is tied to something, <code>⌘2</code> opens that node&#x27;s network and <code>⌘⇧2</code> arranges it, rather than dropping you onto the whole map. On an untied branch they behave as before.</li></ul></div>
+    <div id="notesBody"><h3 class="rel">0.21.0 <span>2026-09-16</span></h3><h4>Changed</h4><ul><li><b>Picking children now picks them.</b> A level you never touch is still told in map order. Once you pick any of its children (<code>⌘</code>+click from the parent to the first one, then sibling to sibling), the level is told exactly as picked and the children you left out are skipped, with everything under them. This replaces &quot;unpicked siblings follow after&quot; from 0.20.0.</li><li><b>Unpicking resets what is underneath.</b> Unlinking a node, or <code>⌫</code> on it while arranging, takes it out of the story and clears every arrangement in its branch. Unpicking from the middle of a chain joins the nodes either side of it, so the rest of the order holds.</li><li><b>Arrange mode shows what will be skipped.</b> Skipped branches are struck through and labelled <code>skipped</code>, and folded branches say how many nodes the fold leaves out, so a missing link shows up before the talk rather than during it.</li></ul><h4>Added</h4><ul><li><b>Full screen, from a button</b> in the presentation bar. Ending the presentation leaves full screen too.</li><li><b>Pick up where you left off.</b> Leave a presentation and <code>⌘3</code> again in the same session resumes at the same step, as long as the story has not changed. <code>Home</code> starts over.</li><li><b>Click to move on.</b> A click anywhere steps forward and a right-click steps back, alongside the keys and presentation clickers.</li><li><b>A progress line</b> along the bottom edge while presenting.</li></ul><h3 class="rel">0.20.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>Tell the story in your own order.</b> Press <code>R</code> while presenting to arrange it: the whole walk comes up with every ordered node numbered. <code>⌘</code>+click a sibling to say <em>this, then that</em>; <code>⌘</code>+click from a parent to one of its children to say which child that level opens with. The same pair again undoes. From the keyboard, <code>Space</code> picks a node up and <code>Space</code> on a sibling puts the picked one before it, and <code>⌫</code> puts a node back in map order. <code>R</code> again presents the new order from the top. Order only ever changes things inside one level. A branch is told in full before the level above carries on, so ordering a branch&#x27;s children never moves the branch itself. Siblings you did not order follow after the ones you did, in map order, so forgetting a link can never drop a point from a talk; folding a branch is still how you leave it out. The order is saved with the map and undo covers it. Deleting or moving a node quietly heals any order it was part of, and exports never show it.</li></ul><h3 class="rel">0.19.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>Presentation mode, on <code>⌘3</code></b> (or <code>⌥3</code>). Walk a story through your map without showing anything you have not said yet. It starts on the centre alone; each <code>→</code> or <code>Space</code> reveals the next node in reading order, and the camera glides to frame it with its parent. What you have already covered stays on screen, stepped back, so the shape of the argument builds up as you talk. The toolbar, badges and hints step aside while you present. Nodes appear exactly where they will stay. The map is laid out in full and the parts you have not reached are simply not drawn yet, so nothing shuffles around as the story unfolds.</li><li><b><code>⇧→</code> reveals a whole level at once</b>, for points that belong together: on a node with hidden children it shows them all; on a node without, it shows the rest of its siblings. The next <code>→</code> carries on to whatever is still hidden.</li><li><b><code>←</code> steps back</b> exactly one step, whole levels included. <code>O</code> shows everything covered so far and <code>O</code> again returns; <code>Home</code> starts over.</li><li><b><code>Esc</code>, <code>⌘1</code> or <code>⌘3</code> ends it</b> and puts you back where you were. Presenting from a focused branch tells just that branch, and folded branches stay folded, so folding is how you leave something out. Cross-links appear once both of their ends are on screen. While presenting, the keyboard and mouse cannot edit the map.</li></ul><h3 class="rel">0.18.0 <span>2026-09-16</span></h3><h4>Changed</h4><ul><li><b>The number row is views.</b> <code>⌘1</code> is the normal map, <code>⌘2</code> is connections, and <code>⌘3</code> is kept for a presentation view that is on its way. From any other view, <code>⌘1</code> puts you back where you were, focus and all; pressing a view&#x27;s own number again does the same.</li><li><b><code>⌥1</code>, <code>⌥2</code> and <code>⌥3</code> mirror them</b>, because a browser tab may keep <code>⌘</code> plus a number for switching tabs and never hand it to the page. They go by the physical key, so they work even though <code>⌥</code> changes what a digit types on a Mac, and they are off while you are typing, so a node can still hold a <code>£</code>. <code>⌥L</code> still works for connections.</li><li><b><code>⌘.</code> now takes you to the selection at 100%</b>, the job <code>⌘1</code> used to do. <code>⌘0</code> is unchanged: it fits the whole map, and <code>⌘⇧0</code> fits the focused branch.</li></ul><h3 class="rel">0.17.0 <span>2026-09-16</span></h3><h4>Changed</h4><ul><li><b>The keys follow what you can see in a network.</b> With the tree hidden, arrows used to keep walking it, straight onto nodes that were not on screen. Now an arrow goes to the nearest node that way, and <code>Tab</code> walks the network nearest first and wraps.</li><li><b>Anything you make in a network stays in it.</b> <code>Enter</code>, <code>⇧Enter</code> and <code>⌘</code>+arrow tie the new node to the one you made it from, so it appears in the network instead of vanishing the moment it exists. Undo takes the node and its tie together, and a node you abandon blank takes its tie with it.</li><li><b>The link badge admits what it cannot show.</b> When some of a node&#x27;s links end in a folded part of the network, the badge says so: <code>∿1 · 1 hidden</code>.</li><li><b>A bar says which view you are in</b>: the network&#x27;s centre, how many nodes it has and how many are folded, or that the links are dimmed, with a button to step back.</li></ul><h4>Fixed</h4><ul><li><code>Esc</code> while typing in a lens now finishes the node. It used to leave the lens instead, and in a network the new node&#x27;s text went with it.</li><li>Typing in a network no longer snaps every node back to the tree&#x27;s layout while you type.</li><li>Deleting the node a network is centred on falls back to dimmed rather than leaving an empty view.</li><li>Moving a node (<code>⌥</code>+arrow) and inserting between nodes (hold <code>Tab</code>+arrow) are off inside a network, where they would rearrange a tree you cannot see.</li></ul><h3 class="rel">0.16.0 <span>2026-09-16</span></h3><h4>Changed</h4><ul><li><b>Leaving a lens puts you back where you were.</b> Turning the lens off with <code>⌘2</code> (or <code>Esc</code> all the way out) used to drop you on the whole map. Now, if you were focused on a branch when the lens came up, you land back in that branch; if you were not, the camera returns to exactly where it was.</li><li><b>A focused network is always arranged by its links.</b> <code>⌘/</code> on a tied node, with the lens up, lays its network out by the links rather than leaving each node where the tree put it, so a chain that crosses the hierarchy reads as a chain.</li></ul><h4>Removed</h4><ul><li><b><code>⌘⇧2</code>, the whole-web view.</b> Focusing on a tied node shows its network, arranged the same way, which covers what the whole web was for with less to remember. The shortcut does nothing now.</li></ul></div>
     <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
 </div>
@@ -621,7 +628,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="0.20.0";
+var VERSION="0.21.0";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid",
   width:2, dash:"solid", slop:1, edges:"round",
@@ -985,8 +992,12 @@ var pres=null;
    only ever set INSIDE one level: siblings chain to siblings, and a parent can
    name the child its level opens with. A branch is told in full before the
    level above carries on, so ordering children never disturbs their parents.
-   Siblings nobody ordered follow after the ordered ones, in map order, so
-   forgetting a link can never drop a point from a talk. Saved with the map. */
+   A level nobody ordered is told in map order. Once you pick any child of a
+   level (by chaining siblings, or from the parent to the child it opens with),
+   that level is told as picked and the children you did not pick are skipped,
+   with everything under them. Arrange mode marks what will be skipped, so a
+   forgotten link shows before the talk rather than during it. Saved with the
+   map. */
 function storyGroup(p){ return (state.story||{})[p]; }
 function storyHas(p){ var g=storyGroup(p); return !!g && (!!g.start || Object.keys(g.next).length>0); }
 function storySweep(){
@@ -1008,7 +1019,7 @@ function storyKids(id){
   var heads=ks.filter(function(k){ return !hasIn[k] && (g.next[k] || k===g.start); });
   heads.sort(function(a,b){ return ((a===g.start)?-1:0)-((b===g.start)?-1:0) || ks.indexOf(a)-ks.indexOf(b); });
   heads.forEach(function(h){ var x=h; while(x && !seen[x] && ks.indexOf(x)>=0){ seen[x]=1; out.push(x); x=g.next[x]; } });
-  return { ordered:out, all:out.concat(ks.filter(function(k){ return !seen[k]; })) };
+  return { ordered:out, all:out };
 }
 function storyChildren(id){ var r=storyKids(id); return Array.isArray(r)?r:r.all; }
 /* Where a node sits in its level's told order, and whether someone put it there. */
@@ -1018,8 +1029,30 @@ function storyPlace(id){
   var i=r.all.indexOf(id); if(i<0) return null;
   return { n:i+1, set:r.ordered.indexOf(id)>=0 };
 }
+function storyPicked(p){
+  var r=storyHas(p) ? storyKids(p) : null, out={};
+  if(r && !Array.isArray(r)) r.ordered.forEach(function(k){ out[k]=1; });
+  return out;
+}
+/* Unpicking a node resets every arrangement underneath it. */
+function storyClearUnder(id){
+  var S=state.story; if(!S) return;
+  subtree(id).forEach(function(x){ if(x!==id) delete S[x]; });
+  delete S[id];
+}
+function storyAfter(p,before){
+  var after=storyPicked(p);
+  Object.keys(before).forEach(function(k){ if(!after[k] && N(k)) storyClearUnder(k); });
+  storySweep();
+}
 function storyLink(a,b){
   if(!a||!b||!N(a)||!N(b)) return null;
+  var grp=(N(b).parent===a)?a:N(a).parent, before=grp?storyPicked(grp):{};
+  var r=storyLinkRaw(a,b);
+  if(r && grp) storyAfter(grp,before);
+  return r;
+}
+function storyLinkRaw(a,b){
   if(a===b){ flash(b); return null; }
   var A=N(a), B=N(b);
   state.story=state.story||{};
@@ -1028,7 +1061,7 @@ function storyLink(a,b){
     p=a;
     snap();
     g=state.story[p]||(state.story[p]={start:null,next:{}});
-    if(g.start===b){ g.start=null; storySweep(); return "this level starts as usual again"; }
+    if(g.start===b){ g.start=null; storySweep(); return "unpicked"; }
     g.start=b; return "\u201c"+trunc(B.text)+"\u201d opens this level";
   }
   if(!A.parent || A.parent!==B.parent){ flash(b); flashSave("order only runs between siblings"); return null; }
@@ -1047,12 +1080,23 @@ function storyLink(a,b){
 }
 function storyUnlink(id){
   var p=N(id).parent, g=p&&storyGroup(p), changed=false;
-  if(!g) return false;
+  if(!g){
+    /* not ordered itself, but maybe something under it is */
+    var any=subtree(id).some(function(x){ return x!==id && storyGroup(x); }) || !!storyGroup(id);
+    if(!any) return false;
+    snap(); storyClearUnder(id); storySweep(); return true;
+  }
+  var before=storyPicked(p);
   snap();
-  if(g.start===id){ g.start=null; changed=true; }
+  /* splice it out, so the nodes either side of it stay picked and joined */
+  var succ=g.next[id]||null, pred=null;
+  Object.keys(g.next).forEach(function(k){ if(g.next[k]===id) pred=k; });
+  if(g.start===id){ g.start=succ; changed=true; }
   if(g.next[id]){ delete g.next[id]; changed=true; }
-  Object.keys(g.next).forEach(function(k){ if(g.next[k]===id){ delete g.next[k]; changed=true; } });
+  if(pred){ delete g.next[pred]; changed=true; if(succ && pred!==succ) g.next[pred]=succ; }
   if(!changed){ undoPop(); return false; }
+  storyAfter(p,before);
+  storyClearUnder(id);
   storySweep();
   return true;
 }
@@ -1068,21 +1112,41 @@ function presLitFor(here,group){
   return lit;
 }
 function presDim(id){ return !!pres && !pres.arrange && !pres.lit[id]; }
+/* while arranging: what the walk will not reach */
+function presSkip(id){ return !!pres && pres.arrange && !!pres.walkSet && !pres.walkSet[id]; }
+/* The last talk in this session, so leaving and coming back resumes it, as
+   long as it is the same branch told in the same order. */
+var presLast=null;
 function presStart(){
   if(editing) commitEdit();
   if(lensActive()) lensOff();
   clearMarks();
-  var r=VR(), sh={}; sh[r]=1;
-  pres={ order:presOrder(), shown:sh, here:r, lit:presLitFor(r), hist:[], over:false,
+  var r=VR(), sh={}, order=presOrder(); sh[r]=1;
+  pres={ order:order, shown:sh, here:r, lit:presLitFor(r), hist:[], over:false, arrange:false,
          home:{ focus:focusId, sel:selected, view:{x:view.x,y:view.y,z:view.z} } };
-  selected=r;
+  var L=presLast, resumed=false;
+  if(L && L.root===r && L.sig===order.join(",") && L.hist.length && N(L.here)){
+    pres.shown=L.shown; pres.here=L.here; pres.lit=L.lit; pres.hist=L.hist; pres.frame=L.frame; resumed=true;
+  }
+  selected=pres.here;
   document.body.classList.add("presenting");
   hardRender();
-  presFrame([r]);
+  presFrame(resumed && pres.frame ? pres.frame : [pres.here]);
+  flashSave(resumed ? "picked up where you left off \u00b7 Home to start over" : "presenting");
+}
+function presFull(){
+  try{
+    if(document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen();
+  }catch(e){ flashSave("full screen is not available here"); }
 }
 function presEnd(){
   if(!pres) return;
-  var h=pres.home; pres=null; stopCam();
+  var h=pres.home;
+  if(!pres.arrange) presLast={ root:VR(), sig:pres.order.join(","), shown:pres.shown, here:pres.here,
+                               lit:pres.lit, hist:pres.hist, frame:pres.frame };
+  pres=null; stopCam();
+  try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
   document.body.classList.remove("presenting","arranging");
   if(h.focus && N(h.focus)) focusId=h.focus;
   if(h.sel && N(h.sel)) selected=h.sel;
@@ -1647,6 +1711,13 @@ function render(keepView,lead){
   state.frames = state.frames || [];
   if(lensOne && !N(lensOne)){ lensOne=null; lensFold={}; lens=true; }
   storySweep();
+  if(pres){
+    if(pres.arrange){ pres.walkSet={}; presOrder().forEach(function(i){ pres.walkSet[i]=1; }); }
+    else pres.walkSet=null;
+    var pp=document.getElementById("presProgress");
+    if(pp){ var seen=pres.order.filter(function(i){ return pres.shown[i]; }).length;
+      pp.style.width=(pres.order.length>1?((seen-1)/(pres.order.length-1))*100:100)+"%"; }
+  }
   state.links = (state.links||[]).filter(function(l){ return N(l.a)&&N(l.b); });
   var showing={};
   (function walk(id){ showing[id]=1; kids(N(id)).forEach(walk); })(VR());
@@ -1671,7 +1742,8 @@ function render(keepView,lead){
       (ghosts && !ghosts[id] && !isVR(n) ? " ghost" : "")+
       (solo && !solo[id] ? " lenshide" : "")+
       (pres && !pres.arrange && !pres.shown[id] ? " preshide" : "")+
-      (presDim(id) ? " past" : "");
+      (presDim(id) ? " past" : "")+
+      (presSkip(id) ? " skipped" : "");
   });
   Object.keys(els).forEach(function(id){ if(!showing[id]){ els[id].remove(); delete els[id]; } });
 
@@ -1738,10 +1810,22 @@ function drawBadges(){
   if(pres){
     if(pres.arrange){
       Object.keys(pos).forEach(function(id){
-        var sp=storyPlace(id); if(!sp) return;
-        var k="st"+id; live[k]=1;
-        badgeAt(id,k,"badge story"+(sp.set?"":" def"),String(sp.n))
-          .style.transform="translate("+(pos[id].cx-box[id].w/2-14)+"px,"+(pos[id].cy-box[id].h/2-12)+"px)";
+        var n=N(id), bx=pos[id].cx-box[id].w/2, by=pos[id].cy-box[id].h/2;
+        var sp=storyPlace(id);
+        if(sp){
+          var k="st"+id; live[k]=1;
+          badgeAt(id,k,"badge story",String(sp.n)).style.transform="translate("+(bx-14)+"px,"+(by-12)+"px)";
+        }
+        /* the top of each skipped branch says so */
+        if(presSkip(id) && n.parent && !presSkip(n.parent)){
+          var k2="sk"+id; live[k2]=1;
+          badgeAt(id,k2,"badge skip","skipped").style.transform="translate("+(bx-10)+"px,"+(by-14)+"px)";
+        }
+        if(!presSkip(id) && n.collapsed && n.children.length){
+          var k3="fd"+id; live[k3]=1;
+          badgeAt(id,k3,"badge skip","folded: "+descCount(id)+" skipped")
+            .style.transform="translate("+(bx+box[id].w-20)+"px,"+(by+box[id].h-6)+"px)";
+        }
       });
     }
     Object.keys(bdEls).forEach(function(k){ if(!live[k]){ bdEls[k].remove(); delete bdEls[k]; } });
@@ -1921,7 +2005,7 @@ function shapes(ids, opt){
      those is that the tree is out of the way. Never in an export: an exported
      map is the map, not whatever lens you happened to have up. */
   var lensQuiet = !opt.exporting && lens && !lensSolo();
-  function presFade(id){ return !opt.exporting && presDim(id); }
+  function presFade(id){ return !opt.exporting && (presDim(id) || presSkip(id)); }
   var lensHideTree = !opt.exporting && lensSolo();
   var lensGhosts = lensQuiet ? lensParts() : {};
   ids.forEach(function(id){
@@ -2235,7 +2319,7 @@ function drawCrumbs(){
   if(pres && pres.arrange){
     elCrumbs.className="bar on lensbar";
     var ha='<span class="lk" style="color:var(--sel)">Arranging the story</span>'+
-      '<span class="meta">\u2318+click a sibling: this, then that \u00b7 from a parent: start here \u00b7 Space pick, Space drop \u00b7 \u232b reset a node \u00b7 R to present</span>'+
+      '<span class="meta">\u2318+click from a parent picks its first child, then siblings follow \u00b7 unpicked children are skipped \u00b7 Space pick, Space drop \u00b7 \u232b unpick (resets everything under it) \u00b7 R to present</span>'+
       '<button class="out" data-out="1">Esc to end</button>';
     if(elCrumbs.innerHTML!==ha) elCrumbs.innerHTML=ha;
     return;
@@ -2245,6 +2329,7 @@ function drawCrumbs(){
     var total=pres.order.length, seen=pres.order.filter(function(id){ return pres.shown[id]; }).length;
     var hp='<span class="lk" style="color:var(--sel)">Presenting</span><span class="meta">'+seen+' / '+total+
       '</span><span class="meta">\u2192 next \u00b7 \u21e7\u2192 whole level \u00b7 \u2190 back \u00b7 O overview \u00b7 R arrange the order</span>'+
+      '<button class="out" data-full="1">'+(document.fullscreenElement?"Exit full screen":"Full screen")+'</button>'+
       '<button class="out" data-out="1">Esc to end</button>';
     if(elCrumbs.innerHTML!==hp) elCrumbs.innerHTML=hp;
     return;
@@ -2277,6 +2362,7 @@ function drawCrumbs(){
 elCrumbs.addEventListener("mousedown",function(e){ e.preventDefault(); });
 elCrumbs.addEventListener("click",function(e){
   var b=e.target.closest("button"); if(!b) return;
+  if(b.dataset.full){ presFull(); return; }
   if(b.dataset.out){
     if(pres){ presEnd(); return; }
     if(lensOne) lensSet(true,null); else if(lens) lensOff(); else exitFocus();
@@ -3485,7 +3571,7 @@ document.addEventListener("keydown",function(e){
      switches tabs and a tab may never hand it to the page. */
   if((mod&&!e.shiftKey&&e.key==="3") || altDigit==="3"){
     e.preventDefault(); if(editing) commitEdit();
-    presStart(); flashSave("presenting");
+    presStart();
     return;
   }
   if((mod&&!e.shiftKey&&e.key==="2") || altDigit==="2" || (e.altKey&&(e.key==="l"||e.key==="L"||e.key==="¬"))){
@@ -3582,7 +3668,7 @@ elNodes.addEventListener("mousedown",function(e){
   var el=e.target.closest(".node"); if(!el) return;
   if(pres){
     e.preventDefault(); e.stopPropagation();
-    if(!pres.arrange) return;
+    if(!pres.arrange){ if(e.button===0) presNext(false); return; }
     if(e.button===0 && (e.metaKey||e.ctrlKey) && selected && selected!==el.dataset.id) presTie(selected,el.dataset.id);
     else { selected=el.dataset.id; render(true); }
     return;
@@ -3621,7 +3707,7 @@ elNodes.addEventListener("dblclick",function(e){
    exception is the node you are currently typing in, where the browser's own
    cut/copy/paste menu is the useful thing. */
 elStage.addEventListener("contextmenu",function(e){
-  if(pres){ e.preventDefault(); return; }
+  if(pres){ e.preventDefault(); if(!pres.arrange) presBack(); return; }
   var el=e.target.closest(".node");
   if(el && editing===el.dataset.id) return;
   e.preventDefault();
@@ -3661,7 +3747,7 @@ elStage.addEventListener("mousedown",function(e){
     drawMarquee(); render(true);
     return;
   }
-  drag={x:e.clientX,y:e.clientY,vx:view.x,vy:view.y};
+  drag={x:e.clientX,y:e.clientY,vx:view.x,vy:view.y,pres:!!pres&&!pres.arrange&&e.button===0};
   elStage.classList.add("panning");
 });
 addEventListener("mousemove",function(e){
@@ -3680,7 +3766,9 @@ addEventListener("mousemove",function(e){
   if(!drag) return;
   view.x=drag.vx+(e.clientX-drag.x); view.y=drag.vy+(e.clientY-drag.y); applyView();
 });
-addEventListener("mouseup",function(){
+addEventListener("mouseup",function(e){
+  /* a click (not a drag) on the canvas moves a presentation on */
+  if(drag && drag.pres && pres && Math.abs(e.clientX-drag.x)+Math.abs(e.clientY-drag.y)<5) presNext(false);
   if(marq){
     marq=null; drawMarquee();
     document.body.classList.remove("marquee");
@@ -3912,6 +4000,11 @@ document.getElementById("topbar").addEventListener("mousedown",function(e){ if(e
 document.getElementById("zoombar").addEventListener("mousedown",function(e){ if(e.target.closest("button")) e.preventDefault(); });
 elFrames.addEventListener("input",function(){ /* live title width */ });
 addEventListener("resize",applyView);
+document.addEventListener("fullscreenchange",function(){
+  if(!pres) return;
+  drawCrumbs();
+  setTimeout(function(){ if(pres && !pres.arrange && pres.frame) presFrame(pres.frame); },120);
+});
 addEventListener("beforeunload",function(){ if(editing) commitEdit(); if(editFrame) commitFrameEdit(); save(); });
 
 /* ============================================================

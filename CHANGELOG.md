@@ -3,6 +3,33 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.21.0] - 2026-09-16
+
+### Changed
+- **Picking children now picks them.** A level you never touch is still told
+  in map order. Once you pick any of its children (`⌘`+click from the parent
+  to the first one, then sibling to sibling), the level is told exactly as
+  picked and the children you left out are skipped, with everything under
+  them. This replaces "unpicked siblings follow after" from 0.20.0.
+- **Unpicking resets what is underneath.** Unlinking a node, or `⌫` on it
+  while arranging, takes it out of the story and clears every arrangement in
+  its branch. Unpicking from the middle of a chain joins the nodes either side
+  of it, so the rest of the order holds.
+- **Arrange mode shows what will be skipped.** Skipped branches are struck
+  through and labelled `skipped`, and folded branches say how many nodes the
+  fold leaves out, so a missing link shows up before the talk rather than
+  during it.
+
+### Added
+- **Full screen, from a button** in the presentation bar. Ending the
+  presentation leaves full screen too.
+- **Pick up where you left off.** Leave a presentation and `⌘3` again in the
+  same session resumes at the same step, as long as the story has not
+  changed. `Home` starts over.
+- **Click to move on.** A click anywhere steps forward and a right-click
+  steps back, alongside the keys and presentation clickers.
+- **A progress line** along the bottom edge while presenting.
+
 ## [0.20.0] - 2026-09-16
 
 ### Added
