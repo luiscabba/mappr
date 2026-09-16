@@ -3,6 +3,35 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.12.0] - 2026-09-16
+
+### Added
+- **Cross-links.** `⌘` (or `Ctrl`) + click ties the selected node to the one you
+  click, anywhere on the map, and a faint arc joins them. The same pair again
+  unties. This is the first thing in Mappr that is not a tree edge, so it is
+  built to stay out of the tree's way: links live beside `state.nodes` rather
+  than in it, layout never sees one, and tying two nodes never moves the
+  picture. A pair is stored once and matched either way round.
+
+  The line is an arc rather than the short way round. A taut line takes the
+  direct path, which on a mindmap runs straight through whatever sits between
+  the two ends; bowing it out costs space and keeps several links readable when
+  they overlap. It is sampled into points and drawn through the same roughness
+  as everything else, so it is in the app's own hand.
+
+- **A `∿` badge on a tied node**, counting the links that land on it. The far
+  end of a link is usually off screen, so the badge is a button: it walks you
+  there, and clicking again cycles the rest. It opens folded branches and steps
+  out of focus to get there, the same way Jump does.
+
+- **Folded ends stay honest.** When the node you tied is folded away, the arc
+  retargets to the visible ancestor and ends in a hollow dot rather than a solid
+  one, and that branch carries the badge for everything tied up inside it. A
+  line running into nothing would be worse than a stand-in that says so.
+
+Links are state like anything else, so they undo, redo, save, reload, export to
+SVG and PNG, and are swept when a node is deleted, the way frames already were.
+
 ## [0.11.0] - 2026-09-15
 
 ### Added

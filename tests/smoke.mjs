@@ -817,6 +817,80 @@ group("arrows across branches and inside focus");
   ok("and at the top it is the whole map again", (await M(() => __mf.focus)) === null);
 }
 
+group("cross-links");
+{
+  const newMap = async () => {
+    await M(() => document.getElementById("btnMaps").click());
+    await M(() => document.getElementById("btnNewMap").click());
+    await page.waitForTimeout(220);
+  };
+  const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const arcs = () => M(() => document.querySelectorAll('#paintLayer path[stroke-dasharray="7 6"]').length);
+
+  await newMap();
+  await M(() => __mf.paste("Model\n- Risk\n  - True positives\n  - Penalties\n- Missing\n  - Before values\n  - Adoption"));
+  await page.waitForTimeout(250);
+
+  const a = await idOf("True positives"), b2 = await idOf("Adoption");
+  ok("a fresh map has no links", (await M(() => __mf.links)).length === 0);
+  ok("tying two nodes reports it", (await M(([x, y]) => __mf.tie(x, y), [a, b2])) === "tied");
+  ok("the link is stored once", (await M(() => __mf.links)).length === 1);
+  ok("an arc is drawn", (await arcs()) === 1, await arcs());
+  ok("layout did not move", (await M(() => Object.keys(__mf.pos()).length)) === 7);
+
+  // order does not matter, and the same pair again unties
+  ok("tying the same pair the other way round unties", (await M(([x, y]) => __mf.tie(y, x), [a, b2])) === "cut");
+  ok("and the arc goes with it", (await arcs()) === 0);
+  await M(([x, y]) => __mf.tie(x, y), [a, b2]);
+  ok("a node cannot be tied to itself", (await M((x) => __mf.tie(x, x), a)) === null);
+
+  // a tie is an edit like any other, so it sits on the undo stack
+  await M(() => __mf.undo());
+  await page.waitForTimeout(200);
+  ok("undo takes the link back off", (await M(() => __mf.links)).length === 0, await M(() => __mf.links));
+  await M(() => __mf.redo());
+  await page.waitForTimeout(200);
+  ok("redo puts it back", (await M(() => __mf.links)).length === 1, await M(() => __mf.links));
+
+  // the badge counts what lands here and walks to the far end
+  ok("the tied node carries a badge", await M(() => !!document.querySelector(".badge.link")));
+  ok("two of them, one per end", (await M(() => document.querySelectorAll(".badge.link").length)) === 2);
+  await M((x) => __mf.select(x), a);
+  await M((x) => __mf.hop(x), a);
+  await page.waitForTimeout(250);
+  ok("the badge walks to the other end", (await textOf()) === "Adoption", await textOf());
+
+  // folding one end retargets the arc rather than dropping it
+  const risk = await idOf("Risk");
+  await M((x) => __mf.select(x), risk);
+  await M(() => __mf.fold());
+  await page.waitForTimeout(250);
+  ok("the arc survives a folded end", (await arcs()) === 1, await arcs());
+  ok("and it ends hollow on the folded node", await M(() => !!document.querySelector('#paintLayer circle[stroke-width="1.7"]')));
+  ok("the folded branch carries the badge", await M(() => !!document.querySelector(".badge.link")));
+  await M((x) => __mf.hop(x), risk);
+  await page.waitForTimeout(300);
+  ok("walking from a folded branch opens it", (await textOf()) === "Adoption" || !(await node("Risk")).collapsed);
+  await M((x) => { __mf.select(x); }, risk);
+  if ((await node("Risk")).collapsed) { await M(() => __mf.fold()); await page.waitForTimeout(200); }
+
+  // links are state, so undo and persistence carry them
+  ok("links reach the export", (await M(() => __mf.svg())).includes('stroke-dasharray="7 6"'));
+
+  // deleting a node takes its links with it, as it already does its frames
+  await page.waitForTimeout(600);
+  await page.reload();
+  await page.waitForFunction(() => !!window.__mf);
+  await page.waitForTimeout(300);
+  ok("links survive a reload", (await M(() => __mf.links)).length >= 1, await M(() => __mf.links));
+  await pick("Adoption");
+  await key("Backspace");
+  await page.waitForTimeout(250);
+  ok("deleting an end removes the link", (await M(() => __mf.links)).length === 0, await M(() => __mf.links));
+  ok("and the arc with it", (await arcs()) === 0);
+  ok("the badges go too", (await M(() => document.querySelectorAll(".badge.link").length)) === 0);
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 

@@ -32,6 +32,7 @@
     --muted:#868e96;
     --sel:#6965db;
     --danger:#c0392b;
+    --tie:#c2410c; --tie-soft:#fde3d3;
     --sel-soft:#e0dfff;
     --panel:#ffffff;
     --panel-line:#e9ecef;
@@ -57,6 +58,7 @@
     --muted:#8d949b;
     --sel:#a5a1ff;
     --danger:#ff8b7a;
+    --tie:#ff9f6e; --tie-soft:#4a2a1c;
     --sel-soft:#2a2856;
     --panel:#1e1e1e;
     --panel-line:#343434;
@@ -153,6 +155,11 @@
     cursor:pointer;user-select:none;
   }
   .badge:hover{color:var(--ink);border-color:var(--sel)}
+  /* A link's far end is often off screen, so a tied node carries its count.
+     Same machinery as the fold badge, different colour, and it is a button:
+     clicking it walks you to the other end. */
+  .badge.link{color:var(--tie);border-color:var(--tie-soft);background:var(--tie-soft)}
+  .badge.link:hover{color:var(--tie);border-color:var(--tie)}
 
   /* frame titles live in world space */
   #frames{position:absolute;left:0;top:0;width:0;height:0}
@@ -454,6 +461,7 @@
   <span><b>Move node</b> <kbd>⌥</kbd><kbd>←↑→↓</kbd></span>
   <span><b>Fold</b> <kbd>⌘</kbd><kbd>E</kbd></span>
   <span><b>Select a level</b> <kbd>⇧</kbd>+click</span>
+  <span><b>Tie two nodes</b> <kbd>⌘</kbd>+click</span>
   <span><b>Whole map</b> <kbd>⌘</kbd><kbd>0</kbd></span>
   <span><b>All keys</b> <kbd>?</kbd></span>
 </div>
@@ -498,6 +506,13 @@
       <tr><td><kbd>⌘</kbd><kbd>E</kbd></td><td>Fold or unfold a branch. A folded node wears a badge with the number hidden underneath; click the badge to open it. With a selection up it folds every selected node at once, so a whole level goes away in one press.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag (a small pennant).</td></tr>
+    </table>
+
+    <h3>Cross-links</h3>
+    <table class="keys">
+      <tr><td><kbd>⌘</kbd> + click</td><td>Tie the selected node to the one you click, anywhere on the map. A faint arc joins them. The same pair again unties. A link says these two relate; it does not change who owns whom, so nothing moves.</td></tr>
+      <tr><td>The <b>∿</b> badge</td><td>How many links land on this node. Click it to walk to the other end, which is usually off screen; clicking again cycles through the rest. A folded branch carries the badge for everything tied up inside it, and walking there opens it.</td></tr>
+      <tr><td>A hollow end</td><td>The node you actually tied is folded away inside the one the arc reaches. Better than a line running into nothing.</td></tr>
     </table>
 
     <h3>Maps and touch</h3>
@@ -611,7 +626,7 @@ var OPP={L:"R",R:"L",U:"D",D:"U"}, KEYDIR={ArrowLeft:"L",ArrowRight:"R",ArrowUp:
 function horiz(d){ return d==="L"||d==="R"; }
 
 function freshState(){
-  var rid=nid(), s={rootId:rid, nodes:{}, frames:[]};
+  var rid=nid(), s={rootId:rid, nodes:{}, frames:[], links:[]};
   s.nodes[rid]={id:rid,parent:null,children:[],text:"Central idea",dir:null};
   return s;
 }
@@ -623,6 +638,58 @@ function depthAbs(n){ var d=0; while(n.parent){ n=N(n.parent); d++; } return d; 
 function depthRel(n){ var d=0,r=VR(); while(n.id!==r && n.parent){ n=N(n.parent); d++; } return d; }
 function visible(id){ var r=VR(),n=N(id); while(n){ if(n.id===r) return true; n=n.parent?N(n.parent):null; } return false; }
 function pathTo(id){ var o=[],n=N(id); while(n){ o.unshift(n.id); n=n.parent?N(n.parent):null; } return o; }
+/* ---------- cross-links ----------
+   The first thing in Mappr that is not a tree edge. A link says "these two
+   relate" without changing who owns whom, so it lives beside state.nodes rather
+   than in it: layout never sees a link, and a link can never make the picture
+   move. Order does not matter, so a pair is stored once and matched either way
+   round. */
+function linkIndex(a,b){
+  var L=state.links||[];
+  for(var i=0;i<L.length;i++){
+    if((L[i].a===a&&L[i].b===b)||(L[i].a===b&&L[i].b===a)) return i;
+  }
+  return -1;
+}
+function linksOf(id){
+  return (state.links||[]).filter(function(l){ return l.a===id||l.b===id; });
+}
+function otherEnd(l,id){ return l.a===id?l.b:l.a; }
+function toggleLink(a,b){
+  if(!a||!b||a===b||!N(a)||!N(b)) return null;
+  state.links=state.links||[];
+  var i=linkIndex(a,b);
+  snap();
+  if(i>=0){ state.links.splice(i,1); return "cut"; }
+  state.links.push({a:a,b:b});
+  return "tied";
+}
+/* A link is only drawable if you can see both ends. When one end is folded
+   away, the nearest visible ancestor stands in for it and is drawn hollow: a
+   line running into nothing is worse than an honest stand-in. */
+function visibleEnd(id){
+  if(!N(id)) return null;
+  var chain=pathTo(id);
+  for(var i=0;i<chain.length;i++){
+    if(!visible(chain[i])) return null;
+    if(N(chain[i]).collapsed && chain[i]!==id) return { id:chain[i], proxy:true };
+  }
+  return visible(id) ? { id:id, proxy:false } : null;
+}
+/* The far ends of every link that currently lands on this node, which for a
+   folded branch means everything tied up inside it. Returns the REAL far node,
+   not its stand-in, so walking to it can open the branch on the way. */
+function linksAt(id){
+  var out=[];
+  (state.links||[]).forEach(function(l){
+    var ea=visibleEnd(l.a), eb=visibleEnd(l.b);
+    if(!ea||!eb||ea.id===eb.id) return;
+    if(ea.id===id) out.push(l.b);
+    else if(eb.id===id) out.push(l.a);
+  });
+  return out;
+}
+function linkTally(id){ return linksAt(id).length; }
 function subtree(id,out){ out=out||[]; out.push(id); N(id).children.forEach(function(c){ subtree(c,out); }); return out; }
 function kids(n){ return n.collapsed ? [] : n.children; }
 function descCount(id){ var c=0; (function w(x){ N(x).children.forEach(function(k){ c++; w(k); }); })(id); return c; }
@@ -684,6 +751,7 @@ function removeNode(id){
   p.children.splice(idx,1);
   state.frames.forEach(function(f){ f.roots=f.roots.filter(function(r){ return !gone[r]; }); });
   state.frames=state.frames.filter(function(f){ return f.roots.length; });
+  state.links=(state.links||[]).filter(function(l){ return !gone[l.a] && !gone[l.b]; });
   return p.children.length ? p.children[Math.min(idx,p.children.length-1)] : p.id;
 }
 function branch(node,pressed){
@@ -1044,6 +1112,7 @@ function markedRoots(){
 
 function render(keepView,lead){
   state.frames = state.frames || [];
+  state.links = (state.links||[]).filter(function(l){ return N(l.a)&&N(l.b); });
   var showing={};
   (function walk(id){ showing[id]=1; kids(N(id)).forEach(walk); })(VR());
 
@@ -1109,30 +1178,61 @@ function drawStartHint(){
   top.style.transform="translate("+p.cx+"px,"+(p.cy-b.h/2-26)+"px) translate(-50%,-100%)";
   bot.style.transform="translate("+p.cx+"px,"+(p.cy+b.h/2+26)+"px) translateX(-50%)";
 }
+function badgeAt(id,key,cls,text){
+  var el=bdEls[key];
+  if(!el){ el=document.createElement("div"); elBadges.appendChild(el); bdEls[key]=el; }
+  el.dataset.b = cls==="badge link" ? "" : id;
+  el.dataset.tie = cls==="badge link" ? id : "";
+  el.className=cls;
+  if(el.textContent!==text) el.textContent=text;
+  return el;
+}
 function drawBadges(){
   var live={};
   Object.keys(pos).forEach(function(id){
-    var n=N(id);
-    if(!n.collapsed || !n.children.length) return;
-    live[id]=1;
-    var el=bdEls[id];
-    if(!el){ el=document.createElement("div"); el.dataset.b=id; elBadges.appendChild(el); bdEls[id]=el; }
-    el.className="badge";
-    el.textContent="+"+descCount(id);
-    var p=pos[id], b=box[id], d=isRoot(n)?"R":dirOf(id), x,y;
-    if(d==="R"){ x=p.cx+b.w/2+7; y=p.cy-10; }
-    else if(d==="L"){ x=p.cx-b.w/2-31; y=p.cy-10; }
-    else if(d==="D"){ x=p.cx-12; y=p.cy+b.h/2+7; }
-    else { x=p.cx-12; y=p.cy-b.h/2-27; }
-    el.style.transform="translate("+x+"px,"+y+"px)";
+    var n=N(id), p=pos[id], b=box[id], d=isRoot(n)?"R":dirOf(id);
+    if(n.collapsed && n.children.length){
+      live[id]=1;
+      var x,y;
+      if(d==="R"){ x=p.cx+b.w/2+7; y=p.cy-10; }
+      else if(d==="L"){ x=p.cx-b.w/2-31; y=p.cy-10; }
+      else if(d==="D"){ x=p.cx-12; y=p.cy+b.h/2+7; }
+      else { x=p.cx-12; y=p.cy-b.h/2-27; }
+      badgeAt(id,id,"badge","+"+descCount(id)).style.transform="translate("+x+"px,"+y+"px)";
+    }
+    var tn=linkTally(id);
+    if(tn){
+      var tk="tie"+id; live[tk]=1;
+      /* opposite corner from the fold badge, so the two never collide */
+      badgeAt(id,tk,"badge link","\u223f"+tn)
+        .style.transform="translate("+(p.cx-b.w/2-8)+"px,"+(p.cy+b.h/2-4)+"px)";
+    }
   });
-  Object.keys(bdEls).forEach(function(id){ if(!live[id]){ bdEls[id].remove(); delete bdEls[id]; } });
+  Object.keys(bdEls).forEach(function(k){ if(!live[k]){ bdEls[k].remove(); delete bdEls[k]; } });
 }
 elBadges.addEventListener("mousedown",function(e){ e.preventDefault(); e.stopPropagation(); });
 elBadges.addEventListener("click",function(e){
   var el=e.target.closest(".badge"); if(!el) return;
-  e.stopPropagation(); selected=el.dataset.b; toggleCollapse(el.dataset.b);
+  e.stopPropagation();
+  if(el.dataset.tie){ hopLink(el.dataset.tie); return; }
+  selected=el.dataset.b; toggleCollapse(el.dataset.b);
 });
+/* The far end of a link is usually off screen, so there has to be a way to get
+   there. Repeating on the same node cycles its links rather than bouncing
+   between the same two. */
+var hopFrom=null, hopAt=0;
+function hopLink(id){
+  var far=linksAt(id);
+  if(!far.length){ flash(id); return; }
+  if(hopFrom!==id) hopAt=0;
+  var to=far[hopAt%far.length];
+  hopAt=(hopAt+1)%far.length;
+  hopFrom=id;
+  if(!N(to)){ flash(id); return; }
+  jumpTo(to);                       /* opens folded ancestors and steps out of focus */
+  hopFrom=to; hopAt=0;
+  flashSave(far.length>1 ? "1 of "+far.length+" links" : "the other end");
+}
 
 /* ---------- frames ---------- */
 var FPAD=30;
@@ -1199,6 +1299,51 @@ function shapes(ids, opt){
         '" fill="'+(dark()?"rgba(255,255,255,.028)":"rgba(30,30,30,.022)")+
         '" stroke="'+(on?(dark()?"#a5a1ff":"#6965db"):(dark()?"#5a5a5a":"#c9ccd1"))+
         '" stroke-width="'+(on?2:1.5)+'" stroke-linecap="round"/>');
+    });
+  }
+
+  /* Cross-links, under the tree and under the nodes. An arc rather than a
+     straight line on purpose: a taut line takes the short path, which on a
+     mindmap runs straight through whatever sits between the two ends. Bowing
+     it out costs space but keeps every link readable when several overlap.
+     Sampled into points and run through roughPoly, so it is drawn in the same
+     hand as everything else rather than looking like a machine drew it. */
+  if(opt.links !== false && (state.links||[]).length){
+    var lcol=dark()?"#ff9f6e":"#c2410c";
+    (state.links||[]).forEach(function(l,li){
+      var ea=visibleEnd(l.a), eb=visibleEnd(l.b);
+      if(!ea||!eb||ea.id===eb.id) return;
+      if(!inSet[ea.id]||!inSet[eb.id]||!pos[ea.id]||!pos[eb.id]) return;
+      var A=pos[ea.id], B=pos[eb.id];
+      var on=!opt.exporting && (selected===ea.id||selected===eb.id);
+      var lkey="lk"+l.a+"_"+l.b+"|"+SC.gen+"|"+geo(ea.id)+"|"+geo(eb.id)+"|"+
+               (ea.proxy?1:0)+(eb.proxy?1:0)+"|"+(on?1:0);
+      if(cache){
+        var lhit=SC.edge[lkey];
+        if(lhit!==undefined){ nEdge[lkey]=lhit; emit(lkey,lhit); return; }
+      }
+      var dx=B.cx-A.cx, dy=B.cy-A.cy, dist=Math.hypot(dx,dy)||1;
+      var bow=Math.min(190,dist*.34);
+      var mx=(A.cx+B.cx)/2 - dy/dist*bow, my=(A.cy+B.cy)/2 + dx/dist*bow;
+      var pts=[], STEPS=14;
+      for(var s=0;s<=STEPS;s++){
+        var t=s/STEPS, u=1-t;
+        pts.push([u*u*A.cx+2*u*t*mx+t*t*B.cx, u*u*A.cy+2*u*t*my+t*t*B.cy]);
+      }
+      var lr=rngFrom(seedOf(l.a+l.b+"lk"));
+      var lout='<path d="'+roughPoly(pts,lr,amp*.7)+'" fill="none" stroke="'+lcol+
+        '" stroke-width="'+(on?2.1:1.5)+'" stroke-linecap="round" stroke-linejoin="round"'+
+        ' stroke-dasharray="7 6" opacity="'+(on?.9:.34)+'"/>';
+      /* hollow end = the node you actually tied is folded inside this one */
+      [[A,ea],[B,eb]].forEach(function(pr){
+        lout += pr[1].proxy
+          ? '<circle cx="'+pr[0].cx+'" cy="'+pr[0].cy+'" r="5" fill="'+(dark()?"#16161a":"#fdfcf8")+
+            '" stroke="'+lcol+'" stroke-width="1.7" opacity="'+(on?.9:.4)+'"/>'
+          : '<circle cx="'+pr[0].cx+'" cy="'+pr[0].cy+'" r="3.2" fill="'+lcol+'" opacity="'+(on?.9:.4)+'"/>';
+      });
+      if(cache) nEdge[lkey]=lout;
+      emit(lkey,lout);
+      void li;
     });
   }
 
@@ -1681,6 +1826,7 @@ function deleteMarked(ids){
     });
   })(rid,null);
   dead.forEach(function(i){ delete state.nodes[i]; });
+  state.links=(state.links||[]).filter(function(l){ return !D[l.a] && !D[l.b]; });
   state.frames=(state.frames||[]).filter(function(f){
     f.roots=f.roots.filter(function(r){ return !D[r]; });
     return f.roots.length;
@@ -1981,6 +2127,7 @@ function insertOutline(items){
   return made;
 }
 var flashTimer=null;
+function trunc(s){ s=(s||"").split("\n")[0]; return s.length>22 ? s.slice(0,21)+"\u2026" : s; }
 function flashSave(msg){
   var el=document.getElementById("saveState");
   el.textContent=msg; clearTimeout(flashTimer);
@@ -2714,6 +2861,19 @@ elNodes.addEventListener("mousedown",function(e){
      read shift + right-click as "show me the real menu" and hand it to the
      browser before the page ever sees it. */
   if(e.button===0 && e.shiftKey){ e.preventDefault(); markSiblings(el.dataset.id); return; }
+  /* Cmd (or Ctrl) + click ties the selected node to this one, and the same pair
+     again unties. Nothing else was using this chord on a node. */
+  if(e.button===0 && (e.metaKey||e.ctrlKey)){
+    e.preventDefault();
+    var tgt=el.dataset.id;
+    if(!selected||selected===tgt){ select(tgt); return; }
+    var was=N(selected).text||"a node";
+    var r=toggleLink(selected,tgt);
+    if(!r){ flash(tgt); return; }
+    clearMarks(); hardRender(); saveSoon();
+    flashSave(r==="tied" ? "tied to "+trunc(was) : "untied");
+    return;
+  }
   select(el.dataset.id);
 });
 elNodes.addEventListener("dblclick",function(e){
@@ -3060,6 +3220,9 @@ window.__mf={
   between:insertBetween, del:doDelete, select:select,
   mark:function(ids){ marked={}; ids.forEach(function(i){ marked[i]=1; }); render(true); },
   markSibs:markSiblings, fold:toggleCollapse,
+  get links(){ return (state.links||[]).map(function(l){ return {a:l.a,b:l.b}; }); },
+  tie:function(a,b){ var r=toggleLink(a,b); if(r){ hardRender(); save(); } return r; },
+  linksAt:linksAt, hop:hopLink,
   get isMac(){ return IS_MAC; }, keyWords:keyWords,
   trash:function(){ return trashList().map(function(d){ return {id:d.id,name:docName(d.state)}; }); },
   restore:trashRestore,
