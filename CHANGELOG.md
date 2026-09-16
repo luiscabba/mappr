@@ -3,6 +3,31 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.15.0] - 2026-09-16
+
+### Added
+- **Focus follows the whole network.** With a lens up, `⌘/` on a tied node now
+  shows everything it is connected to, however indirectly: if A is tied to B
+  and B to C, focusing A brings all three. It follows links hop by hop and never
+  runs down the tree, so the answer is "what this relates to", not "what sits
+  under it".
+
+- **Focus works in the web view too.** In `⌘⇧2`, `⌘/` narrows the web to that
+  node's network and keeps it arranged by its links. `Esc` goes back to the
+  whole web.
+
+- **`⌘E` folds the network.** Inside a focused network, fold stops meaning the
+  tree and starts meaning the links: everything reached only *through* the
+  selected node goes, counting outward from the node you focused, and the node
+  wears a badge with how many it is hiding. Click the badge or press `⌘E` again
+  to bring them back. The tree itself is never touched, and the folds are
+  forgotten when you leave, like everything else in a lens.
+
+- **A lens picks up where focus left off.** Focused on a branch whose node is
+  tied to something, `⌘2` opens that node's network and `⌘⇧2` arranges it,
+  rather than dropping you onto the whole map. On an untied branch they behave
+  as before.
+
 ## [0.14.0] - 2026-09-16
 
 ### Added

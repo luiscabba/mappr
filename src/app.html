@@ -534,9 +534,10 @@
       <tr><td><kbd>⌘</kbd> + click</td><td>Tie the selected node to the one you click, anywhere on the map. A faint arc joins them. The same pair again unties. A link says these two relate; it does not change who owns whom, so nothing moves.</td></tr>
       <tr><td>The <b>∿</b> badge</td><td>How many links land on this node. Click it to walk to the other end, which is usually off screen; clicking again cycles through the rest. A folded branch carries the badge for everything tied up inside it, and walking there opens it.</td></tr>
       <tr><td>A hollow end</td><td>The node you actually tied is folded away inside the one the arc reaches. Better than a line running into nothing.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Dim to the links.</b> The whole map stays put and everything no link touches drops to a ghost, so you keep your bearings while the arcs come forward. <kbd>Esc</kbd> turns it off.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>/</kbd> while dimmed</td><td>On a tied node, Focus means <em>just this and what it reaches</em>: the node, the things tied to it, and nothing else. <kbd>Esc</kbd> steps back to dimmed. On a node with nothing tied to it, Focus does what it always did.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>2</kbd></td><td>The whole web at once, tree hidden, laid out <em>by the links</em> instead of by the tree, so clusters that disagree with the hierarchy show up as clusters. It is a view: nothing is moved, and leaving puts every node back.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Dim to the links.</b> The whole map stays put and everything no link touches drops to a ghost, so you keep your bearings while the arcs come forward. <kbd>Esc</kbd> turns it off. Pressed while focused on a tied branch, it goes straight to that node's network.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>/</kbd> with a lens up</td><td>On a tied node, Focus shows <em>its whole network</em>: the node, everything tied to it, and everything tied to those, and nothing else. In the web view the network stays arranged by its links. <kbd>Esc</kbd> steps back. While dimmed, Focus on an untied node does what it always did.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>E</kbd> in a network</td><td>Folds the network instead of the tree: everything reached only <em>through</em> the selected node goes, and it wears a badge counting them. Click the badge or press it again to bring them back.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>2</kbd></td><td>The whole web at once, tree hidden, laid out <em>by the links</em> instead of by the tree, so clusters that disagree with the hierarchy show up as clusters. It is a view: nothing is moved, and leaving puts every node back. From a focused branch or a network, it arranges just that network.</td></tr>
     </table>
 
     <h3>Maps and touch</h3>
@@ -735,26 +736,55 @@ function linkTally(id){ return linksAt(id).length; }
      lens      dim.  The whole map stays on screen and everything not part of a
                      link drops to a ghost. You keep your bearings, because the
                      shape you know is still there.
-     lensOne   only. One node and the things it is tied to, tree hidden. This is
-                     what dim escalates to when you press Focus on a tied node:
-                     Focus already means "just this", so it means "just this and
-                     what it reaches" once the lens is up.
+     lensOne   only. One node and its whole network: everything tied to it,
+                     and everything tied to those, hop by hop along links (never
+                     down the tree). This is what Focus means once any lens is
+                     up. It combines with lensWeb, in which case the network is
+                     arranged by its links rather than left where the tree put it.
+                     Inside it, Fold works on the network rather than the tree:
+                     folding a node hides whatever is only reached THROUGH it,
+                     counting outward from the focused node (lensFold).
      lensWeb   every link at once, tree hidden, and arranged BY the links rather
                      than by the tree, which is the one case where arranging
                      earns itself: clusters that disagree with the hierarchy
                      become visible as clusters. */
-var lens=false, lensOne=null, lensWeb=false;
+var lens=false, lensOne=null, lensWeb=false, lensFold={};
 function lensActive(){ return lens||!!lensOne||lensWeb; }
-function lensSig(){ return (lens?1:0)+"|"+(lensOne||"")+"|"+(lensWeb?1:0); }
+function lensSig(){ return (lens?1:0)+"|"+(lensOne||"")+"|"+(lensWeb?1:0)+"|"+Object.keys(lensFold).sort().join(","); }
 function lensSolo(){ return !!lensOne||lensWeb; }
+/* A network, walked breadth first from one node along links only, at whatever
+   node currently stands for each end. The walk ignores folds so that every node
+   has one fixed "came from" node regardless of what is folded; folding then
+   hides a node when anything strictly between it and the origin is folded.
+   Returns the visible set, and for each folded node how many it is hiding. */
+function lensReach(origin){
+  var adj={};
+  (state.links||[]).forEach(function(l){
+    var a=visibleEnd(l.a), b=visibleEnd(l.b);
+    if(!a||!b||a.id===b.id) return;
+    (adj[a.id]=adj[a.id]||[]).push(b.id);
+    (adj[b.id]=adj[b.id]||[]).push(a.id);
+  });
+  var from={}, order=[origin], seen={}; seen[origin]=1;
+  for(var i=0;i<order.length;i++){
+    (adj[order[i]]||[]).forEach(function(x){
+      if(seen[x]) return; seen[x]=1; from[x]=order[i]; order.push(x);
+    });
+  }
+  var set={}, hidden={}, beyond={};
+  order.forEach(function(id){
+    var p=from[id], shut=null;
+    while(p!=null){ beyond[p]=1; if(lensFold[p]) shut=p; p=from[p]; }
+    if(shut==null) set[id]=1;
+    /* count against the fold nearest the origin, which is the badge you see */
+    else hidden[shut]=(hidden[shut]||0)+1;
+  });
+  return { set:set, hidden:hidden, beyond:beyond };
+}
 /* Everything a link currently lands on, at whatever node stands for it. */
 function lensParts(){
   var set={};
-  if(lensOne){
-    set[lensOne]=1;
-    linksAt(lensOne).forEach(function(far){ var e=visibleEnd(far); if(e) set[e.id]=1; });
-    return set;
-  }
+  if(lensOne) return lensReach(lensOne).set;
   (state.links||[]).forEach(function(l){
     var a=visibleEnd(l.a), b=visibleEnd(l.b);
     if(!a||!b||a.id===b.id) return;
@@ -764,13 +794,33 @@ function lensParts(){
 }
 function lensClear(){
   if(!lensActive()) return false;
-  lens=false; lensOne=null; lensWeb=false;
+  lens=false; lensOne=null; lensWeb=false; lensFold={};
   return true;
 }
 function lensSet(l,one,web){
+  if((one||null)!==lensOne) lensFold={};
   lens=l; lensOne=one||null; lensWeb=!!web;
+  if(lensOne) selected=lensOne;
   if(lensSolo()) focusId=null;      /* the far end is usually outside the focused branch */
   clearMarks(); hardRender(); fit();
+}
+
+/* Fold, inside a network view. Hides what is only reached through this node and
+   leaves the node itself on screen, the same way a tree fold does. */
+function toggleLensFold(id){
+  var r=lensReach(lensOne);
+  if(!r.beyond[id]){ flash(id); flashSave("nothing beyond this"); return; }
+  if(lensFold[id]){ delete lensFold[id]; flashSave("unfolded"); }
+  else { lensFold[id]=1; flashSave("folded "+(lensReach(lensOne).hidden[id]||0)+" beyond"); }
+  hardRender();
+}
+/* The network to use when a lens comes up while you are focused on a branch:
+   the focused node's own, provided it has one. Focus is cleared first, because
+   the far ends almost always sit outside the focused branch. */
+function lensFromFocus(){
+  if(!focusId) return null;
+  var f=focusId; focusId=null;
+  return linkTally(f) ? f : null;
 }
 
 /* Arrange by links. Springs with a REST LENGTH, so tied nodes settle a readable
@@ -1359,16 +1409,21 @@ function badgeAt(id,key,cls,text){
 }
 function drawBadges(){
   var live={};
+  /* in a network view the tree's fold badges mean nothing; the network's do */
+  var lr=lensOne ? lensReach(lensOne) : null;
   Object.keys(pos).forEach(function(id){
     var n=N(id), p=pos[id], b=box[id], d=isRoot(n)?"R":dirOf(id);
-    if(n.collapsed && n.children.length){
+    var lh=lr && lr.hidden[id];
+    if(lh || (!lr && n.collapsed && n.children.length)){
       live[id]=1;
       var x,y;
       if(d==="R"){ x=p.cx+b.w/2+7; y=p.cy-10; }
       else if(d==="L"){ x=p.cx-b.w/2-31; y=p.cy-10; }
       else if(d==="D"){ x=p.cx-12; y=p.cy+b.h/2+7; }
       else { x=p.cx-12; y=p.cy-b.h/2-27; }
-      badgeAt(id,id,"badge","+"+descCount(id)).style.transform="translate("+x+"px,"+y+"px)";
+      var fb=badgeAt(id,id,lh?"badge link":"badge","+"+(lh||descCount(id)));
+      fb.dataset.lf=lh?id:"";
+      fb.style.transform="translate("+x+"px,"+y+"px)";
     }
     var tn=linkTally(id);
     if(tn){
@@ -1385,6 +1440,7 @@ elBadges.addEventListener("click",function(e){
   var el=e.target.closest(".badge"); if(!el) return;
   e.stopPropagation();
   if(el.dataset.tie){ hopLink(el.dataset.tie); return; }
+  if(el.dataset.lf){ selected=el.dataset.lf; toggleLensFold(el.dataset.lf); return; }
   selected=el.dataset.b; toggleCollapse(el.dataset.b);
 });
 /* The far end of a link is usually off screen, so there has to be a way to get
@@ -1399,7 +1455,7 @@ function hopLink(id){
   hopAt=(hopAt+1)%far.length;
   hopFrom=id;
   if(!N(to)){ flash(id); return; }
-  if(lensOne){ lensSet(false,to,false); selected=to; centerOn(to); flashSave("the other end"); return; }
+  if(lensOne){ lensSet(false,to,lensWeb); selected=to; centerOn(to); flashSave("the other end"); return; }
   jumpTo(to);                       /* opens folded ancestors and steps out of focus */
   hopFrom=to; hopAt=0;
   flashSave(far.length>1 ? "1 of "+far.length+" links" : "the other end");
@@ -1481,12 +1537,13 @@ function shapes(ids, opt){
      hand as everything else rather than looking like a machine drew it. */
   if(opt.links !== false && (state.links||[]).length){
     var lcol=dark()?"#ff9f6e":"#c2410c";
+    var reachSet=(lensOne && !opt.exporting) ? lensReach(lensOne).set : null;
     (state.links||[]).forEach(function(l,li){
       var ea=visibleEnd(l.a), eb=visibleEnd(l.b);
       if(!ea||!eb||ea.id===eb.id) return;
       if(!inSet[ea.id]||!inSet[eb.id]||!pos[ea.id]||!pos[eb.id]) return;
       var A=pos[ea.id], B=pos[eb.id];
-      if(lensOne && !opt.exporting && ea.id!==lensOne && eb.id!==lensOne) return;
+      if(lensOne && !opt.exporting && (!reachSet[ea.id] || !reachSet[eb.id])) return;
       var on=!opt.exporting && (lensActive() || selected===ea.id || selected===eb.id);
       var lkey="lk"+l.a+"_"+l.b+"|"+SC.gen+"|"+geo(ea.id)+"|"+geo(eb.id)+"|"+
                (ea.proxy?1:0)+(eb.proxy?1:0)+"|"+(on?1:0)+"|"+lensSig();
@@ -2969,7 +3026,8 @@ document.addEventListener("keydown",function(e){
   if(e.key==="?"&&!editing){ toggleHelp(true); return; }
   if(e.key==="Escape"){
     if(document.getElementById("notes").classList.contains("open")){ toggleNotes(false); return; }
-    if(lensSolo()){ e.preventDefault(); lensSet(true,null,false); return; }
+    if(lensOne){ e.preventDefault(); lensSet(!lensWeb,null,lensWeb); return; }
+    if(lensWeb){ e.preventDefault(); lensSet(true,null,false); return; }
     if(lens){ e.preventDefault(); lensClear(); hardRender(); fit(); return; }
     if(elJump.classList.contains("on")){ closeJump(); return; }
     if(elMaps.classList.contains("on")){ toggleMaps(false); return; }
@@ -2994,27 +3052,46 @@ document.addEventListener("keydown",function(e){
     e.preventDefault(); if(editing) commitEdit();
     if(lensWeb){ lensClear(); hardRender(); fit(); }
     else if(!(state.links||[]).length){ flash(selected); flashSave("nothing is tied yet"); }
-    else lensSet(false,null,true);
+    else {
+      var wo=lensOne || lensFromFocus();
+      lensSet(false,wo,true);
+      if(wo) flashSave("its network, arranged");
+    }
     return;
   }
   if((mod&&e.key==="2") || (e.altKey&&(e.key==="l"||e.key==="L"||e.key==="¬"))){
     e.preventDefault(); if(editing) commitEdit();
     if(lensActive()){ lensClear(); hardRender(); fit(); flashSave("lens off"); }
     else if(!(state.links||[]).length){ flash(selected); flashSave("nothing is tied yet"); }
-    else { lensSet(true,null,false); flashSave("dimmed to the links"); }
+    else {
+      var fo=lensFromFocus();
+      if(fo){ lensSet(false,fo,false); flashSave("its network"); }
+      else { lensSet(true,null,false); flashSave("dimmed to the links"); }
+    }
     return;
   }
   if(mod&&e.key==="."){ e.preventDefault(); centerOn(selected); return; }
-  if(mod&&(e.key==="e"||e.key==="E")){ e.preventDefault(); if(editing) commitEdit(); toggleCollapse(); return; }
+  if(mod&&(e.key==="e"||e.key==="E")){
+    e.preventDefault(); if(editing) commitEdit();
+    if(lensOne) toggleLensFold(selected); else toggleCollapse();
+    return;
+  }
   if(mod&&e.shiftKey&&(e.key==="d"||e.key==="D")){ e.preventDefault(); if(editing) commitEdit(); toggleMark("done"); return; }
   if(mod&&(e.key==="d"||e.key==="D")){ e.preventDefault(); if(editing) commitEdit(); duplicateBranch(); return; }
   if(mod&&e.shiftKey&&(e.key==="f"||e.key==="F")){ e.preventDefault(); if(editing) commitEdit(); toggleMark("flag"); return; }
   if(mod&&e.key==="/"){
     e.preventDefault(); if(editing) commitEdit();
-    /* With the lens up, Focus on a tied node means "just this and what it
-       reaches" rather than "just this branch". On a node with nothing tied to
-       it, Focus still means what it always did. */
-    if(lens && !lensSolo() && linkTally(selected)){ lensSet(false,selected,false); return; }
+    /* With any lens up, Focus on a tied node means "this node and its whole
+       network" rather than "just this branch". In the web view the network
+       stays arranged by its links. On an untied node, dim still falls back to
+       plain branch focus; the solo views have no branch to focus, so they say so. */
+    if(lensActive()){
+      if(linkTally(selected)){
+        if(selected===lensOne){ flash(selected); return; }
+        lensSet(false,selected,lensWeb); return;
+      }
+      if(lensSolo()){ flash(selected); flashSave("nothing tied to this"); return; }
+    }
     enterFocus(); return;
   }
   if(mod&&(e.key==="a"||e.key==="A")){ e.preventDefault(); if(editing) return; selectAllVisible(); return; }
@@ -3454,10 +3531,11 @@ window.__mf={
   get links(){ return (state.links||[]).map(function(l){ return {a:l.a,b:l.b}; }); },
   tie:function(a,b){ var r=toggleLink(a,b); if(r){ hardRender(); save(); } return r; },
   linksAt:linksAt, hop:hopLink,
-  get lens(){ return lensWeb?"web":(lensOne?"one":(lens?"dim":"off")); },
+  get lens(){ return lensWeb?(lensOne?"webone":"web"):(lensOne?"one":(lens?"dim":"off")); },
+  get lensFold(){ return Object.keys(lensFold); },
   setLens:function(k,id){
     if(k==="off"){ lensClear(); hardRender(); fit(); return; }
-    lensSet(k==="dim", k==="one"?(id||selected):null, k==="web");
+    lensSet(k==="dim", (k==="one"||k==="webone")?(id||selected):null, k==="web"||k==="webone");
   },
   get ghosts(){ return document.querySelectorAll(".node.ghost").length; },
   get shown(){ return Object.keys(pos).length; },

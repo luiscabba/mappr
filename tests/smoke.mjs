@@ -1018,6 +1018,85 @@ group("the connections lens");
   ok("the links themselves survived", (await M(() => __mf.links)).length === 2);
 }
 
+group("networks: indirect links, folding them, focus into a lens");
+{
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const arcs = () => M(() => document.querySelectorAll('#paintLayer path.lk').length);
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(320); };
+  const lensIs = () => M(() => __mf.lens);
+  await M(() => __mf.paste("Hub\n- P1\n  - A\n    - a1\n  - E\n- P2\n  - B\n  - C\n- P3\n  - D"));
+  await page.waitForTimeout(280);
+  const A = await idOf("A"), B = await idOf("B"), C = await idOf("C"), D = await idOf("D"), P1 = await idOf("P1");
+  await M(([a, b]) => __mf.tie(a, b), [A, B]);
+  await M(([a, b]) => __mf.tie(a, b), [B, C]);
+  await M(([a, b]) => __mf.tie(a, b), [C, D]);
+  await page.waitForTimeout(200);
+
+  // Focus in dim follows the chain, not just the direct partner
+  await M(() => __mf.setLens("dim")); await page.waitForTimeout(250);
+  await M((x) => __mf.select(x), A);
+  await press("Meta+/");
+  ok("focus in dim shows the whole chain", (await lensIs()) === "one" && (await M(() => __mf.shown)) === 5, await M(() => __mf.shown));
+  ok("and every link inside it", (await arcs()) === 3, await arcs());
+
+  // Cmd+E folds the network, not the tree
+  await M((x) => __mf.select(x), B);
+  await press("Meta+e");
+  ok("folding B hides what is only reached through it", (await M(() => __mf.shown)) === 3, await M(() => __mf.shown));
+  ok("B itself stays", await M((x) => !!__mf.pos()[x], B));
+  ok("the fold is recorded on the network", (await M(() => __mf.lensFold)).join() === B);
+  ok("and it wears a count", await M((x) => [...document.querySelectorAll(".badge.link")].some((b) => b.dataset.lf === x && b.textContent === "+2"), B));
+  ok("the tree was not folded", await M((x) => !__mf.state.nodes[x].collapsed, B));
+  await M((x) => __mf.select(x), D);
+  await M((x) => __mf.select(x), A);
+  await press("Meta+e");
+  ok("folding the origin hides the rest", (await M(() => __mf.shown)) === 2, await M(() => __mf.shown));
+  await press("Meta+e");
+  await M((x) => __mf.select(x), B);
+  await press("Meta+e");
+  ok("pressing again brings them back", (await M(() => __mf.shown)) === 5, await M(() => __mf.shown));
+  await press("Meta+e");
+  await press("Escape");
+  ok("Escape steps back to dim", (await lensIs()) === "dim");
+  ok("and forgets the network's folds", (await M(() => __mf.lensFold)).length === 0);
+  await press("Escape");
+
+  // web view: focus keeps it arranged, Escape goes back to the whole web
+  await M(() => __mf.setLens("web")); await page.waitForTimeout(300);
+  await M((x) => __mf.select(x), C);
+  await press("Meta+/");
+  ok("focus in the web view keeps it arranged", (await lensIs()) === "webone", await lensIs());
+  ok("and shows C's whole network", (await M(() => __mf.shown)) === 5, await M(() => __mf.shown));
+  await M((x) => __mf.select(x), D);
+  await press("Meta+e");
+  ok("a leaf of the network has nothing beyond", (await M(() => __mf.lensFold)).length === 0);
+  await press("Escape");
+  ok("Escape goes back to the whole web", (await lensIs()) === "web");
+  await M(() => __mf.setLens("off")); await page.waitForTimeout(250);
+
+  // focused on a branch, then a lens: its network
+  await M((x) => __mf.select(x), A);
+  await press("Meta+/");
+  ok("plain focus first", (await M(() => __mf.focus)) === A);
+  await press("Meta+2");
+  ok("Cmd+2 from focus opens that node's network", (await lensIs()) === "one" && (await M(() => __mf.shown)) === 5, await lensIs());
+  ok("focus made way for it", (await M(() => __mf.focus)) === null);
+  await press("Escape"); await press("Escape");
+  await M((x) => __mf.select(x), A);
+  await press("Meta+/");
+  await press("Meta+Shift+2");
+  ok("Cmd+Shift+2 from focus arranges that network", (await lensIs()) === "webone", await lensIs());
+  await M(() => __mf.setLens("off")); await page.waitForTimeout(250);
+  await M((x) => __mf.select(x), P1);
+  await press("Meta+/");
+  await press("Meta+2");
+  ok("an untied focus falls back to plain dim", (await lensIs()) === "dim", await lensIs());
+  await M(() => __mf.setLens("off"));
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 
