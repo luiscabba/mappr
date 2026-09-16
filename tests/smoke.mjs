@@ -1082,7 +1082,7 @@ group("networks: indirect links, folding them, focus into a lens");
   await press("Meta+2");
   ok("so does Cmd+2 a second time", (await lensIs()) === "off" && (await M(() => __mf.focus)) === A);
   ok("with only the focused branch on screen", (await M(() => __mf.shown)) === 2, await M(() => __mf.shown));
-  await M(() => __mf.focusOut()); await page.waitForTimeout(250);
+  await M(() => { while (__mf.focus) __mf.focusOut(); }); await page.waitForTimeout(250);
   // not focused: the camera comes back exactly
   await M(() => __mf.select(__mf.state.rootId));
   const cam0 = await M(() => JSON.stringify(__mf.cam()));
@@ -1306,7 +1306,7 @@ group("presentation: the end, the whole story, jumping");
 
   // copy the story as an outline
   await press("KeyR");
-  await M(() => document.querySelector('#crumbs button[data-copy]').click());
+  await M(() => { document.querySelector('#crumbs button[data-cmenu]').click(); document.querySelector('#storyMenu .mi[data-c="0"]').click(); });
   await page.waitForTimeout(250);
   ok("the arrange bar copies the story as an outline", /story copied/.test(await M(() => document.getElementById("saveState").textContent)));
   await press("Escape");
@@ -1694,11 +1694,11 @@ group("working inside a network");
 
   // a bar says where you are
   ok("the bar names the network", await M(() => /Network/.test(document.getElementById("crumbs").textContent) && document.getElementById("crumbs").classList.contains("on")), await M(() => document.getElementById("crumbs").className + ":" + document.getElementById("crumbs").textContent));
-  await M(() => document.querySelector("#crumbs .out").click());
+  await M(() => document.querySelector("#crumbs [data-out]").click());
   await page.waitForTimeout(250);
   ok("its button steps back to dimmed", (await M(() => __mf.lens)) === "dim");
   ok("and the bar follows", await M(() => /Links dimmed/.test(document.getElementById("crumbs").textContent)));
-  await M(() => document.querySelector("#crumbs .out").click());
+  await M(() => document.querySelector("#crumbs [data-out]").click());
   await page.waitForTimeout(250);
   ok("then turns the lens off", (await M(() => __mf.lens)) === "off");
   ok("and the bar goes away", await M(() => !document.getElementById("crumbs").classList.contains("on")));
@@ -1710,6 +1710,166 @@ group("working inside a network");
   await press("Backspace");
   ok("deleting the centre of a network falls back to dim", (await M(() => __mf.lens)) === "dim", await M(() => __mf.lens));
   await M(() => __mf.setLens("off"));
+}
+
+group("QoL: focus toggle, undoing a retype, copying views, tabbed keys");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(220); };
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  await M((t) => __mf.pasteOutline && __mf.pasteOutline(t), "");
+  await page.evaluate((t) => { const dt = new DataTransfer(); dt.setData("text/plain", t); document.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true })); }, `Q
+- Alpha
+  - A1
+  - A2
+- Beta
+  - B1`);
+  await page.waitForTimeout(250);
+  const id = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+
+  // Cmd+/ twice is a round trip
+  await M(() => __mf.select(__mf.state.rootId));
+  await press("Meta+0");
+  const cam0 = await M(() => JSON.stringify(__mf.cam()));
+  await pick("Alpha");
+  await press("Meta+/");
+  ok("Cmd+/ focuses", (await M(() => __mf.focus)) === (await id("Alpha")));
+  await press("Meta+/");
+  ok("Cmd+/ again leaves the focus", (await M(() => __mf.focus)) === null);
+  ok("and puts the camera back exactly", (await M(() => JSON.stringify(__mf.cam()))) === cam0, [await M(() => JSON.stringify(__mf.cam())), cam0]);
+  ok("with the branch still selected", (await M(() => __mf.selected)) === (await id("Alpha")));
+  // nested: back one focus at a time
+  await press("Meta+/");
+  await pick("A1");
+  await M((x) => { __mf.state.nodes[x].children.length || 0; }, await id("A1"));
+  await pick("Alpha");
+  await press("ArrowDown"); // step the focus to Beta, sideways
+  const f1 = await M(() => __mf.focus);
+  await press("Meta+/");
+  ok("after stepping to a sibling branch, Cmd+/ still goes back to the map", (await M(() => __mf.focus)) === null, [f1, await M(() => __mf.focus)]);
+  ok("and forgets the trail", (await M(() => __mf.focusTrail)) === 0);
+  // Esc still steps out as before
+  await pick("Alpha"); await press("Meta+/"); await press("Escape");
+  ok("Esc still leaves a focus", (await M(() => __mf.focus)) === null);
+  ok("and clears nothing it should not", (await M(() => __mf.focusTrail)) <= 1);
+
+  // retyping a node is undoable
+  await pick("Beta");
+  await page.keyboard.type("Oops");
+  await press("Enter");
+  await page.waitForTimeout(100);
+  await press("Escape");
+  ok("the retype took", await M(() => Object.values(__mf.state.nodes).some((n) => n.text === "Oops")));
+  await press("Meta+z");
+  ok("Cmd+Z brings the old text back", await M(() => Object.values(__mf.state.nodes).some((n) => n.text === "Beta") && !Object.values(__mf.state.nodes).some((n) => n.text === "Oops")));
+  await press("Meta+Shift+z");
+  ok("and redo puts the retype back", await M(() => Object.values(__mf.state.nodes).some((n) => n.text === "Oops")));
+  await press("Meta+z");
+  // undo while still typing
+  await pick("Beta");
+  await press("Space");
+  await page.keyboard.type("Wrong");
+  await press("Meta+z");
+  ok("Cmd+Z mid-retype restores the old text", await M(() => Object.values(__mf.state.nodes).some((n) => n.text === "Beta")), await M(() => Object.values(__mf.state.nodes).map((n) => n.text)));
+  ok("and is no longer typing", (await M(() => __mf.editing)) == null);
+  // typing a brand new node is not an extra undo step
+  await pick("B1");
+  await press("Enter");
+  await page.keyboard.type("B2");
+  await press("Escape");
+  const steps = await M(() => __mf.undoSteps);
+  await press("Meta+z");
+  ok("one undo removes a node made and named in one go", !(await M(() => Object.values(__mf.state.nodes).some((n) => n.text === "B2"))));
+  ok("the retype step count is sane", steps >= 1);
+  // an unchanged retype leaves no step
+  const s0 = await M(() => __mf.undoSteps);
+  await pick("Alpha"); await press("Space"); await press("Escape");
+  ok("opening and closing a node without changing it adds no step", (await M(() => __mf.undoSteps)) === s0);
+
+  // copying a network
+  const [a, b, c] = [await id("Alpha"), await id("B1"), await id("A2")];
+  await M(([a, b, c]) => { __mf.tie(a, b); __mf.tie(b, c); }, [a, b, c]);
+  await M((x) => __mf.select(x), a);
+  await press("Meta+2");
+  await press("Meta+/");
+  ok("a network is open", (await M(() => __mf.lens)) === "one");
+  const clip = await page.evaluate(() => new Promise((res) => {
+    document.addEventListener("copy", (e) => setTimeout(() => res(null), 0), { once: true });
+    const dt = new DataTransfer();
+    const ev = new ClipboardEvent("copy", { clipboardData: dt, bubbles: true, cancelable: true });
+    document.dispatchEvent(ev);
+    res({ t: dt.getData("text/plain"), h: dt.getData("text/html") });
+  }));
+  ok("Cmd+C in a network copies the network as an outline", clip && clip.t === "Alpha\n- B1\n  - A2", clip);
+  ok("with nested html", clip && /<ul><li>Alpha<ul><li>B1<ul><li>A2/.test(clip.h), clip);
+  ok("the network bar has a copy menu", await M(() => __mf.copyMenu() && document.querySelectorAll("#storyMenu .mi").length === 2));
+  await press("Escape");
+  ok("any key closes the copy menu first", await M(() => !document.getElementById("storyMenu")) && (await M(() => __mf.lens)) === "one");
+  await page.evaluate(() => document.getElementById("btnExport").click());
+  await M(() => document.querySelector('#exportMenu [data-x="svg"]').click());
+  await page.evaluate(() => document.getElementById("btnExport").click());
+  const svg = await M(() => __mf.lastSvg || "");
+  ok("a network image holds just the network", [">Alpha<", ">B1<", ">A2<"].every((t) => svg.includes(t)) && !svg.includes(">Q<") && !svg.includes(">A1<"), svg.length);
+  await press("Meta+/");
+  ok("Cmd+/ on the network's centre goes back to the view it came from", (await M(() => __mf.lens)) === "dim", await M(() => __mf.lens));
+  await press("Escape");
+
+  // copying a story, so far and whole
+  await M(() => __mf.select(__mf.state.rootId));
+  await M(() => __mf.makeFrameOf && 0);
+  await pick("Alpha");
+  await press("Meta+g"); await page.keyboard.type("Chapter"); await press("Enter");
+  await press("Escape");
+  await M(() => __mf.select(__mf.state.rootId));
+  await press("Meta+3");
+  await press("ArrowRight"); await press("ArrowRight");
+  const soFar = await page.evaluate(() => { const dt = new DataTransfer(); document.dispatchEvent(new ClipboardEvent("copy", { clipboardData: dt, bubbles: true, cancelable: true })); return dt.getData("text/plain"); });
+  ok("Cmd+C while presenting copies the story so far", soFar === "Q\n- Alpha\n  - A1", soFar);
+  ok("the frame title is not clickable while presenting", await M(() => [...document.querySelectorAll(".ftitle")].every((e) => getComputedStyle(e).pointerEvents === "none")));
+  ok("a frame shows around what has been told", await M(() => document.querySelectorAll(".ftitle").length === 1));
+  await M(() => __mf.copyMenu());
+  ok("the presenting copy menu has four choices", await M(() => document.querySelectorAll("#storyMenu .mi").length === 4));
+  await press("Digit4");
+  await page.waitForTimeout(100);
+  const whole = await M(() => __mf.lastSvg || "");
+  ok("the whole story image has every node the story tells", ["Alpha", "A1", "A2", "Oops", "B1"].every((t) => whole.includes(">" + t + "<")) || ["Alpha", "A1", "A2", "B1"].every((t) => whole.includes(">" + t + "<")), whole.length);
+  ok("and the frame with its title", whole.includes(">Chapter<"));
+  ok("and the talk is where it was", (await M(() => __mf.pres.here)) === (await id("A1")) && (await M(() => __mf.shown)) === 3, await M(() => __mf.shown));
+  await press("Meta+Shift+c");
+  await page.waitForTimeout(100);
+  const part = await M(() => __mf.lastSvg || "");
+  ok("Shift+Cmd+C copies the image so far", part.includes(">A1<") && !part.includes(">A2<") && !part.includes(">B1<"), part.length);
+  await press("Escape");
+
+  // frames step aside in a network
+  await M((x) => __mf.select(x), a);
+  await press("Meta+2"); await press("Meta+/");
+  ok("frames are hidden in a network", await M(() => document.querySelectorAll(".ftitle").length === 0));
+  await M(() => __mf.setLens("off"));
+  ok("and come back after", await M(() => document.querySelectorAll(".ftitle").length === 1));
+
+  // the key list has tabs
+  await M(() => __mf.select(__mf.state.rootId));
+  await press("Shift+?");
+  ok("? opens the keys", await M(() => document.getElementById("help").classList.contains("open")));
+  ok("with tabs", await M(() => document.querySelectorAll("#helpTabs button").length >= 6));
+  ok("and one pane showing", await M(() => [...document.querySelectorAll(".hpane")].filter((p) => getComputedStyle(p).display !== "none").length === 1));
+  await press("Digit5");
+  ok("a number switches tab", await M(() => document.querySelector("#helpTabs button.on").dataset.tab === "links"));
+  await press("ArrowDown");
+  ok("arrows step tabs", await M(() => document.querySelector("#helpTabs button.on").dataset.tab === "present"));
+  const txt0 = await M(() => __mf.state.nodes[__mf.selected].text);
+  await press("KeyX");
+  ok("letters do not reach the map behind", (await M(() => __mf.state.nodes[__mf.selected].text)) === txt0 && (await M(() => __mf.editing)) == null);
+  await M(() => document.querySelector('#helpTabs button[data-tab="edit"]').dispatchEvent(new MouseEvent("mousedown", { bubbles: true })));
+  ok("clicking a tab switches", await M(() => document.querySelector(".hpane.on").dataset.tab === "edit"));
+  await press("Escape");
+  await press("Shift+?");
+  ok("it reopens on the last tab", await M(() => document.querySelector(".hpane.on").dataset.tab === "edit"));
+  await press("Escape");
+  ok("Esc closes the keys", await M(() => !document.getElementById("help").classList.contains("open")));
+  ok("the paste button is gone", await M(() => !document.getElementById("btnPaste")));
 }
 
 group("console");

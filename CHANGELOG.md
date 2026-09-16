@@ -3,6 +3,36 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.25.0] - 2026-09-16
+
+### Added
+- **Copy what you are looking at.** In a network, `⌘C` copies the network
+  as an outline (the centre, what is tied to it, what is tied to those) and
+  `⇧⌘C` copies a picture of just the network. While presenting, they copy the
+  story told so far, so you can paste it mid-talk; from the overview, the
+  finale or arrange mode they copy the whole story. A **Copy** menu in the bar
+  has every option, whole story included, and a number picks while it is open.
+  Story pictures carry their frames and leave out what the story skips.
+- **The key list has tabs.** Create, Move, Edit, Frames, Links, Present, Maps
+  and Canvas each get their own page. Arrows or a number switch tabs, it opens
+  where you left it, and keys no longer reach the map behind it.
+
+### Changed
+- **`⌘/` again takes you back.** Pressing Focus on the branch you are focused
+  on returns you to exactly the view you had before, zoom and all, even after
+  stepping across to a sibling branch. On a network's centre it goes back to
+  wherever you opened the network from. `Esc` still steps out one level.
+- **Frames follow the view.** While presenting, a frame grows as its nodes are
+  revealed and its title can no longer be clicked by accident; in a network,
+  where the tree steps aside, frames do too.
+- **The Paste outline button is gone.** `⌘V` does the same job.
+
+### Fixed
+- **Retyping a node can be undone.** Overwriting a node's text is now an undo
+  step of its own, so `⌘Z` brings the old text back, even mid-retype. A node
+  made and dropped without a word no longer leaves an undo step that does
+  nothing.
+
 ## [0.24.0] - 2026-09-16
 
 ### Changed
