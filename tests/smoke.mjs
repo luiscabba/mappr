@@ -1242,6 +1242,96 @@ group("presentation");
   await M(() => __mf.setLens("off"));
 }
 
+group("story order");
+{
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(180); };
+  const walkText = () => M(() => __mf.walk.map((i) => __mf.state.nodes[i].text).join(","));
+  await M(() => __mf.paste("Pitch\n- Problem\n  - Slow\n  - Lost\n- Bet\n  - Keys\n  - Layout\n  - Camera\n- Proof\n- Ask"));
+  await page.waitForTimeout(280);
+  const root = await M(() => __mf.state.rootId);
+  const [Prob, Slow, Lost, Bet, Keys, Lay, Cam, Proof, Ask] = await Promise.all(["Problem","Slow","Lost","Bet","Keys","Layout","Camera","Proof","Ask"].map(idOf));
+  ok("with no order the walk is map order", (await walkText()) === "Pitch,Problem,Slow,Lost,Bet,Keys,Layout,Camera,Proof,Ask");
+
+  await press("Meta+3");
+  await press("KeyR");
+  ok("R arranges", await M(() => __mf.arranging));
+  ok("the whole walk is on screen while arranging", (await M(() => __mf.shown)) === 10);
+  ok("the bar says so", await M(() => /Arranging the story/.test(document.getElementById("crumbs").textContent)));
+
+  // mouse: Cmd+click from the root to Ask makes Ask open the top level
+  const clickNode = async (id, mods) => {
+    const r = await M((x) => { const b = document.querySelector('.node[data-id="' + x + '"]').getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; }, id);
+    for (const m of mods || []) await page.keyboard.down(m);
+    await page.mouse.click(r.x, r.y);
+    for (const m of (mods || []).reverse()) await page.keyboard.up(m);
+    await page.waitForTimeout(180);
+  };
+  await clickNode(root);
+  ok("a plain click selects while arranging", (await M(() => __mf.selected)) === root);
+  await clickNode(Ask, ["Meta"]);
+  ok("Cmd+click from a parent sets where its level starts", (await walkText()).startsWith("Pitch,Ask,Problem"), await walkText());
+  await clickNode(Proof, ["Meta"]);
+  ok("Cmd+click to a sibling puts it next", (await walkText()).startsWith("Pitch,Ask,Proof,Problem"), await walkText());
+  ok("siblings nobody ordered follow after, in map order", (await walkText()) === "Pitch,Ask,Proof,Problem,Slow,Lost,Bet,Keys,Layout,Camera", await walkText());
+  ok("ordered nodes are numbered", await M(() => [...document.querySelectorAll(".badge.story:not(.def)")].map((b) => b.textContent).sort().join() === "1,2"));
+  ok("the rest carry their place too", await M(() => document.querySelectorAll(".badge.story.def").length === 2));
+  ok("arrows show the order", await M(() => document.querySelectorAll("#paintLayer path.story, svg path.story").length >= 2));
+
+  // order across levels is refused
+  await clickNode(Slow);
+  await clickNode(Cam, ["Meta"]);
+  ok("order never crosses levels", !JSON.stringify(await M(() => __mf.story)).includes(Cam));
+
+  // keyboard: pick Camera, drop on Keys -> Camera before Keys
+  await M((x) => __mf.select(x), Cam);
+  await press("Space");
+  await M((x) => __mf.select(x), Keys);
+  await press("Space");
+  ok("Space picks and Space drops", (await walkText()).includes("Bet,Camera,Keys,Layout"), await walkText());
+  ok("ordering children keeps the level above in place", (await walkText()) === "Pitch,Ask,Proof,Problem,Slow,Lost,Bet,Camera,Keys,Layout", await walkText());
+
+  // same pair again undoes
+  await M((x) => __mf.select(x), Cam);
+  await press("Space");
+  await M((x) => __mf.select(x), Keys);
+  await press("Space");
+  ok("the same pair again undoes", (await walkText()).includes("Bet,Keys,Layout,Camera"), await walkText());
+
+  // backspace resets a node, undo brings it back
+  await M((x) => __mf.select(x), Proof);
+  await press("Backspace");
+  ok("Backspace puts a node back in map order", (await walkText()).startsWith("Pitch,Ask,Problem"), await walkText());
+  await press("Meta+z");
+  ok("and undo restores it", (await walkText()).startsWith("Pitch,Ask,Proof"), await walkText());
+  ok("nothing was deleted", (await M(() => Object.keys(__mf.state.nodes).length)) === 10);
+
+  // R again presents in the new order
+  await press("KeyR");
+  ok("R again presents", !(await M(() => __mf.arranging)) && (await M(() => __mf.pres.shown)) === 1);
+  await press("ArrowRight");
+  ok("the walk follows the story", (await M(() => __mf.pres.here)) === Ask);
+  await press("ArrowRight");
+  ok("step by step", (await M(() => __mf.pres.here)) === Proof);
+  await press("Escape");
+
+  // it is saved with the map, and a deleted node leaves no trace
+  await page.waitForTimeout(600);
+  await page.reload();
+  await page.waitForFunction(() => !!window.__mf);
+  await page.waitForTimeout(300);
+  ok("the order survives a reload", (await walkText()).startsWith("Pitch,Ask,Proof,Problem"), await walkText());
+  await M((x) => __mf.select(x), Proof);
+  await press("Backspace");
+  await page.waitForTimeout(200);
+  ok("deleting an ordered node heals the order", (await walkText()).startsWith("Pitch,Ask,Problem") && !JSON.stringify(await M(() => __mf.story)).includes(Proof), await walkText());
+  const svg = await M(() => __mf.svg());
+  ok("an export shows no story arrows", !svg.includes('class="story"'));
+}
+
 group("working inside a network");
 {
   await M(() => document.getElementById("btnMaps").click());

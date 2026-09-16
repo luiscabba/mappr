@@ -132,6 +132,9 @@
   body.presenting #topbar, body.presenting #hint, body.presenting #zoombar,
   body.presenting #framebar, body.presenting #startHint{display:none}
   body.presenting #nodes, body.presenting #frames{pointer-events:none}
+  body.presenting.arranging #nodes{pointer-events:auto}
+  .badge.story{pointer-events:none;color:#fff;background:var(--sel);border-color:var(--sel);font-family:var(--font-ui);font-weight:700}
+  .badge.story.def{color:var(--muted);background:var(--panel);border-color:var(--panel-line)}
 
   /* collapse badges live in world space */
   #badges{position:absolute;left:0;top:0;width:0;height:0}
@@ -547,6 +550,7 @@
       <tr><td>A hollow end</td><td>The node you actually tied is folded away inside the one the arc reaches. Better than a line running into nothing.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>1</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>1</kbd></td><td><b>Normal view.</b> The number keys are views, and 1 is the plain map. From any other view it puts you back where you were, focus and all. The <kbd>⌥</kbd> versions are there because a browser tab may keep <kbd>⌘</kbd> plus a number for itself.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>3</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>3</kbd></td><td><b>Present.</b> Walks the map (or the focused branch) one node at a time in reading order, showing nothing you have not reached yet. Each node lands where it will stay and the camera follows. <kbd>→</kbd> or <kbd>Space</kbd> next, <kbd>⇧</kbd><kbd>→</kbd> the whole level at once, <kbd>←</kbd> back, <kbd>O</kbd> a look at everything so far, <kbd>Home</kbd> from the top. <kbd>Esc</kbd>, <kbd>⌘</kbd><kbd>1</kbd> or <kbd>⌘</kbd><kbd>3</kbd> ends it and puts you back where you were. Folded branches stay folded.</td></tr>
+      <tr><td><kbd>R</kbd> while presenting</td><td><b>Arrange the story.</b> The whole walk comes up, numbered. <kbd>⌘</kbd>+click a sibling to say <em>this, then that</em>, or from a parent to one of its children to say which child that level opens with; the same pair again undoes. From the keyboard, <kbd>Space</kbd> picks a node up and <kbd>Space</kbd> on another puts the picked one before it. <kbd>⌫</kbd> puts a node back in map order. Order only ever changes things inside one level, and siblings you did not order follow after the ones you did. <kbd>R</kbd> again presents the new order from the top. It is saved with the map.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>2</kbd> / <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Dim to the links.</b> The whole map stays put and everything no link touches drops to a ghost, so you keep your bearings while the arcs come forward. Pressed while focused on a tied branch, it goes straight to that node's network. Press it again, or <kbd>Esc</kbd>, to turn it off: you land back where you were, focus and all.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>/</kbd> with a lens up</td><td>On a tied node, Focus shows <em>its whole network</em>: the node, everything tied to it, and everything tied to those, and nothing else. It is laid out <em>by the links</em> rather than by the tree, so a chain reads as a chain; nothing is moved for good. <kbd>Esc</kbd> steps back to dimmed. While dimmed, Focus on an untied node does what it always did.</td></tr>
       <tr><td>Moving in a network</td><td>The tree is hidden, so the keys follow what is on screen: arrows go to the nearest node that way, <kbd>Tab</kbd> walks the network nearest first, and anything you make with <kbd>Enter</kbd> or <kbd>⌘</kbd>+arrow is tied to the node you made it from, so it stays in view. Moving nodes and inserting between them are off until you leave.</td></tr>
@@ -976,9 +980,85 @@ function arrangeByLinks(){
    that belong together. The camera frames every step. Like a lens it is a
    view: nothing is saved and leaving puts you back where you were. */
 var pres=null;
+/* ---------- story order ----------
+   state.story[parent] = { start: child|null, next: {child: sibling} }. Order is
+   only ever set INSIDE one level: siblings chain to siblings, and a parent can
+   name the child its level opens with. A branch is told in full before the
+   level above carries on, so ordering children never disturbs their parents.
+   Siblings nobody ordered follow after the ordered ones, in map order, so
+   forgetting a link can never drop a point from a talk. Saved with the map. */
+function storyGroup(p){ return (state.story||{})[p]; }
+function storyHas(p){ var g=storyGroup(p); return !!g && (!!g.start || Object.keys(g.next).length>0); }
+function storySweep(){
+  var S=state.story; if(!S) return;
+  Object.keys(S).forEach(function(p){
+    var g=S[p], P=N(p);
+    if(!P){ delete S[p]; return; }
+    var mine=function(x){ return x && N(x) && N(x).parent===p; };
+    if(g.start && !mine(g.start)) g.start=null;
+    Object.keys(g.next).forEach(function(a){ if(!mine(a)||!mine(g.next[a])) delete g.next[a]; });
+    if(!g.start && !Object.keys(g.next).length) delete S[p];
+  });
+}
+function storyKids(id){
+  var ks=kids(N(id)).slice(), g=storyGroup(id);
+  if(!g || !storyHas(id)) return ks;
+  var hasIn={}, out=[], seen={};
+  Object.keys(g.next).forEach(function(a){ hasIn[g.next[a]]=1; });
+  var heads=ks.filter(function(k){ return !hasIn[k] && (g.next[k] || k===g.start); });
+  heads.sort(function(a,b){ return ((a===g.start)?-1:0)-((b===g.start)?-1:0) || ks.indexOf(a)-ks.indexOf(b); });
+  heads.forEach(function(h){ var x=h; while(x && !seen[x] && ks.indexOf(x)>=0){ seen[x]=1; out.push(x); x=g.next[x]; } });
+  return { ordered:out, all:out.concat(ks.filter(function(k){ return !seen[k]; })) };
+}
+function storyChildren(id){ var r=storyKids(id); return Array.isArray(r)?r:r.all; }
+/* Where a node sits in its level's told order, and whether someone put it there. */
+function storyPlace(id){
+  var p=N(id).parent; if(!p || !storyHas(p)) return null;
+  var r=storyKids(p); if(Array.isArray(r)) return null;
+  var i=r.all.indexOf(id); if(i<0) return null;
+  return { n:i+1, set:r.ordered.indexOf(id)>=0 };
+}
+function storyLink(a,b){
+  if(!a||!b||!N(a)||!N(b)) return null;
+  if(a===b){ flash(b); return null; }
+  var A=N(a), B=N(b);
+  state.story=state.story||{};
+  var g, p;
+  if(B.parent===a){
+    p=a;
+    snap();
+    g=state.story[p]||(state.story[p]={start:null,next:{}});
+    if(g.start===b){ g.start=null; storySweep(); return "this level starts as usual again"; }
+    g.start=b; return "\u201c"+trunc(B.text)+"\u201d opens this level";
+  }
+  if(!A.parent || A.parent!==B.parent){ flash(b); flashSave("order only runs between siblings"); return null; }
+  p=A.parent;
+  var g0=state.story[p];
+  /* one way in, one way out: a new link replaces the old ones */
+  var x=b, guard=0;
+  while(g0 && x && guard++<999){ if(x===a && !(g0.next[a]===b)){ flash(b); flashSave("that would make a loop"); return null; } x=g0.next[x]; }
+  snap();
+  g=state.story[p]||(state.story[p]={start:null,next:{}});
+  if(g.next[a]===b){ delete g.next[a]; storySweep(); return "unlinked"; }
+  Object.keys(g.next).forEach(function(k){ if(g.next[k]===b) delete g.next[k]; });
+  if(g.next[b]===a) delete g.next[b];
+  g.next[a]=b;
+  return trunc(A.text)+" \u2192 "+trunc(B.text);
+}
+function storyUnlink(id){
+  var p=N(id).parent, g=p&&storyGroup(p), changed=false;
+  if(!g) return false;
+  snap();
+  if(g.start===id){ g.start=null; changed=true; }
+  if(g.next[id]){ delete g.next[id]; changed=true; }
+  Object.keys(g.next).forEach(function(k){ if(g.next[k]===id){ delete g.next[k]; changed=true; } });
+  if(!changed){ undoPop(); return false; }
+  storySweep();
+  return true;
+}
 function presOrder(){
   var out=[];
-  (function w(id){ out.push(id); kids(N(id)).forEach(w); })(VR());
+  (function w(id){ out.push(id); storyChildren(id).forEach(w); })(VR());
   return out;
 }
 function presLitFor(here,group){
@@ -987,7 +1067,7 @@ function presLitFor(here,group){
   (group||[]).forEach(function(g){ lit[g]=1; });
   return lit;
 }
-function presDim(id){ return !!pres && !pres.lit[id]; }
+function presDim(id){ return !!pres && !pres.arrange && !pres.lit[id]; }
 function presStart(){
   if(editing) commitEdit();
   if(lensActive()) lensOff();
@@ -1003,7 +1083,7 @@ function presStart(){
 function presEnd(){
   if(!pres) return;
   var h=pres.home; pres=null; stopCam();
-  document.body.classList.remove("presenting");
+  document.body.classList.remove("presenting","arranging");
   if(h.focus && N(h.focus)) focusId=h.focus;
   if(h.sel && N(h.sel)) selected=h.sel;
   hardRender();
@@ -1082,8 +1162,44 @@ function glideTo(tx,ty,tz){
     camAnim=k<1?requestAnimationFrame(step):null;
   })(t0);
 }
+/* R: arrange the story. The whole walk is on screen, numbered, and Cmd+click
+   (or Space to pick up, Space again to drop) says "this, then that". R again
+   presents the new order from the top. */
+function presArrange(on){
+  if(!pres) return;
+  pres.arrange=on; pres.pick=null;
+  document.body.classList.toggle("arranging",on);
+  if(on){ pres.over=false; render(true); presFrame(Object.keys(pos),1); flashSave("arranging the story"); return; }
+  var r=VR(), sh={}; sh[r]=1;
+  pres.order=presOrder(); pres.shown=sh; pres.here=r; pres.lit=presLitFor(r); pres.hist=[];
+  selected=r; render(true); presFrame([r]); flashSave("presenting from the top");
+}
+function presTie(a,b){
+  var r=storyLink(a,b);
+  if(r){ saveSoon(); flashSave(r); }
+  selected=b; render(true);
+}
+function arrangeKey(e){
+  var k=e.key, mod=e.metaKey||e.ctrlKey;
+  if(mod && (k==="z"||k==="Z")){ e.preventDefault(); e.shiftKey?redo():undo(); storySweep(); render(true); return; }
+  if(mod) return;
+  e.preventDefault();
+  if(KEYDIR[k]){ var t=navigate(N(selected),KEYDIR[k]); if(t){ selected=t; render(true); cameraTo(t); } else flash(selected); return; }
+  if(k===" "){
+    if(!pres.pick){ pres.pick=selected; flashSave("picked \u201c"+trunc(N(selected).text)+"\u201d: move, then Space to put it before"); render(true); }
+    else { var a=pres.pick; pres.pick=null; presTie(a,selected); }
+    return;
+  }
+  if(k==="Backspace"||k==="Delete"){
+    if(storyUnlink(selected)){ saveSoon(); flashSave("back to map order here"); render(true); } else flash(selected);
+    return;
+  }
+}
 function presKey(e){
   var k=e.key, mod=e.metaKey||e.ctrlKey, code=e.code||"";
+  if(!mod && (k==="r"||k==="R")){ e.preventDefault(); presArrange(!pres.arrange); return; }
+  if(pres.arrange && k==="Escape" && pres.pick){ e.preventDefault(); pres.pick=null; render(true); return; }
+  if(pres.arrange && k!=="Escape" && !(mod&&/^[123]$/.test(k)) && !(e.altKey&&/^Digit[123]$/.test(code))){ arrangeKey(e); return; }
   var dig = (mod&&!e.shiftKey&&/^[123]$/.test(k)) ? k : ((e.altKey&&!mod&&/^Digit[123]$/.test(code)) ? code.slice(5) : null);
   if(k==="Escape"||dig==="1"||dig==="3"){ e.preventDefault(); presEnd(); flashSave("normal view"); return; }
   if(dig==="2"){ e.preventDefault(); presEnd(); return "lens"; }
@@ -1098,7 +1214,7 @@ function presKey(e){
 /* Run after layout(), before anything is positioned or painted. */
 function lensLayout(){
   if(pres){
-    Object.keys(pos).forEach(function(id){ if(!pres.shown[id]) delete pos[id]; });
+    if(!pres.arrange) Object.keys(pos).forEach(function(id){ if(!pres.shown[id]) delete pos[id]; });
     return;
   }
   if(!lensSolo()) return;
@@ -1530,6 +1646,7 @@ function markedRoots(){
 function render(keepView,lead){
   state.frames = state.frames || [];
   if(lensOne && !N(lensOne)){ lensOne=null; lensFold={}; lens=true; }
+  storySweep();
   state.links = (state.links||[]).filter(function(l){ return N(l.a)&&N(l.b); });
   var showing={};
   (function walk(id){ showing[id]=1; kids(N(id)).forEach(walk); })(VR());
@@ -1553,7 +1670,7 @@ function render(keepView,lead){
       (n.mark==="done"?" done":"")+(n.mark==="flag"?" flag":"")+
       (ghosts && !ghosts[id] && !isVR(n) ? " ghost" : "")+
       (solo && !solo[id] ? " lenshide" : "")+
-      (pres && !pres.shown[id] ? " preshide" : "")+
+      (pres && !pres.arrange && !pres.shown[id] ? " preshide" : "")+
       (presDim(id) ? " past" : "");
   });
   Object.keys(els).forEach(function(id){ if(!showing[id]){ els[id].remove(); delete els[id]; } });
@@ -1618,7 +1735,18 @@ function badgeAt(id,key,cls,text){
 }
 function drawBadges(){
   var live={};
-  if(pres){ Object.keys(bdEls).forEach(function(k){ bdEls[k].remove(); delete bdEls[k]; }); return; }
+  if(pres){
+    if(pres.arrange){
+      Object.keys(pos).forEach(function(id){
+        var sp=storyPlace(id); if(!sp) return;
+        var k="st"+id; live[k]=1;
+        badgeAt(id,k,"badge story"+(sp.set?"":" def"),String(sp.n))
+          .style.transform="translate("+(pos[id].cx-box[id].w/2-14)+"px,"+(pos[id].cy-box[id].h/2-12)+"px)";
+      });
+    }
+    Object.keys(bdEls).forEach(function(k){ if(!live[k]){ bdEls[k].remove(); delete bdEls[k]; } });
+    return;
+  }
   /* in a network view the tree's fold badges mean nothing; the network's do */
   var lr=lensOne ? lensReach(lensOne) : null;
   Object.keys(pos).forEach(function(id){
@@ -1755,7 +1883,7 @@ function shapes(ids, opt){
       if(!inSet[ea.id]||!inSet[eb.id]||!pos[ea.id]||!pos[eb.id]) return;
       var A=pos[ea.id], B=pos[eb.id];
       if(lensOne && !opt.exporting && (!reachSet[ea.id] || !reachSet[eb.id])) return;
-      if(pres && !opt.exporting && (!pres.shown[ea.id] || !pres.shown[eb.id])) return;
+      if(pres && !opt.exporting && (pres.arrange || !pres.shown[ea.id] || !pres.shown[eb.id])) return;
       var on=!opt.exporting && (lensActive() || selected===ea.id || selected===eb.id);
       var lkey="lk"+l.a+"_"+l.b+"|"+SC.gen+"|"+geo(ea.id)+"|"+geo(eb.id)+"|"+
                (ea.proxy?1:0)+(eb.proxy?1:0)+"|"+(on?1:0)+"|"+lensSig();
@@ -1952,6 +2080,37 @@ function paint(){
       '" fill="none" stroke="'+accent+'" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="9 6" opacity=".75"/>');
   }
 
+  /* story arrows, only while arranging */
+  if(pres && pres.arrange){
+    var sc=dark()?"#a5a1ff":"#6965db";
+    var arrow=function(a,b,bend,dash){
+      var A=pos[a], B=pos[b]; if(!A||!B) return;
+      var dx=B.cx-A.cx, dy=B.cy-A.cy, d=Math.hypot(dx,dy)||1, k=bend*Math.min(90,d*.45);
+      var mx=(A.cx+B.cx)/2+dy/d*k, my=(A.cy+B.cy)/2-dx/d*k;
+      /* start and end on the box edges, not the centres */
+      var edge=function(P,id,tx,ty){
+        var vx=tx-P.cx, vy=ty-P.cy, hw=box[id].w/2+4, hh=box[id].h/2+4;
+        var f=Math.min(Math.abs(vx)>.01?hw/Math.abs(vx):1e9, Math.abs(vy)>.01?hh/Math.abs(vy):1e9);
+        return [P.cx+vx*f, P.cy+vy*f];
+      };
+      var s0=edge(A,a,mx,my), e0=edge(B,b,mx,my);
+      var ang=Math.atan2(e0[1]-my,e0[0]-mx), L=9, ex=e0[0], ey=e0[1];
+      top.push('<path class="story" d="M'+s0[0]+' '+s0[1]+' Q'+mx+' '+my+' '+ex+' '+ey+'" fill="none" stroke="'+sc+
+        '" stroke-width="2.3" stroke-linecap="round" stroke-dasharray="'+dash+'" opacity=".85"/>');
+      top.push('<path d="M'+(ex-L*Math.cos(ang-.5))+' '+(ey-L*Math.sin(ang-.5))+' L'+ex+' '+ey+' L'+(ex-L*Math.cos(ang+.5))+' '+(ey-L*Math.sin(ang+.5))+
+        '" fill="none" stroke="'+sc+'" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>');
+    };
+    Object.keys(state.story||{}).forEach(function(p){
+      var g=state.story[p];
+      Object.keys(g.next).forEach(function(a){ arrow(a,g.next[a],1,"2 7"); });
+      if(g.start) arrow(p,g.start,.6,"1 6");
+    });
+    if(pres.pick && pos[pres.pick]){
+      var pb=box[pres.pick], pp=pos[pres.pick];
+      top.push('<path d="'+smoothRect(pp.cx-pb.w/2-9,pp.cy-pb.h/2-9,pb.w+18,pb.h+18,16)+'" fill="none" stroke="'+sc+
+        '" stroke-width="2" stroke-dasharray="5 5" class="ants"/>');
+    }
+  }
   if(pos[selected] && !selFrame){
     var b2=box[selected], p2=pos[selected], m2=6;
     var sr=rngFrom(seedOf(selected+"sel"));
@@ -2073,11 +2232,19 @@ function fitHere(){
 var elCrumbs=document.getElementById("crumbs");
 function esc(t){ return String(t).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
 function drawCrumbs(){
+  if(pres && pres.arrange){
+    elCrumbs.className="bar on lensbar";
+    var ha='<span class="lk" style="color:var(--sel)">Arranging the story</span>'+
+      '<span class="meta">\u2318+click a sibling: this, then that \u00b7 from a parent: start here \u00b7 Space pick, Space drop \u00b7 \u232b reset a node \u00b7 R to present</span>'+
+      '<button class="out" data-out="1">Esc to end</button>';
+    if(elCrumbs.innerHTML!==ha) elCrumbs.innerHTML=ha;
+    return;
+  }
   if(pres){
     elCrumbs.className="bar on lensbar";
     var total=pres.order.length, seen=pres.order.filter(function(id){ return pres.shown[id]; }).length;
     var hp='<span class="lk" style="color:var(--sel)">Presenting</span><span class="meta">'+seen+' / '+total+
-      '</span><span class="meta">\u2192 next \u00b7 \u21e7\u2192 whole level \u00b7 \u2190 back \u00b7 O overview</span>'+
+      '</span><span class="meta">\u2192 next \u00b7 \u21e7\u2192 whole level \u00b7 \u2190 back \u00b7 O overview \u00b7 R arrange the order</span>'+
       '<button class="out" data-out="1">Esc to end</button>';
     if(elCrumbs.innerHTML!==hp) elCrumbs.innerHTML=hp;
     return;
@@ -3413,6 +3580,13 @@ elNodes.addEventListener("input",function(){
    ============================================================ */
 elNodes.addEventListener("mousedown",function(e){
   var el=e.target.closest(".node"); if(!el) return;
+  if(pres){
+    e.preventDefault(); e.stopPropagation();
+    if(!pres.arrange) return;
+    if(e.button===0 && (e.metaKey||e.ctrlKey) && selected && selected!==el.dataset.id) presTie(selected,el.dataset.id);
+    else { selected=el.dataset.id; render(true); }
+    return;
+  }
   if(editing===el.dataset.id) return;
   e.stopPropagation();
   /* Shift + click marks the row. Left button only: the same chord on the right
@@ -3437,6 +3611,7 @@ elNodes.addEventListener("mousedown",function(e){
 });
 elNodes.addEventListener("dblclick",function(e){
   var el=e.target.closest(".node"); if(!el) return;
+  if(pres){ e.preventDefault(); e.stopPropagation(); return; }
   e.stopPropagation(); selected=el.dataset.id; clearMarks(); render(); beginEdit(el.dataset.id,true);
 });
 /* Right-click is the mouse equivalent of Cmd+/ : on a node it focuses into that
@@ -3803,6 +3978,10 @@ window.__mf={
   get lensFold(){ return Object.keys(lensFold); },
   get pres(){ return pres ? { here:pres.here, shown:Object.keys(pres.shown).length, total:pres.order.length } : null; },
   present:presStart, presNext:presNext, presBack:presBack, presEnd:presEnd,
+  get story(){ return JSON.parse(JSON.stringify(state.story||{})); },
+  storyLink:function(a,b){ var r=storyLink(a,b); render(true); return r; },
+  get walk(){ return presOrder(); },
+  get arranging(){ return !!(pres&&pres.arrange); },
   setLens:function(k,id){
     if(k==="off"){ lensOff(); return; }
     lensSet(k==="dim", k==="one"?(id||selected):null);

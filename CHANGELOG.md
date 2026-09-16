@@ -3,6 +3,26 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.20.0] - 2026-09-16
+
+### Added
+- **Tell the story in your own order.** Press `R` while presenting to arrange
+  it: the whole walk comes up with every ordered node numbered. `⌘`+click a
+  sibling to say *this, then that*; `⌘`+click from a parent to one of its
+  children to say which child that level opens with. The same pair again
+  undoes. From the keyboard, `Space` picks a node up and `Space` on a sibling
+  puts the picked one before it, and `⌫` puts a node back in map order.
+  `R` again presents the new order from the top.
+
+  Order only ever changes things inside one level. A branch is told in full
+  before the level above carries on, so ordering a branch's children never
+  moves the branch itself. Siblings you did not order follow after the ones
+  you did, in map order, so forgetting a link can never drop a point from a
+  talk; folding a branch is still how you leave it out.
+
+  The order is saved with the map and undo covers it. Deleting or moving a
+  node quietly heals any order it was part of, and exports never show it.
+
 ## [0.19.0] - 2026-09-16
 
 ### Added
