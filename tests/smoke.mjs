@@ -934,6 +934,90 @@ group("what's new");
   ok("and not again on the next run", !(await open()));
 }
 
+group("the connections lens");
+{
+  const newMap = async () => {
+    await M(() => document.getElementById("btnMaps").click());
+    await M(() => document.getElementById("btnNewMap").click());
+    await page.waitForTimeout(220);
+  };
+  const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const arcs = () => M(() => document.querySelectorAll('#paintLayer path[stroke-dasharray="7 6"]').length);
+  const treeEdges = () => M(() => document.querySelectorAll("#paintLayer path.te").length);
+
+  await newMap();
+  await M(() => __mf.paste("Model\n- Risk\n  - True positives\n  - Penalties\n- Missing\n  - Before values\n  - Adoption\n- Cost\n  - Build\n  - Upkeep"));
+  await page.waitForTimeout(280);
+  const tp = await idOf("True positives"), ad = await idOf("Adoption"), bv = await idOf("Before values");
+  await M(([a, b]) => __mf.tie(a, b), [tp, ad]);
+  await M(([a, b]) => __mf.tie(a, b), [tp, bv]);
+  await page.waitForTimeout(200);
+
+  ok("the lens starts off", (await M(() => __mf.lens)) === "off");
+  const allShown = await M(() => __mf.shown);
+
+  // dim: everything stays, the untied go quiet
+  await M(() => __mf.setLens("dim"));
+  await page.waitForTimeout(300);
+  ok("dim keeps the whole map on screen", (await M(() => __mf.shown)) === allShown, await M(() => __mf.shown));
+  ok("and ghosts what no link touches", (await M(() => __mf.ghosts)) > 0, await M(() => __mf.ghosts));
+  ok("the tied nodes are not ghosted", await M((x) => !document.querySelector('.node[data-id="' + x + '"]').classList.contains("ghost"), tp));
+  ok("the arcs are still drawn", (await arcs()) === 2, await arcs());
+  ok("the tree is still there, just quiet", (await treeEdges()) > 0, await treeEdges());
+
+  // Focus on a tied node escalates to the solo view
+  await M((x) => __mf.select(x), tp);
+  await M(() => __mf.focusIn === undefined);
+  await page.keyboard.press("Meta+/");
+  await page.waitForTimeout(350);
+  ok("Focus on a tied node goes solo", (await M(() => __mf.lens)) === "one", await M(() => __mf.lens));
+  ok("only that node, its partners and the centre remain", (await M(() => __mf.shown)) === 4, await M(() => __mf.shown));
+  ok("the tree is not drawn in a solo view", (await treeEdges()) === 0, await treeEdges());
+  ok("it did not enter branch focus instead", (await M(() => __mf.focus)) === null);
+
+  await key("Escape");
+  await page.waitForTimeout(300);
+  ok("Escape steps back to dim", (await M(() => __mf.lens)) === "dim");
+  await key("Escape");
+  await page.waitForTimeout(300);
+  ok("and again turns the lens off", (await M(() => __mf.lens)) === "off");
+  ok("the whole map is back", (await M(() => __mf.shown)) === allShown);
+
+  // Focus on an untied node is still plain focus
+  await M(() => __mf.setLens("dim"));
+  await page.waitForTimeout(250);
+  await pick("Risk");
+  await page.keyboard.press("Meta+/");
+  await page.waitForTimeout(350);
+  ok("Focus on an untied node still focuses the branch", (await M(() => __mf.focus)) !== null);
+  await M(() => __mf.setLens("off"));
+  await M(() => __mf.focusOut());
+  await page.waitForTimeout(250);
+
+  // the web view: no tree, arranged, and reversible
+  const posBefore = await M(() => JSON.stringify(__mf.pos()));
+  await M(() => __mf.setLens("web"));
+  await page.waitForTimeout(400);
+  ok("the web view drops the tree", (await treeEdges()) === 0, await treeEdges());
+  ok("it shows only what the links touch", (await M(() => __mf.shown)) < allShown, await M(() => __mf.shown));
+  ok("arranging moved things", (await M(() => JSON.stringify(__mf.pos()))) !== posBefore);
+  await M(() => __mf.setLens("off"));
+  await page.waitForTimeout(400);
+  ok("and leaving puts every node back exactly", (await M(() => JSON.stringify(__mf.pos()))) === posBefore);
+
+  // a lens is a view, so it never reaches an export and is never saved
+  await M(() => __mf.setLens("dim"));
+  await page.waitForTimeout(250);
+  const svg = await M(() => __mf.svg());
+  ok("an export ignores the lens", !svg.includes('opacity=".17"') && !svg.includes('opacity=".22"'));
+  await page.waitForTimeout(600);
+  await page.reload();
+  await page.waitForFunction(() => !!window.__mf);
+  await page.waitForTimeout(300);
+  ok("and a reload comes back with it off", (await M(() => __mf.lens)) === "off");
+  ok("the links themselves survived", (await M(() => __mf.links)).length === 2);
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 

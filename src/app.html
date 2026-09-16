@@ -122,6 +122,9 @@
 
   .node.done{opacity:.5;text-decoration:line-through;text-decoration-thickness:1.5px}
   .node.flag{font-weight:600}
+  /* dimmed by the connections lens: still there, still where you put it */
+  .node.ghost{opacity:.17}
+  .node.lenshide{display:none}
 
   /* collapse badges live in world space */
   #badges{position:absolute;left:0;top:0;width:0;height:0}
@@ -479,6 +482,7 @@
   <span><b>Fold</b> <kbd>⌘</kbd><kbd>E</kbd></span>
   <span><b>Select a level</b> <kbd>⇧</kbd>+click</span>
   <span><b>Tie two nodes</b> <kbd>⌘</kbd>+click</span>
+  <span><b>Connections</b> <kbd>⌘</kbd><kbd>2</kbd></span>
   <span><b>Whole map</b> <kbd>⌘</kbd><kbd>0</kbd></span>
   <span><b>All keys</b> <kbd>?</kbd></span>
 </div>
@@ -530,6 +534,9 @@
       <tr><td><kbd>⌘</kbd> + click</td><td>Tie the selected node to the one you click, anywhere on the map. A faint arc joins them. The same pair again unties. A link says these two relate; it does not change who owns whom, so nothing moves.</td></tr>
       <tr><td>The <b>∿</b> badge</td><td>How many links land on this node. Click it to walk to the other end, which is usually off screen; clicking again cycles through the rest. A folded branch carries the badge for everything tied up inside it, and walking there opens it.</td></tr>
       <tr><td>A hollow end</td><td>The node you actually tied is folded away inside the one the arc reaches. Better than a line running into nothing.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Dim to the links.</b> The whole map stays put and everything no link touches drops to a ghost, so you keep your bearings while the arcs come forward. <kbd>Esc</kbd> turns it off.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>/</kbd> while dimmed</td><td>On a tied node, Focus means <em>just this and what it reaches</em>: the node, the things tied to it, and nothing else. <kbd>Esc</kbd> steps back to dimmed. On a node with nothing tied to it, Focus does what it always did.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>2</kbd></td><td>The whole web at once, tree hidden, laid out <em>by the links</em> instead of by the tree, so clusters that disagree with the hierarchy show up as clusters. It is a view: nothing is moved, and leaving puts every node back.</td></tr>
     </table>
 
     <h3>Maps and touch</h3>
@@ -718,6 +725,132 @@ function linksAt(id){
   return out;
 }
 function linkTally(id){ return linksAt(id).length; }
+
+/* ---------- the connections lens ----------
+   Two kinds of relationship now share one picture, and past a handful of links
+   they compete for the same attention. The lens is a way of asking for one and
+   quieting the other. It is a VIEW: nothing here is saved, nothing here moves a
+   node for good, and turning it off puts the map back exactly as it was.
+
+     lens      dim.  The whole map stays on screen and everything not part of a
+                     link drops to a ghost. You keep your bearings, because the
+                     shape you know is still there.
+     lensOne   only. One node and the things it is tied to, tree hidden. This is
+                     what dim escalates to when you press Focus on a tied node:
+                     Focus already means "just this", so it means "just this and
+                     what it reaches" once the lens is up.
+     lensWeb   every link at once, tree hidden, and arranged BY the links rather
+                     than by the tree, which is the one case where arranging
+                     earns itself: clusters that disagree with the hierarchy
+                     become visible as clusters. */
+var lens=false, lensOne=null, lensWeb=false;
+function lensActive(){ return lens||!!lensOne||lensWeb; }
+function lensSig(){ return (lens?1:0)+"|"+(lensOne||"")+"|"+(lensWeb?1:0); }
+function lensSolo(){ return !!lensOne||lensWeb; }
+/* Everything a link currently lands on, at whatever node stands for it. */
+function lensParts(){
+  var set={};
+  if(lensOne){
+    set[lensOne]=1;
+    linksAt(lensOne).forEach(function(far){ var e=visibleEnd(far); if(e) set[e.id]=1; });
+    return set;
+  }
+  (state.links||[]).forEach(function(l){
+    var a=visibleEnd(l.a), b=visibleEnd(l.b);
+    if(!a||!b||a.id===b.id) return;
+    set[a.id]=1; set[b.id]=1;
+  });
+  return set;
+}
+function lensClear(){
+  if(!lensActive()) return false;
+  lens=false; lensOne=null; lensWeb=false;
+  return true;
+}
+function lensSet(l,one,web){
+  lens=l; lensOne=one||null; lensWeb=!!web;
+  if(lensSolo()) focusId=null;      /* the far end is usually outside the focused branch */
+  clearMarks(); hardRender(); fit();
+}
+
+/* Arrange by links. Springs with a REST LENGTH, so tied nodes settle a readable
+   distance apart rather than on the same point; repulsion between every pair,
+   so separate clusters claim separate space; and a weak spring holding each
+   node back toward where the tidy tree put it, so the result is your map with
+   the tied things drawn closer rather than a force-directed blob that threw
+   your placement away. Operates on pos, which layout() rebuilds from the tree
+   on every render, so this can never become permanent. */
+var ARR_REST=210, ARR_SPRING=0.045, ARR_REP=150000, ARR_ANCHOR=0.10, ARR_ITER=340;
+function arrangeByLinks(){
+  var rid=VR();
+  var live=Object.keys(pos).filter(function(id){ return id!==rid && box[id]; });
+  if(live.length<2) return;
+  var pairs=[];
+  (state.links||[]).forEach(function(l){
+    var a=visibleEnd(l.a), b=visibleEnd(l.b);
+    if(!a||!b||a.id===b.id) return;
+    if(!pos[a.id]||!pos[b.id]||a.id===rid||b.id===rid) return;
+    pairs.push([a.id,b.id]);
+  });
+  if(!pairs.length) return;
+
+  var S={};
+  live.forEach(function(id){
+    S[id]={ ax:pos[id].cx, ay:pos[id].cy, x:pos[id].cx, y:pos[id].cy, vx:0, vy:0,
+            w:box[id].w, h:box[id].h };
+  });
+  for(var it=0; it<ARR_ITER; it++){
+    var cool=Math.pow(1-it/ARR_ITER,1.4);
+    live.forEach(function(id){ S[id].vx=0; S[id].vy=0; });
+    for(var i=0;i<live.length;i++) for(var j=i+1;j<live.length;j++){
+      var P=S[live[i]], Q=S[live[j]];
+      var dx=Q.x-P.x, dy=Q.y-P.y, d2=dx*dx+dy*dy;
+      if(d2<1){ dx=Math.random()-.5; dy=Math.random()-.5; d2=1; }
+      if(d2>810000) continue;
+      var d=Math.sqrt(d2), f=ARR_REP/d2, ux=dx/d, uy=dy/d;
+      P.vx-=ux*f; P.vy-=uy*f; Q.vx+=ux*f; Q.vy+=uy*f;
+    }
+    pairs.forEach(function(pr){
+      var P=S[pr[0]], Q=S[pr[1]]; if(!P||!Q) return;
+      var dx=Q.x-P.x, dy=Q.y-P.y, d=Math.hypot(dx,dy)||1;
+      var f=(d-ARR_REST)*ARR_SPRING, ux=dx/d, uy=dy/d;
+      P.vx+=ux*f; P.vy+=uy*f; Q.vx-=ux*f; Q.vy-=uy*f;
+    });
+    live.forEach(function(id){
+      var n=S[id];
+      n.vx+=(n.ax-n.x)*ARR_ANCHOR; n.vy+=(n.ay-n.y)*ARR_ANCHOR;
+      var step=Math.hypot(n.vx,n.vy);
+      if(step>26){ n.vx=n.vx/step*26; n.vy=n.vy/step*26; }
+      n.x+=n.vx*cool; n.y+=n.vy*cool;
+    });
+  }
+  /* The simulation treats nodes as points; they are boxes. The centre node is
+     in this pass but never moves. */
+  var boxes=live.map(function(id){ return S[id]; });
+  if(pos[rid]&&box[rid]) boxes.push({x:pos[rid].cx,y:pos[rid].cy,w:box[rid].w,h:box[rid].h,fixed:true});
+  for(var sp=0; sp<30; sp++){
+    var moved=false;
+    for(var a2=0;a2<boxes.length;a2++) for(var b2=a2+1;b2<boxes.length;b2++){
+      var U=boxes[a2], V=boxes[b2];
+      var ox=(U.w+V.w)/2+20-Math.abs(U.x-V.x), oy=(U.h+V.h)/2+12-Math.abs(U.y-V.y);
+      if(ox<=0||oy<=0) continue;
+      moved=true;
+      var uf=U.fixed?0:(V.fixed?1:.5), vf=V.fixed?0:(U.fixed?1:.5);
+      if(ox<oy){ var dx2=(U.x<V.x?-1:1); U.x+=dx2*ox*uf; V.x-=dx2*ox*vf; }
+      else { var dy2=(U.y<V.y?-1:1); U.y+=dy2*oy*uf; V.y-=dy2*oy*vf; }
+    }
+    if(!moved) break;
+  }
+  live.forEach(function(id){ pos[id]={cx:S[id].x, cy:S[id].y}; });
+}
+
+/* Run after layout(), before anything is positioned or painted. */
+function lensLayout(){
+  if(!lensSolo()) return;
+  var keep=lensParts(); keep[VR()]=1;
+  Object.keys(pos).forEach(function(id){ if(!keep[id]) delete pos[id]; });
+  if(lensWeb) arrangeByLinks();
+}
 function subtree(id,out){ out=out||[]; out.push(id); N(id).children.forEach(function(c){ subtree(c,out); }); return out; }
 function kids(n){ return n.collapsed ? [] : n.children; }
 function descCount(id){ var c=0; (function w(x){ N(x).children.forEach(function(k){ c++; w(k); }); })(id); return c; }
@@ -1143,6 +1276,13 @@ function render(keepView,lead){
   state.links = (state.links||[]).filter(function(l){ return N(l.a)&&N(l.b); });
   var showing={};
   (function walk(id){ showing[id]=1; kids(N(id)).forEach(walk); })(VR());
+  /* A solo view HIDES rather than removes: layout needs a measured box for
+     every node in the tree, so the elements have to exist and be measured even
+     when they are not going to be seen. lensLayout() then drops their positions
+     so nothing draws them. */
+  var ghosts = lens && !lensSolo() ? lensParts() : null;
+  var solo=null;
+  if(lensSolo()){ solo=lensParts(); solo[VR()]=1; }
 
   Object.keys(showing).forEach(function(id){
     var el=els[id];
@@ -1153,7 +1293,9 @@ function render(keepView,lead){
       if(el.textContent!==t) el.textContent=t;
     }
     el.className="node"+(isVR(n)?" root":"")+(id===editing?" editing":"")+
-      (n.mark==="done"?" done":"")+(n.mark==="flag"?" flag":"");
+      (n.mark==="done"?" done":"")+(n.mark==="flag"?" flag":"")+
+      (ghosts && !ghosts[id] && !isVR(n) ? " ghost" : "")+
+      (solo && !solo[id] ? " lenshide" : "");
   });
   Object.keys(els).forEach(function(id){ if(!showing[id]){ els[id].remove(); delete els[id]; } });
 
@@ -1172,7 +1314,7 @@ function render(keepView,lead){
     meas[id]={k:el.className+"\u0001"+el.textContent, w:w, h:h};
   });
 
-  layout(); reposition(); paint(); drawBadges(); drawFrameTitles(); drawCrumbs(); drawFrameBar(); drawStartHint();
+  layout(); lensLayout(); reposition(); paint(); drawBadges(); drawFrameTitles(); drawCrumbs(); drawFrameBar(); drawStartHint();
   if(!keepView && CFG.follow) cameraTo(selected,lead);
   applyView();
 }
@@ -1257,6 +1399,7 @@ function hopLink(id){
   hopAt=(hopAt+1)%far.length;
   hopFrom=id;
   if(!N(to)){ flash(id); return; }
+  if(lensOne){ lensSet(false,to,false); selected=to; centerOn(to); flashSave("the other end"); return; }
   jumpTo(to);                       /* opens folded ancestors and steps out of focus */
   hopFrom=to; hopAt=0;
   flashSave(far.length>1 ? "1 of "+far.length+" links" : "the other end");
@@ -1343,9 +1486,10 @@ function shapes(ids, opt){
       if(!ea||!eb||ea.id===eb.id) return;
       if(!inSet[ea.id]||!inSet[eb.id]||!pos[ea.id]||!pos[eb.id]) return;
       var A=pos[ea.id], B=pos[eb.id];
-      var on=!opt.exporting && (selected===ea.id||selected===eb.id);
+      if(lensOne && !opt.exporting && ea.id!==lensOne && eb.id!==lensOne) return;
+      var on=!opt.exporting && (lensActive() || selected===ea.id || selected===eb.id);
       var lkey="lk"+l.a+"_"+l.b+"|"+SC.gen+"|"+geo(ea.id)+"|"+geo(eb.id)+"|"+
-               (ea.proxy?1:0)+(eb.proxy?1:0)+"|"+(on?1:0);
+               (ea.proxy?1:0)+(eb.proxy?1:0)+"|"+(on?1:0)+"|"+lensSig();
       if(cache){
         var lhit=SC.edge[lkey];
         if(lhit!==undefined){ nEdge[lkey]=lhit; emit(lkey,lhit); return; }
@@ -1359,7 +1503,7 @@ function shapes(ids, opt){
         pts.push([u*u*A.cx+2*u*t*mx+t*t*B.cx, u*u*A.cy+2*u*t*my+t*t*B.cy]);
       }
       var lr=rngFrom(seedOf(l.a+l.b+"lk"));
-      var lout='<path d="'+roughPoly(pts,lr,amp*.7)+'" fill="none" stroke="'+lcol+
+      var lout='<path class="lk" d="'+roughPoly(pts,lr,amp*.7)+'" fill="none" stroke="'+lcol+
         '" stroke-width="'+(on?2.1:1.5)+'" stroke-linecap="round" stroke-linejoin="round"'+
         ' stroke-dasharray="7 6" opacity="'+(on?.9:.34)+'"/>';
       /* hollow end = the node you actually tied is folded inside this one */
@@ -1375,19 +1519,27 @@ function shapes(ids, opt){
     });
   }
 
+  /* The lens quiets the tree so the links can be read. In dim it drops to a
+     ghost; in the solo views it is not drawn at all, because the whole point of
+     those is that the tree is out of the way. Never in an export: an exported
+     map is the map, not whatever lens you happened to have up. */
+  var lensQuiet = !opt.exporting && lens && !lensSolo();
+  var lensHideTree = !opt.exporting && lensSolo();
+  var lensGhosts = lensQuiet ? lensParts() : {};
   ids.forEach(function(id){
+    if(lensHideTree) return;
     N(id).children.forEach(function(cid){
       if(!pos[cid] || !inSet[cid]) return;
       var d=dirOf(cid), col=paletteFor(N(cid)).line, key=null;
       if(cache){
-        key=cid+"|"+SC.gen+"|"+geo(id)+"|"+geo(cid)+"|"+d+"|"+col;
+        key=cid+"|"+SC.gen+"|"+geo(id)+"|"+geo(cid)+"|"+d+"|"+col+"|"+(lensQuiet?1:0);
         var hit=SC.edge[key];
         if(hit!==undefined){ nEdge[key]=hit; emit(key,hit); return; }
       }
       var out=[], pts=connectorPts(id,cid,d);
       for(var k=0;k<passes;k++){
         var r=rngFrom(seedOf(cid+"e"+k));
-        out.push('<path d="'+roughPoly(pts,r,amp)+'" fill="none" stroke="'+col+'" stroke-width="'+sw+
+        out.push('<path class="te" d="'+roughPoly(pts,r,amp)+'" fill="none" stroke="'+col+'" stroke-width="'+sw+
           '" stroke-linecap="round" stroke-linejoin="round"'+dattr+' opacity="'+(amp?.6:.68)+'"/>');
       }
       if(CFG.head!=="none"){
@@ -1403,6 +1555,7 @@ function shapes(ids, opt){
         }
       }
       var str=out.join("");
+      if(lensQuiet) str='<g opacity=".22">'+str+'</g>';
       if(cache) nEdge[key]=str;
       emit(key,str);
     });
@@ -1411,7 +1564,8 @@ function shapes(ids, opt){
   ids.forEach(function(id){
     var n=N(id), P=paletteFor(n), key=null;
     if(cache){
-      key=id+"|"+SC.gen+"|"+geo(id)+"|"+P.line+"|"+(P.fill||"")+"|"+(n.mark||"")+"|"+(isVR(n)?1:0);
+      key=id+"|"+SC.gen+"|"+geo(id)+"|"+P.line+"|"+(P.fill||"")+"|"+(n.mark||"")+"|"+(isVR(n)?1:0)+
+          "|"+((lensQuiet && !lensGhosts[id] && !isVR(n))?1:0);
       var hit=SC.body[key];
       if(hit!==undefined){ nBody[key]=hit; emit(key,hit.b); if(hit.d) defs.push(hit.d); return; }
     }
@@ -1437,7 +1591,9 @@ function shapes(ids, opt){
         '" fill="none" stroke="'+P.line+'" stroke-width="'+bsw+'" stroke-linecap="round"'+dattr+
         ' opacity="'+(amp?(k?.5:.95):1)+'"/>');
     }
-    var rec={b:out.join(""), d:def};
+    var body=out.join("");
+    if(lensQuiet && !lensGhosts[id] && !isVR(n)) body='<g opacity=".17">'+body+'</g>';
+    var rec={b:body, d:def};
     if(cache) nBody[key]=rec;
     emit(key,rec.b); if(rec.d) defs.push(rec.d);
   });
@@ -2813,6 +2969,8 @@ document.addEventListener("keydown",function(e){
   if(e.key==="?"&&!editing){ toggleHelp(true); return; }
   if(e.key==="Escape"){
     if(document.getElementById("notes").classList.contains("open")){ toggleNotes(false); return; }
+    if(lensSolo()){ e.preventDefault(); lensSet(true,null,false); return; }
+    if(lens){ e.preventDefault(); lensClear(); hardRender(); fit(); return; }
     if(elJump.classList.contains("on")){ closeJump(); return; }
     if(elMaps.classList.contains("on")){ toggleMaps(false); return; }
     if(document.getElementById("help").classList.contains("open")){ toggleHelp(false); return; }
@@ -2828,12 +2986,37 @@ document.addEventListener("keydown",function(e){
   if(mod&&e.shiftKey&&e.key===")"){ e.preventDefault(); fitHere(); return; }
   if(mod&&e.key==="0"){ e.preventDefault(); e.shiftKey?fitHere():fitAll(); return; }
   if(mod&&e.key==="1"){ e.preventDefault(); if(editing) commitEdit(); view.z=1; centerOn(selected); return; }
+  /* The connections lens. Cmd+2 dims everything a link does not touch; add
+     Shift for the whole web at once, arranged by the links rather than by the
+     tree. Alt+L does the same as Cmd+2, because Cmd plus a digit is how every
+     browser switches tabs and a tab may never hand it to the page. */
+  if(mod&&e.shiftKey&&(e.key==="2"||e.key==="@")){
+    e.preventDefault(); if(editing) commitEdit();
+    if(lensWeb){ lensClear(); hardRender(); fit(); }
+    else if(!(state.links||[]).length){ flash(selected); flashSave("nothing is tied yet"); }
+    else lensSet(false,null,true);
+    return;
+  }
+  if((mod&&e.key==="2") || (e.altKey&&(e.key==="l"||e.key==="L"||e.key==="¬"))){
+    e.preventDefault(); if(editing) commitEdit();
+    if(lensActive()){ lensClear(); hardRender(); fit(); flashSave("lens off"); }
+    else if(!(state.links||[]).length){ flash(selected); flashSave("nothing is tied yet"); }
+    else { lensSet(true,null,false); flashSave("dimmed to the links"); }
+    return;
+  }
   if(mod&&e.key==="."){ e.preventDefault(); centerOn(selected); return; }
   if(mod&&(e.key==="e"||e.key==="E")){ e.preventDefault(); if(editing) commitEdit(); toggleCollapse(); return; }
   if(mod&&e.shiftKey&&(e.key==="d"||e.key==="D")){ e.preventDefault(); if(editing) commitEdit(); toggleMark("done"); return; }
   if(mod&&(e.key==="d"||e.key==="D")){ e.preventDefault(); if(editing) commitEdit(); duplicateBranch(); return; }
   if(mod&&e.shiftKey&&(e.key==="f"||e.key==="F")){ e.preventDefault(); if(editing) commitEdit(); toggleMark("flag"); return; }
-  if(mod&&e.key==="/"){ e.preventDefault(); if(editing) commitEdit(); enterFocus(); return; }
+  if(mod&&e.key==="/"){
+    e.preventDefault(); if(editing) commitEdit();
+    /* With the lens up, Focus on a tied node means "just this and what it
+       reaches" rather than "just this branch". On a node with nothing tied to
+       it, Focus still means what it always did. */
+    if(lens && !lensSolo() && linkTally(selected)){ lensSet(false,selected,false); return; }
+    enterFocus(); return;
+  }
   if(mod&&(e.key==="a"||e.key==="A")){ e.preventDefault(); if(editing) return; selectAllVisible(); return; }
   if(mod&&e.shiftKey&&(e.key==="g"||e.key==="G")){ e.preventDefault(); ungroup(); return; }
   if(mod&&(e.key==="g"||e.key==="G")){ e.preventDefault(); if(editing) commitEdit(); makeFrame(); return; }
@@ -3271,6 +3454,13 @@ window.__mf={
   get links(){ return (state.links||[]).map(function(l){ return {a:l.a,b:l.b}; }); },
   tie:function(a,b){ var r=toggleLink(a,b); if(r){ hardRender(); save(); } return r; },
   linksAt:linksAt, hop:hopLink,
+  get lens(){ return lensWeb?"web":(lensOne?"one":(lens?"dim":"off")); },
+  setLens:function(k,id){
+    if(k==="off"){ lensClear(); hardRender(); fit(); return; }
+    lensSet(k==="dim", k==="one"?(id||selected):null, k==="web");
+  },
+  get ghosts(){ return document.querySelectorAll(".node.ghost").length; },
+  get shown(){ return Object.keys(pos).length; },
   get isMac(){ return IS_MAC; }, keyWords:keyWords, notes:toggleNotes,
   get seen(){ try{ return localStorage.getItem("mappr.seen"); }catch(e){ return null; } },
   trash:function(){ return trashList().map(function(d){ return {id:d.id,name:docName(d.state)}; }); },

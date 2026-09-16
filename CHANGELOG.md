@@ -3,6 +3,42 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.14.0] - 2026-09-16
+
+### Added
+- **The connections lens.** Two kinds of relationship now share one picture, and
+  past a handful of links the arcs compete with the tree for the same
+  attention. `⌘2` (or `⌥L`) dims everything no link touches: the whole map stays
+  exactly where it is and drops to a ghost, so the arcs come forward without
+  you losing your bearings.
+
+- **Focus escalates it.** With the lens up, `⌘/` on a tied node means *just this
+  and what it reaches*: that node, the things tied to it, and nothing else, with
+  the tree gone. Focus already meant "just this", so it means "just this and
+  what it reaches" once the lens is up. `Esc` steps back to dimmed and again
+  turns it off. On a node with nothing tied to it, `⌘/` still focuses the branch
+  the way it always did.
+
+- **`⌘⇧2` shows the whole web**, tree hidden, laid out *by the links* rather
+  than by the tree. Links become springs with a rest length so tied nodes settle
+  a readable distance apart; every pair repels so separate clusters claim
+  separate space; and each node stays on a weak spring back to where the tidy
+  tree put it, so the result is your map with the tied things drawn closer
+  rather than a force-directed blob that threw your placement away.
+
+  This is the one case where arranging earns itself: clusters that disagree with
+  the hierarchy become visible as clusters, where on the tree layout the same
+  links are a tangle through the middle.
+
+Every part of this is a view. Nothing is saved, nothing moves a node for good,
+an export ignores the lens entirely, and leaving puts every node back exactly
+where it was.
+
+### Changed
+- Connector paths are now marked in the drawing as `te` (tree) or `lk` (link).
+  They were indistinguishable from node outlines once rendered, which made the
+  lens impossible to assert on.
+
 ## [0.13.0] - 2026-09-16
 
 ### Added
