@@ -994,16 +994,19 @@ group("the connections lens");
   await M(() => __mf.focusOut());
   await page.waitForTimeout(250);
 
-  // the web view: no tree, arranged, and reversible
+  // the network view: no tree, arranged by links, and reversible
   const posBefore = await M(() => JSON.stringify(__mf.pos()));
-  await M(() => __mf.setLens("web"));
+  await M((x) => __mf.setLens("one", x), tp);
   await page.waitForTimeout(400);
-  ok("the web view drops the tree", (await treeEdges()) === 0, await treeEdges());
-  ok("it shows only what the links touch", (await M(() => __mf.shown)) < allShown, await M(() => __mf.shown));
+  ok("the network view drops the tree", (await treeEdges()) === 0, await treeEdges());
+  ok("it shows only the network", (await M(() => __mf.shown)) < allShown, await M(() => __mf.shown));
   ok("arranging moved things", (await M(() => JSON.stringify(__mf.pos()))) !== posBefore);
   await M(() => __mf.setLens("off"));
   await page.waitForTimeout(400);
   ok("and leaving puts every node back exactly", (await M(() => JSON.stringify(__mf.pos()))) === posBefore);
+  await page.keyboard.press("Meta+Shift+2");
+  await page.waitForTimeout(250);
+  ok("Cmd+Shift+2 no longer does anything", (await M(() => __mf.lens)) === "off");
 
   // a lens is a view, so it never reaches an export and is never saved
   await M(() => __mf.setLens("dim"));
@@ -1064,19 +1067,6 @@ group("networks: indirect links, folding them, focus into a lens");
   ok("and forgets the network's folds", (await M(() => __mf.lensFold)).length === 0);
   await press("Escape");
 
-  // web view: focus keeps it arranged, Escape goes back to the whole web
-  await M(() => __mf.setLens("web")); await page.waitForTimeout(300);
-  await M((x) => __mf.select(x), C);
-  await press("Meta+/");
-  ok("focus in the web view keeps it arranged", (await lensIs()) === "webone", await lensIs());
-  ok("and shows C's whole network", (await M(() => __mf.shown)) === 5, await M(() => __mf.shown));
-  await M((x) => __mf.select(x), D);
-  await press("Meta+e");
-  ok("a leaf of the network has nothing beyond", (await M(() => __mf.lensFold)).length === 0);
-  await press("Escape");
-  ok("Escape goes back to the whole web", (await lensIs()) === "web");
-  await M(() => __mf.setLens("off")); await page.waitForTimeout(250);
-
   // focused on a branch, then a lens: its network
   await M((x) => __mf.select(x), A);
   await press("Meta+/");
@@ -1085,16 +1075,25 @@ group("networks: indirect links, folding them, focus into a lens");
   ok("Cmd+2 from focus opens that node's network", (await lensIs()) === "one" && (await M(() => __mf.shown)) === 5, await lensIs());
   ok("focus made way for it", (await M(() => __mf.focus)) === null);
   await press("Escape"); await press("Escape");
-  await M((x) => __mf.select(x), A);
-  await press("Meta+/");
-  await press("Meta+Shift+2");
-  ok("Cmd+Shift+2 from focus arranges that network", (await lensIs()) === "webone", await lensIs());
-  await M(() => __mf.setLens("off")); await page.waitForTimeout(250);
+  // turning it off lands you back in the focused branch, not the whole map
+  ok("Esc all the way out restores the focus", (await M(() => __mf.focus)) === A, await M(() => __mf.focus));
+  await press("Meta+2");
+  await press("Meta+2");
+  ok("so does Cmd+2 a second time", (await lensIs()) === "off" && (await M(() => __mf.focus)) === A);
+  ok("with only the focused branch on screen", (await M(() => __mf.shown)) === 2, await M(() => __mf.shown));
+  await M(() => __mf.focusOut()); await page.waitForTimeout(250);
+  // not focused: the camera comes back exactly
+  await M(() => __mf.select(__mf.state.rootId));
+  const cam0 = await M(() => JSON.stringify(__mf.cam()));
+  await press("Meta+2"); await press("Meta+2");
+  ok("unfocused, the camera comes back exactly", (await M(() => JSON.stringify(__mf.cam()))) === cam0);
   await M((x) => __mf.select(x), P1);
   await press("Meta+/");
   await press("Meta+2");
   ok("an untied focus falls back to plain dim", (await lensIs()) === "dim", await lensIs());
-  await M(() => __mf.setLens("off"));
+  await press("Meta+2");
+  ok("and still returns to that focus", (await M(() => __mf.focus)) === P1);
+  await M(() => __mf.focusOut());
 }
 
 group("console");

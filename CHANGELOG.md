@@ -3,6 +3,23 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.16.0] - 2026-09-16
+
+### Changed
+- **Leaving a lens puts you back where you were.** Turning the lens off with
+  `⌘2` (or `Esc` all the way out) used to drop you on the whole map. Now, if you
+  were focused on a branch when the lens came up, you land back in that branch;
+  if you were not, the camera returns to exactly where it was.
+- **A focused network is always arranged by its links.** `⌘/` on a tied node,
+  with the lens up, lays its network out by the links rather than leaving each
+  node where the tree put it, so a chain that crosses the hierarchy reads as a
+  chain.
+
+### Removed
+- **`⌘⇧2`, the whole-web view.** Focusing on a tied node shows its network,
+  arranged the same way, which covers what the whole web was for with less to
+  remember. The shortcut does nothing now.
+
 ## [0.15.0] - 2026-09-16
 
 ### Added
