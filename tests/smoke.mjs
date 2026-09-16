@@ -1330,7 +1330,7 @@ group("story order");
   await press("KeyR");
   ok("R arranges", await M(() => __mf.arranging));
   ok("the whole map is on screen while arranging", (await M(() => __mf.shown)) === 10);
-  ok("the bar says so", await M(() => /Arranging the story/.test(document.getElementById("crumbs").textContent)));
+  ok("the bar says so", await M(() => /Arranging/.test(document.getElementById("crumbs").textContent)));
 
   const clickNode = async (id, mods) => {
     const r = await M((x) => { const b = document.querySelector('.node[data-id="' + x + '"]').getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; }, id);
@@ -1473,6 +1473,111 @@ group("cycling branches and networks");
   await tab();
   ok("Tab on the centre goes round to the first again", (await M(() => __mf.selected)) === a1);
   await press("Meta+1");
+}
+
+group("mode bar, camera memory, clearing links, several stories");
+{
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(220); };
+  const cam = () => M(() => JSON.stringify(__mf.cam()));
+  const modeOn = () => M(() => document.querySelector("#modebar button.on")?.dataset.mode);
+  await M(() => __mf.paste("Hub\n- A\n  - a1\n  - a2\n- B\n  - b1\n- C"));
+  await page.waitForTimeout(280);
+  const [A, a1, a2, B, b1, C] = await Promise.all(["A","a1","a2","B","b1","C"].map(idOf));
+  await M(([x, y]) => __mf.tie(x, y), [a1, b1]);
+  await M(([x, y]) => __mf.tie(x, y), [a1, C]);
+
+  ok("the mode bar shows Map", (await modeOn()) === "1");
+  await M(() => document.querySelector('#modebar button[data-mode="2"]').click());
+  await page.waitForTimeout(250);
+  ok("clicking Connections opens it", (await M(() => __mf.lens)) === "dim" && (await modeOn()) === "2");
+  await M(() => document.querySelector('#modebar button[data-mode="1"]').click());
+  await page.waitForTimeout(250);
+  ok("clicking Map goes back", (await M(() => __mf.lens)) === "off" && (await modeOn()) === "1");
+
+  // Cmd+2 keeps the camera
+  await M(() => __mf.select(__mf.state.rootId));
+  await press("Meta+=");
+  const c0 = await cam();
+  await press("Meta+2");
+  ok("switching to connections keeps the zoom and place", (await cam()) === c0);
+  await press("Meta+0");
+  ok("Cmd+0 fits within connections without leaving it", (await M(() => __mf.lens)) === "dim" && (await cam()) !== c0);
+  await press("Meta+1");
+
+  // focus remembers the camera
+  await M((x) => __mf.select(x), A);
+  await press("Meta+=");
+  const c1 = await cam();
+  await press("Meta+/");
+  ok("focus moves the camera", (await cam()) !== c1);
+  await press("Escape");
+  await page.waitForTimeout(150);
+  ok("Esc puts the camera back where it was, not zoomed out", (await cam()) === c1, (await cam()) + " vs " + c1);
+
+  // Cmd+. then Esc
+  await M((x) => __mf.select(x), b1);
+  await press("Meta+.");
+  await page.waitForTimeout(350);
+  ok("Cmd+. goes to 100%", (await M(() => __mf.cam().z)) === 1);
+  await press("Escape");
+  ok("Esc after Cmd+. comes back", (await cam()) === c1);
+
+  // Shift+double-click clears a node's links in connections
+  await press("Meta+2");
+  const box = await M((x) => { const r = document.querySelector('.node[data-id="' + x + '"]').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, a1);
+  await page.keyboard.down("Shift");
+  await page.mouse.dblclick(box.x, box.y);
+  await page.keyboard.up("Shift");
+  await page.waitForTimeout(250);
+  ok("Shift+double-click clears the node's links", (await M(() => __mf.links)).length === 0);
+  ok("with nothing left tied, connections closes", (await M(() => __mf.lens)) === "off");
+  ok("nothing got selected as a row", (await M(() => __mf.rawMarked)).length === 0);
+  await press("Meta+z");
+  ok("undo brings the links back", (await M(() => __mf.links)).length === 2);
+
+  // several stories
+  ok("a map starts with one story", (await M(() => __mf.stories)).join() === "Story 1");
+  await press("Meta+3");
+  await press("KeyR");
+  ok("the mode bar shows Story while arranging", (await modeOn()) === "3");
+  await M((r) => __mf.storyLink(r, __mf.state.nodes[r].children[2]), await M(() => __mf.state.rootId));
+  const walk1 = await M(() => __mf.walk.length);
+  await M(() => document.querySelector("#crumbs button[data-snew]").click());
+  await page.waitForTimeout(200);
+  ok("+ adds a second story", (await M(() => __mf.stories)).length === 2 && (await M(() => __mf.storyAt)) === 1);
+  ok("a new story tells the whole map", (await M(() => __mf.walk.length)) === 7);
+  await press("BracketLeft");
+  ok("[ switches back", (await M(() => __mf.storyAt)) === 0 && (await M(() => __mf.walk.length)) === walk1);
+  await press("BracketRight");
+  // rename by double-click
+  const chip = await M(() => { const r = document.querySelector("#crumbs button.story.here").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  await page.mouse.dblclick(chip.x, chip.y);
+  await page.keyboard.press("Meta+a");
+  await page.keyboard.type("Investor cut");
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(200);
+  ok("double-click renames the story", (await M(() => __mf.stories))[1] === "Investor cut", (await M(() => __mf.stories)).join());
+  ok("renaming did not leave arrange mode", await M(() => __mf.arranging));
+  // delete needs two clicks
+  await M(() => document.querySelector("#crumbs button[data-sdel]").click());
+  ok("one click only arms delete", (await M(() => __mf.stories)).length === 2);
+  await M(() => document.querySelector("#crumbs button[data-sdel]").click());
+  await page.waitForTimeout(150);
+  ok("the second click deletes", (await M(() => __mf.stories)).join() === "Story 1");
+  await press("Meta+z");
+  ok("undo restores it", (await M(() => __mf.stories)).length === 2);
+  await press("KeyR");
+  ok("presenting names the story", await M(() => /Investor cut|Story 1/.test(document.getElementById("crumbs").textContent)));
+  await press("Escape");
+  await page.waitForTimeout(600);
+  await page.reload();
+  await page.waitForFunction(() => !!window.__mf);
+  await page.waitForTimeout(300);
+  ok("stories survive a reload", (await M(() => __mf.stories)).length === 2);
 }
 
 group("working inside a network");

@@ -3,6 +3,32 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.23.0] - 2026-09-16
+
+### Added
+- **A mode bar**, top right: Map, Connections and Story, with their number
+  keys. It shows where you are and switches on a click. It steps aside while
+  you present, so the audience only sees the map.
+- **Several stories per map.** While arranging, the bar lists the map's
+  stories: click one to switch (or `[` and `]`), `+` adds one, double-click the
+  current one to rename it, and `×` deletes it after a second click. A new
+  story starts empty, so it tells the whole map until you pick. Presenting
+  names the story you are telling, and resuming is per story. Maps saved
+  before this keep their order as "Story 1".
+- **`⇧` + double-click in connections** clears every link on that node, and
+  `⌘Z` brings them back. In connections, `⇧`+click only selects, so the
+  gesture never marks a row by accident.
+
+### Changed
+- **Switching to connections keeps your camera.** `⌘2` no longer zooms out;
+  the view only moves when the picture itself changes (opening a network, or
+  coming from a focused branch), and then it keeps your zoom.
+- **`⌘0` fits whatever you are in**: the whole map, all the links, a focused
+  network, or while presenting, what is on screen.
+- **`Esc` goes back to your zoom, not to the whole map.** Leaving a focus
+  puts the camera back where it was before you went in, and `Esc` after `⌘.`
+  undoes the jump to 100%.
+
 ## [0.22.0] - 2026-09-16
 
 ### Added
