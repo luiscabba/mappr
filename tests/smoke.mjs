@@ -1096,6 +1096,98 @@ group("networks: indirect links, folding them, focus into a lens");
   await M(() => __mf.focusOut());
 }
 
+group("working inside a network");
+{
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(260); };
+  const selVisible = () => M(() => !!__mf.pos()[__mf.selected]);
+  await M(() => __mf.paste("Hub\n- P1\n  - A\n    - a1\n  - E\n- P2\n  - B\n  - C\n- P3\n  - D"));
+  await page.waitForTimeout(280);
+  const A = await idOf("A"), B = await idOf("B"), C = await idOf("C"), D = await idOf("D");
+  await M(([a, b]) => __mf.tie(a, b), [A, B]);
+  await M(([a, b]) => __mf.tie(a, b), [B, C]);
+  await M(([a, b]) => __mf.tie(a, b), [A, D]);
+  await M((x) => __mf.setLens("one", x), A);
+  await page.waitForTimeout(350);
+
+  // arrows never leave what is on screen
+  let allSeen = true, moved = 0;
+  for (const k of ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "ArrowRight", "ArrowUp", "ArrowLeft", "ArrowDown"]) {
+    const was = await M(() => __mf.selected);
+    await press(k);
+    if (!(await selVisible())) allSeen = false;
+    if ((await M(() => __mf.selected)) !== was) moved++;
+  }
+  ok("arrows stay on nodes you can see", allSeen);
+  ok("and do get somewhere", moved > 0, moved);
+
+  // Tab walks the network, nearest first, and wraps
+  await M((x) => __mf.select(x), A);
+  await page.keyboard.down("Tab"); await page.keyboard.up("Tab"); await page.waitForTimeout(200);
+  const t1 = await M(() => __mf.selected);
+  ok("Tab goes to a direct partner first", t1 === B || t1 === D, t1);
+  const seen = new Set([A, t1]);
+  for (let i = 0; i < 3; i++) { await page.keyboard.down("Tab"); await page.keyboard.up("Tab"); await page.waitForTimeout(150); seen.add(await M(() => __mf.selected)); }
+  ok("and visits the whole network", [A, B, C, D].every((x) => seen.has(x)), [...seen].length);
+  ok("and nothing outside it", seen.size === 4);
+
+  // making a node ties it, so it stays in view
+  await M((x) => __mf.select(x), C);
+  const linksBefore = (await M(() => __mf.links)).length;
+  await press("Enter");
+  await page.keyboard.type("New idea");
+  await page.waitForTimeout(250);
+  const made = await M(() => __mf.selected);
+  ok("a node made in a network is on screen", await selVisible());
+  ok("because it is tied to where it came from", await M(([c, m]) => __mf.links.some((l) => (l.a === c && l.b === m) || (l.a === m && l.b === c)), [C, made]));
+  ok("the network is still arranged while you type", (await M(() => __mf.shown)) === 6, await M(() => __mf.shown));
+  await press("Escape");
+  ok("Esc while typing finishes the node and stays in the network", (await M(() => __mf.lens)) === "one");
+  ok("the new node kept its text", await M((m) => __mf.state.nodes[m].text === "New idea", made));
+  await press("Meta+z");
+  ok("undo takes the node and its tie together", (await M(() => __mf.links)).length === linksBefore && !(await M((m) => !!__mf.state.nodes[m], made)), (await M(() => __mf.links)).length);
+
+  // a blank node made in a network leaves no dangling tie
+  await M((x) => __mf.select(x), B);
+  await press("Enter");
+  await press("Escape");
+  ok("an abandoned blank node takes its tie with it", (await M(() => __mf.links)).length === linksBefore);
+
+  // tree restructuring is off while the tree is hidden
+  await M((x) => __mf.select(x), B);
+  const par = await M((x) => __mf.state.nodes[x].parent, B);
+  await press("Alt+ArrowDown");
+  ok("Alt+arrow does not move nodes blind", (await M((x) => __mf.state.nodes[x].parent, B)) === par);
+
+  // the badge admits links it cannot show
+  await M((x) => __mf.select(x), B);
+  await press("Meta+e");
+  ok("a folded far end is counted as hidden", await M(() => [...document.querySelectorAll(".badge.link")].some((b) => /hidden/.test(b.textContent))), await M(() => [...document.querySelectorAll(".badge.link")].map((b) => b.textContent).join("|") + " " + __mf.lens + " " + __mf.lensFold));
+  await press("Meta+e");
+
+  // a bar says where you are
+  ok("the bar names the network", await M(() => /Network/.test(document.getElementById("crumbs").textContent) && document.getElementById("crumbs").classList.contains("on")), await M(() => document.getElementById("crumbs").className + ":" + document.getElementById("crumbs").textContent));
+  await M(() => document.querySelector("#crumbs .out").click());
+  await page.waitForTimeout(250);
+  ok("its button steps back to dimmed", (await M(() => __mf.lens)) === "dim");
+  ok("and the bar follows", await M(() => /Links dimmed/.test(document.getElementById("crumbs").textContent)));
+  await M(() => document.querySelector("#crumbs .out").click());
+  await page.waitForTimeout(250);
+  ok("then turns the lens off", (await M(() => __mf.lens)) === "off");
+  ok("and the bar goes away", await M(() => !document.getElementById("crumbs").classList.contains("on")));
+
+  // deleting the node a network is centred on falls back to dim
+  await M((x) => __mf.setLens("one", x), A);
+  await page.waitForTimeout(250);
+  await M((x) => __mf.select(x), A);
+  await press("Backspace");
+  ok("deleting the centre of a network falls back to dim", (await M(() => __mf.lens)) === "dim", await M(() => __mf.lens));
+  await M(() => __mf.setLens("off"));
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 

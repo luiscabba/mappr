@@ -3,6 +3,33 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.17.0] - 2026-09-16
+
+### Changed
+- **The keys follow what you can see in a network.** With the tree hidden,
+  arrows used to keep walking it, straight onto nodes that were not on screen.
+  Now an arrow goes to the nearest node that way, and `Tab` walks the network
+  nearest first and wraps.
+- **Anything you make in a network stays in it.** `Enter`, `⇧Enter` and
+  `⌘`+arrow tie the new node to the one you made it from, so it appears in the
+  network instead of vanishing the moment it exists. Undo takes the node and
+  its tie together, and a node you abandon blank takes its tie with it.
+- **The link badge admits what it cannot show.** When some of a node's links
+  end in a folded part of the network, the badge says so: `∿1 · 1 hidden`.
+- **A bar says which view you are in**: the network's centre, how many nodes
+  it has and how many are folded, or that the links are dimmed, with a button
+  to step back.
+
+### Fixed
+- `Esc` while typing in a lens now finishes the node. It used to leave the lens
+  instead, and in a network the new node's text went with it.
+- Typing in a network no longer snaps every node back to the tree's layout
+  while you type.
+- Deleting the node a network is centred on falls back to dimmed rather than
+  leaving an empty view.
+- Moving a node (`⌥`+arrow) and inserting between nodes (hold `Tab`+arrow) are
+  off inside a network, where they would rearrange a tree you cannot see.
+
 ## [0.16.0] - 2026-09-16
 
 ### Changed

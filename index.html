@@ -148,7 +148,7 @@
   #startHint .sharrow{color:var(--muted);opacity:.55}
   #startHint .sh[data-sh="top"] .sharrow{margin-top:2px}
   #startHint .sh[data-sh="bottom"] .sharrow{margin-bottom:2px;transform:scaleX(-1)}
-  .badge{
+  .badge{white-space:nowrap;
     position:absolute;left:0;top:0;
     min-width:24px;height:20px;padding:0 6px;
     display:flex;align-items:center;justify-content:center;
@@ -321,6 +321,8 @@
   /* ---------- trail, hint, zoom ---------- */
   #crumbs{top:62px;left:14px;display:none;align-items:center;gap:2px;padding:6px 8px;max-width:calc(100vw - 28px)}
   #crumbs.on{display:flex}
+  #crumbs .lk{font-size:11px;font-weight:600;color:#c2410c;padding:0 6px}
+  #crumbs .meta{font-size:11px;color:var(--muted);padding:0 6px}
   #crumbs .c{
     font-family:var(--font-sketch);font-size:14px;background:none;border:0;cursor:pointer;
     color:var(--muted);padding:3px 6px;border-radius:6px;
@@ -410,7 +412,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v0.16.0">Mappr</span>
+  <span class="brand" id="brand" title="Mappr v0.17.0">Mappr</span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -496,7 +498,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.16.0</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.17.0</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <h3>Create</h3>
@@ -536,6 +538,7 @@
       <tr><td>A hollow end</td><td>The node you actually tied is folded away inside the one the arc reaches. Better than a line running into nothing.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Dim to the links.</b> The whole map stays put and everything no link touches drops to a ghost, so you keep your bearings while the arcs come forward. Pressed while focused on a tied branch, it goes straight to that node's network. Press it again, or <kbd>Esc</kbd>, to turn it off: you land back where you were, focus and all.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>/</kbd> with a lens up</td><td>On a tied node, Focus shows <em>its whole network</em>: the node, everything tied to it, and everything tied to those, and nothing else. It is laid out <em>by the links</em> rather than by the tree, so a chain reads as a chain; nothing is moved for good. <kbd>Esc</kbd> steps back to dimmed. While dimmed, Focus on an untied node does what it always did.</td></tr>
+      <tr><td>Moving in a network</td><td>The tree is hidden, so the keys follow what is on screen: arrows go to the nearest node that way, <kbd>Tab</kbd> walks the network nearest first, and anything you make with <kbd>Enter</kbd> or <kbd>⌘</kbd>+arrow is tied to the node you made it from, so it stays in view. Moving nodes and inserting between them are off until you leave.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>E</kbd> in a network</td><td>Folds the network instead of the tree: everything reached only <em>through</em> the selected node goes, and it wears a badge counting them. Click the badge or press it again to bring them back.</td></tr>
     </table>
 
@@ -587,9 +590,9 @@
      panel cannot drift from the record of what actually shipped. -->
 <div id="notes">
   <div id="notesCard">
-    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.16.0</span></h2>
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.17.0</span></h2>
     <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
-    <div id="notesBody"><h3 class="rel">0.16.0 <span>2026-09-16</span></h3><h4>Changed</h4><ul><li><b>Leaving a lens puts you back where you were.</b> Turning the lens off with <code>⌘2</code> (or <code>Esc</code> all the way out) used to drop you on the whole map. Now, if you were focused on a branch when the lens came up, you land back in that branch; if you were not, the camera returns to exactly where it was.</li><li><b>A focused network is always arranged by its links.</b> <code>⌘/</code> on a tied node, with the lens up, lays its network out by the links rather than leaving each node where the tree put it, so a chain that crosses the hierarchy reads as a chain.</li></ul><h4>Removed</h4><ul><li><b><code>⌘⇧2</code>, the whole-web view.</b> Focusing on a tied node shows its network, arranged the same way, which covers what the whole web was for with less to remember. The shortcut does nothing now.</li></ul><h3 class="rel">0.15.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>Focus follows the whole network.</b> With a lens up, <code>⌘/</code> on a tied node now shows everything it is connected to, however indirectly: if A is tied to B and B to C, focusing A brings all three. It follows links hop by hop and never runs down the tree, so the answer is &quot;what this relates to&quot;, not &quot;what sits under it&quot;.</li><li><b>Focus works in the web view too.</b> In <code>⌘⇧2</code>, <code>⌘/</code> narrows the web to that node&#x27;s network and keeps it arranged by its links. <code>Esc</code> goes back to the whole web.</li><li><b><code>⌘E</code> folds the network.</b> Inside a focused network, fold stops meaning the tree and starts meaning the links: everything reached only <em>through</em> the selected node goes, counting outward from the node you focused, and the node wears a badge with how many it is hiding. Click the badge or press <code>⌘E</code> again to bring them back. The tree itself is never touched, and the folds are forgotten when you leave, like everything else in a lens.</li><li><b>A lens picks up where focus left off.</b> Focused on a branch whose node is tied to something, <code>⌘2</code> opens that node&#x27;s network and <code>⌘⇧2</code> arranges it, rather than dropping you onto the whole map. On an untied branch they behave as before.</li></ul><h3 class="rel">0.14.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>The connections lens.</b> Two kinds of relationship now share one picture, and past a handful of links the arcs compete with the tree for the same attention. <code>⌘2</code> (or <code>⌥L</code>) dims everything no link touches: the whole map stays exactly where it is and drops to a ghost, so the arcs come forward without you losing your bearings.</li><li><b>Focus escalates it.</b> With the lens up, <code>⌘/</code> on a tied node means <em>just this and what it reaches</em>: that node, the things tied to it, and nothing else, with the tree gone. Focus already meant &quot;just this&quot;, so it means &quot;just this and what it reaches&quot; once the lens is up. <code>Esc</code> steps back to dimmed and again turns it off. On a node with nothing tied to it, <code>⌘/</code> still focuses the branch the way it always did.</li><li><b><code>⌘⇧2</code> shows the whole web</b>, tree hidden, laid out <em>by the links</em> rather than by the tree. Links become springs with a rest length so tied nodes settle a readable distance apart; every pair repels so separate clusters claim separate space; and each node stays on a weak spring back to where the tidy tree put it, so the result is your map with the tied things drawn closer rather than a force-directed blob that threw your placement away. This is the one case where arranging earns itself: clusters that disagree with the hierarchy become visible as clusters, where on the tree layout the same links are a tangle through the middle.</li></ul><h4>Changed</h4><ul><li>Connector paths are now marked in the drawing as <code>te</code> (tree) or <code>lk</code> (link). They were indistinguishable from node outlines once rendered, which made the lens impossible to assert on.</li></ul><h3 class="rel">0.13.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>What&#x27;s new.</b> The first time you run a version you have not run before, a panel says what changed. Click the Mappr wordmark to read it again any time. It is stamped in from <code>CHANGELOG.md</code> at build time rather than written a second time by hand, so it cannot drift from the record of what actually shipped: the changelog stays the single source and the panel is a view of it. It carries the last six releases. It does not greet a first ever run. Someone opening Mappr for the first time wants the map, not a list of changes to things they have never seen. The version is recorded on every run whether or not the panel appeared, so it can only ever fire on a real upgrade, and while it is open the keyboard belongs to it, so a stray key cannot retype the node behind it.</li></ul><h3 class="rel">0.12.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>Cross-links.</b> <code>⌘</code> (or <code>Ctrl</code>) + click ties the selected node to the one you click, anywhere on the map, and a faint arc joins them. The same pair again unties. This is the first thing in Mappr that is not a tree edge, so it is built to stay out of the tree&#x27;s way: links live beside <code>state.nodes</code> rather than in it, layout never sees one, and tying two nodes never moves the picture. A pair is stored once and matched either way round. The line is an arc rather than the short way round. A taut line takes the direct path, which on a mindmap runs straight through whatever sits between the two ends; bowing it out costs space and keeps several links readable when they overlap. It is sampled into points and drawn through the same roughness as everything else, so it is in the app&#x27;s own hand.</li><li><b>A <code>∿</code> badge on a tied node</b>, counting the links that land on it. The far end of a link is usually off screen, so the badge is a button: it walks you there, and clicking again cycles the rest. It opens folded branches and steps out of focus to get there, the same way Jump does.</li><li><b>Folded ends stay honest.</b> When the node you tied is folded away, the arc retargets to the visible ancestor and ends in a hollow dot rather than a solid one, and that branch carries the badge for everything tied up inside it. A line running into nothing would be worse than a stand-in that says so.</li></ul><h3 class="rel">0.11.0 <span>2026-09-15</span></h3><h4>Added</h4><ul><li><b>Touch moves the camera.</b> One finger pans, two fingers pinch and pan together with the point between them staying put. Nothing else on touch creates, retypes, lassoes or marks: Mappr is a keyboard app and a thumb has no keyboard, so touch is for reading a map you already made rather than a second half-built way to build one. A tap on a node still selects, which is how you open a folded branch. Until now the app shipped a manifest, an icon and an install prompt, then handed anyone who installed it a map they could not pan.</li><li><b>Key labels read in words off a Mac.</b> The hint bar, the Keys dialog and every button tooltip showed <code>⌘</code> and <code>⌥</code> to everyone, so Windows and Linux visitors were reading instructions for keys they do not have. Handling was always cross-platform; only the labels were not. The map itself is never rewritten, so a node whose text is literally <code>⌘</code> stays as typed.</li><li><b>Deleted maps wait in a bin.</b> A deleted map is set aside under its own key instead of dropped, and the last few show under <em>Recently deleted</em> in the maps panel with a Restore button. Only the last few: localStorage is about 5MB with no eviction, and a bin that grew without limit would eventually cost you the maps you still want.</li><li><b>Arrows carry on past a sibling group.</b> At the edge of a node&#x27;s own siblings the arrow continues into the next branch along at the same level, the way <code>Tab</code> cycling does. Two deliberate differences: it stays among branches pointing the same way, so you never teleport across the centre, and it does not wrap, because an arrow is a direction and running out of map should stop rather than reappear at the far end.</li><li><b>Arrows work inside focus.</b> On the focused node itself a sideways arrow carries the focus to the branch beside it and the inward arrow lifts it a level, so a large map can be walked branch by branch without stepping out and back in each time. Outward still goes to the first child, so in and out remain opposites.</li></ul></div>
+    <div id="notesBody"><h3 class="rel">0.17.0 <span>2026-09-16</span></h3><h4>Changed</h4><ul><li><b>The keys follow what you can see in a network.</b> With the tree hidden, arrows used to keep walking it, straight onto nodes that were not on screen. Now an arrow goes to the nearest node that way, and <code>Tab</code> walks the network nearest first and wraps.</li><li><b>Anything you make in a network stays in it.</b> <code>Enter</code>, <code>⇧Enter</code> and <code>⌘</code>+arrow tie the new node to the one you made it from, so it appears in the network instead of vanishing the moment it exists. Undo takes the node and its tie together, and a node you abandon blank takes its tie with it.</li><li><b>The link badge admits what it cannot show.</b> When some of a node&#x27;s links end in a folded part of the network, the badge says so: <code>∿1 · 1 hidden</code>.</li><li><b>A bar says which view you are in</b>: the network&#x27;s centre, how many nodes it has and how many are folded, or that the links are dimmed, with a button to step back.</li></ul><h4>Fixed</h4><ul><li><code>Esc</code> while typing in a lens now finishes the node. It used to leave the lens instead, and in a network the new node&#x27;s text went with it.</li><li>Typing in a network no longer snaps every node back to the tree&#x27;s layout while you type.</li><li>Deleting the node a network is centred on falls back to dimmed rather than leaving an empty view.</li><li>Moving a node (<code>⌥</code>+arrow) and inserting between nodes (hold <code>Tab</code>+arrow) are off inside a network, where they would rearrange a tree you cannot see.</li></ul><h3 class="rel">0.16.0 <span>2026-09-16</span></h3><h4>Changed</h4><ul><li><b>Leaving a lens puts you back where you were.</b> Turning the lens off with <code>⌘2</code> (or <code>Esc</code> all the way out) used to drop you on the whole map. Now, if you were focused on a branch when the lens came up, you land back in that branch; if you were not, the camera returns to exactly where it was.</li><li><b>A focused network is always arranged by its links.</b> <code>⌘/</code> on a tied node, with the lens up, lays its network out by the links rather than leaving each node where the tree put it, so a chain that crosses the hierarchy reads as a chain.</li></ul><h4>Removed</h4><ul><li><b><code>⌘⇧2</code>, the whole-web view.</b> Focusing on a tied node shows its network, arranged the same way, which covers what the whole web was for with less to remember. The shortcut does nothing now.</li></ul><h3 class="rel">0.15.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>Focus follows the whole network.</b> With a lens up, <code>⌘/</code> on a tied node now shows everything it is connected to, however indirectly: if A is tied to B and B to C, focusing A brings all three. It follows links hop by hop and never runs down the tree, so the answer is &quot;what this relates to&quot;, not &quot;what sits under it&quot;.</li><li><b>Focus works in the web view too.</b> In <code>⌘⇧2</code>, <code>⌘/</code> narrows the web to that node&#x27;s network and keeps it arranged by its links. <code>Esc</code> goes back to the whole web.</li><li><b><code>⌘E</code> folds the network.</b> Inside a focused network, fold stops meaning the tree and starts meaning the links: everything reached only <em>through</em> the selected node goes, counting outward from the node you focused, and the node wears a badge with how many it is hiding. Click the badge or press <code>⌘E</code> again to bring them back. The tree itself is never touched, and the folds are forgotten when you leave, like everything else in a lens.</li><li><b>A lens picks up where focus left off.</b> Focused on a branch whose node is tied to something, <code>⌘2</code> opens that node&#x27;s network and <code>⌘⇧2</code> arranges it, rather than dropping you onto the whole map. On an untied branch they behave as before.</li></ul><h3 class="rel">0.14.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>The connections lens.</b> Two kinds of relationship now share one picture, and past a handful of links the arcs compete with the tree for the same attention. <code>⌘2</code> (or <code>⌥L</code>) dims everything no link touches: the whole map stays exactly where it is and drops to a ghost, so the arcs come forward without you losing your bearings.</li><li><b>Focus escalates it.</b> With the lens up, <code>⌘/</code> on a tied node means <em>just this and what it reaches</em>: that node, the things tied to it, and nothing else, with the tree gone. Focus already meant &quot;just this&quot;, so it means &quot;just this and what it reaches&quot; once the lens is up. <code>Esc</code> steps back to dimmed and again turns it off. On a node with nothing tied to it, <code>⌘/</code> still focuses the branch the way it always did.</li><li><b><code>⌘⇧2</code> shows the whole web</b>, tree hidden, laid out <em>by the links</em> rather than by the tree. Links become springs with a rest length so tied nodes settle a readable distance apart; every pair repels so separate clusters claim separate space; and each node stays on a weak spring back to where the tidy tree put it, so the result is your map with the tied things drawn closer rather than a force-directed blob that threw your placement away. This is the one case where arranging earns itself: clusters that disagree with the hierarchy become visible as clusters, where on the tree layout the same links are a tangle through the middle.</li></ul><h4>Changed</h4><ul><li>Connector paths are now marked in the drawing as <code>te</code> (tree) or <code>lk</code> (link). They were indistinguishable from node outlines once rendered, which made the lens impossible to assert on.</li></ul><h3 class="rel">0.13.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>What&#x27;s new.</b> The first time you run a version you have not run before, a panel says what changed. Click the Mappr wordmark to read it again any time. It is stamped in from <code>CHANGELOG.md</code> at build time rather than written a second time by hand, so it cannot drift from the record of what actually shipped: the changelog stays the single source and the panel is a view of it. It carries the last six releases. It does not greet a first ever run. Someone opening Mappr for the first time wants the map, not a list of changes to things they have never seen. The version is recorded on every run whether or not the panel appeared, so it can only ever fire on a real upgrade, and while it is open the keyboard belongs to it, so a stray key cannot retype the node behind it.</li></ul><h3 class="rel">0.12.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>Cross-links.</b> <code>⌘</code> (or <code>Ctrl</code>) + click ties the selected node to the one you click, anywhere on the map, and a faint arc joins them. The same pair again unties. This is the first thing in Mappr that is not a tree edge, so it is built to stay out of the tree&#x27;s way: links live beside <code>state.nodes</code> rather than in it, layout never sees one, and tying two nodes never moves the picture. A pair is stored once and matched either way round. The line is an arc rather than the short way round. A taut line takes the direct path, which on a mindmap runs straight through whatever sits between the two ends; bowing it out costs space and keeps several links readable when they overlap. It is sampled into points and drawn through the same roughness as everything else, so it is in the app&#x27;s own hand.</li><li><b>A <code>∿</code> badge on a tied node</b>, counting the links that land on it. The far end of a link is usually off screen, so the badge is a button: it walks you there, and clicking again cycles the rest. It opens folded branches and steps out of focus to get there, the same way Jump does.</li><li><b>Folded ends stay honest.</b> When the node you tied is folded away, the arc retargets to the visible ancestor and ends in a hollow dot rather than a solid one, and that branch carries the badge for everything tied up inside it. A line running into nothing would be worse than a stand-in that says so.</li></ul></div>
     <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
 </div>
@@ -603,7 +606,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="0.16.0";
+var VERSION="0.17.0";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid",
   width:2, dash:"solid", slop:1, edges:"round",
@@ -778,7 +781,50 @@ function lensReach(origin){
     /* count against the fold nearest the origin, which is the badge you see */
     else hidden[shut]=(hidden[shut]||0)+1;
   });
-  return { set:set, hidden:hidden, beyond:beyond };
+  return { set:set, hidden:hidden, beyond:beyond,
+           order:order.filter(function(id){ return set[id]; }) };
+}
+/* ---------- moving and making things inside a network ----------
+   The tree's rules stop meaning anything once the tree is hidden: an arrow
+   that follows the tree lands on a node you cannot see, and a node made with
+   the tree's keys is tied to nothing, so the view hides it the moment it
+   exists. Inside a network, arrows go by what is on screen, Tab walks the
+   network nearest first, and anything you make is tied to where you made it
+   from. */
+function netVisible(){
+  var r=lensReach(lensOne);
+  return r.order.filter(function(id){ return pos[id]; });
+}
+function netArrow(pressed){
+  var from=pos[selected]; if(!from) return null;
+  var ax=horiz(pressed)?"cx":"cy", bx=horiz(pressed)?"cy":"cx";
+  var sign=(pressed==="R"||pressed==="D")?1:-1, best=null, bestS=Infinity;
+  netVisible().forEach(function(id){
+    if(id===selected) return;
+    var d=(pos[id][ax]-from[ax])*sign, off=Math.abs(pos[id][bx]-from[bx]);
+    if(d<=8 || off>d*2.5) return;          /* roughly that way, not sideways */
+    var sc=d+off*2;
+    if(sc<bestS){ bestS=sc; best=id; }
+  });
+  return best;
+}
+function netCycle(back){
+  var row=netVisible();
+  if(row.length<2) return null;
+  var i=row.indexOf(selected);
+  if(i<0) return row[0];
+  return row[(i+(back?-1:1)+row.length)%row.length];
+}
+function netTie(from,made){
+  if(!lensOne||!made||!N(from)) return;
+  state.links=state.links||[];
+  state.links.push({a:from,b:made.id});
+}
+/* How many of a node's links end somewhere this view is not showing. */
+function netHiddenLinks(id,set){
+  var n=0;
+  linksAt(id).forEach(function(far){ var e=visibleEnd(far); if(e && !set[e.id]) n++; });
+  return n;
 }
 /* Everything a link currently lands on, at whatever node stands for it. */
 function lensParts(){
@@ -1040,6 +1086,7 @@ function focusUp(node){
 }
 function arrowGo(pressed){
   var n=N(selected); if(!n) return false;
+  if(lensOne){ var nt=netArrow(pressed); if(nt){ select(nt); return true; } return false; }
   if(focusId && isVR(n) && !isRoot(n)){
     var d=dirOf(n.id);
     if(pressed===OPP[d]){ if(focusUp(n)) return true; }
@@ -1339,6 +1386,7 @@ function markedRoots(){
 
 function render(keepView,lead){
   state.frames = state.frames || [];
+  if(lensOne && !N(lensOne)){ lensOne=null; lensFold={}; lens=true; }
   state.links = (state.links||[]).filter(function(l){ return N(l.a)&&N(l.b); });
   var showing={};
   (function walk(id){ showing[id]=1; kids(N(id)).forEach(walk); })(VR());
@@ -1444,8 +1492,9 @@ function drawBadges(){
     var tn=linkTally(id);
     if(tn){
       var tk="tie"+id; live[tk]=1;
+      var th=lr ? netHiddenLinks(id,lr.set) : 0;
       /* opposite corner from the fold badge, so the two never collide */
-      badgeAt(id,tk,"badge link","\u223f"+tn)
+      badgeAt(id,tk,"badge link","\u223f"+(tn-th)+(th?" \u00b7 "+th+" hidden":""))
         .style.transform="translate("+(p.cx-b.w/2-8)+"px,"+(p.cy+b.h/2-4)+"px)";
     }
   });
@@ -1874,6 +1923,21 @@ function fitHere(){
 var elCrumbs=document.getElementById("crumbs");
 function esc(t){ return String(t).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
 function drawCrumbs(){
+  if(lensActive()){
+    elCrumbs.className="bar on lensbar";
+    var hh;
+    if(lensOne){
+      var rr=lensReach(lensOne), nf=Object.keys(lensFold).length;
+      hh='<span class="lk">Network</span><button class="c here" data-go="'+lensOne+'" data-net="1">'+
+        esc(trunc(N(lensOne).text||"\u2026"))+'</button><span class="meta">'+rr.order.length+' nodes'+
+        (nf?' \u00b7 '+nf+' folded':'')+'</span><button class="out" data-out="1">Esc back to dimmed</button>';
+    } else {
+      hh='<span class="lk">Links dimmed</span><span class="meta">\u2318/ on a tied node for its network</span>'+
+        '<button class="out" data-out="1">Esc to exit</button>';
+    }
+    if(elCrumbs.innerHTML!==hh) elCrumbs.innerHTML=hh;
+    return;
+  }
   if(!focusId){ elCrumbs.className="bar"; elCrumbs.innerHTML=""; return; }
   elCrumbs.className="bar on";
   var trail=pathTo(focusId),h=[];
@@ -1887,7 +1951,11 @@ function drawCrumbs(){
 elCrumbs.addEventListener("mousedown",function(e){ e.preventDefault(); });
 elCrumbs.addEventListener("click",function(e){
   var b=e.target.closest("button"); if(!b) return;
-  if(b.dataset.out){ exitFocus(); return; }
+  if(b.dataset.out){
+    if(lensOne) lensSet(true,null); else if(lens) lensOff(); else exitFocus();
+    return;
+  }
+  if(b.dataset.net){ selected=b.dataset.go; centerOn(selected); render(true); return; }
   var id=b.dataset.go;
   focusId=(id===state.rootId)?null:id;
   selected=id; editing=null; hardRender(); fit(); saveSoon();
@@ -1986,6 +2054,7 @@ function doBranch(pressed){
   snap();
   var made=branch(node,pressed);
   if(!made){ undoPop(); flash(selected); return; }
+  netTie(node.id,made);
   clearMarks(); selected=made.id; render(false,pressed);
   if(CFG.autoEdit) beginEdit(made.id,true);
   saveSoon();
@@ -1995,6 +2064,7 @@ function doSibling(){
   var made;
   if(isVR(node)) made=addNode(node.id,isRoot(node)?"R":dirOf(node.id),null);
   else { var p=N(node.parent); made=addNode(p.id,dirOf(node.id),p.children.indexOf(node.id)+1); }
+  netTie(node.id,made);
   clearMarks(); selected=made.id; render(false,made.dir);
   beginEdit(made.id,true); saveSoon();
 }
@@ -2016,6 +2086,7 @@ function doNextBranch(){
     var q=(i2<0)?p.id:row[(i2+1)%row.length];
     made=addNode(q,dirOf(q),null);
   }
+  netTie(n.id,made);
   clearMarks(); selected=made.id; render(false,made.dir);
   beginEdit(made.id,true); saveSoon();
 }
@@ -3000,7 +3071,7 @@ var tabDown=false, tabUsed=false;
 addEventListener("keyup",function(e){
   if(e.key==="Tab"){
     if(tabDown && !tabUsed){
-      var nx=cycleLevel(N(selected),e.shiftKey);
+      var nx=lensOne ? netCycle(e.shiftKey) : cycleLevel(N(selected),e.shiftKey);
       nx?select(nx):render();
     }
     tabDown=false; tabUsed=false;
@@ -3035,6 +3106,8 @@ document.addEventListener("keydown",function(e){
   }
   if(tabDown && KEYDIR[e.key]){
     e.preventDefault(); tabUsed=true;
+    /* restructuring the tree while it is hidden would be done blind */
+    if(lensOne){ flash(selected); flashSave("tree edits are off in a network"); return; }
     insertBetween(KEYDIR[e.key]);
     return;
   }
@@ -3042,12 +3115,13 @@ document.addEventListener("keydown",function(e){
   if(e.key==="?"&&!editing){ toggleHelp(true); return; }
   if(e.key==="Escape"){
     if(document.getElementById("notes").classList.contains("open")){ toggleNotes(false); return; }
+    /* finishing a node comes before leaving the lens it was typed in */
+    if(editing){ var wi=editing; e.preventDefault(); commitEdit(); pruneIfBlank(wi); render(); return; }
     if(lensOne){ e.preventDefault(); lensSet(true,null); return; }
     if(lens){ e.preventDefault(); lensOff(); return; }
     if(elJump.classList.contains("on")){ closeJump(); return; }
     if(elMaps.classList.contains("on")){ toggleMaps(false); return; }
     if(document.getElementById("help").classList.contains("open")){ toggleHelp(false); return; }
-    if(editing){ var wi=editing; e.preventDefault(); commitEdit(); pruneIfBlank(wi); render(); return; }
     if(selFrame||Object.keys(marked).length){ e.preventDefault(); clearMarks(); render(true); return; }
     if(focusId){ e.preventDefault(); exitFocus(); return; }
     if(elStyle.classList.contains("on")){ toggleStyle(false); return; }
@@ -3122,7 +3196,11 @@ document.addEventListener("keydown",function(e){
   if(editing) return;
 
   /* Option+arrow moves the node itself */
-  if(e.altKey&&KEYDIR[e.key]){ e.preventDefault(); moveNode(KEYDIR[e.key]); return; }
+  if(e.altKey&&KEYDIR[e.key]){
+    e.preventDefault();
+    if(lensOne){ flash(selected); flashSave("tree edits are off in a network"); return; }
+    moveNode(KEYDIR[e.key]); return;
+  }
 
   if(e.key===" "){ e.preventDefault(); beginEdit(selected,true); return; }
   if(KEYDIR[e.key]){
@@ -3141,7 +3219,7 @@ elNodes.addEventListener("input",function(){
   if(!editing) return;
   N(editing).text=els[editing].innerText.replace(/ /g," ");
   box[editing]={w:els[editing].offsetWidth,h:els[editing].offsetHeight};
-  layout(); reposition(); paint(); drawBadges(); drawFrameTitles();
+  layout(); lensLayout(); reposition(); paint(); drawBadges(); drawFrameTitles();
   if(CFG.follow) cameraTo(editing);
   saveSoon();
 });
