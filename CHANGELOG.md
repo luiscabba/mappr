@@ -3,6 +3,33 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.22.0] - 2026-09-16
+
+### Added
+- **`Tab` cycles focused branches.** On a focused branch's own node, `Tab`
+  and `⇧Tab` move the focus round its sibling branches, like the arrows do,
+  and wrap. Deeper inside the branch, `Tab` still cycles the level. The bar
+  says which branch you are on: `branch 2 of 4`.
+- **Step through networks.** With the links dimmed (`⌘2`), `Tab` and the
+  arrows move the selection from one network to the next. In a focused
+  network, they switch to the next network when its centre is selected, and
+  move within the network otherwise. `Tab` wraps round; arrows stop at the
+  ends. The bar counts them: `network 2 of 5`.
+- **The whole story, `⇧O`.** While presenting, `⇧O` shows every node the
+  story will tell, lit, not just what you have covered. `⇧O` again (or any
+  step) goes back to where you were.
+- **The story has an ending.** After the last node, one more step lights the
+  whole story and stands back to show it; after that, it stops. `←` steps
+  back out of it.
+- **`⌘K` while presenting** jumps to any node in the story and tells
+  everything before it on the way. `←` undoes the jump.
+- **Copy as outline** in the arrange bar copies the story, in story order and
+  skipping what the story skips, as nested bullets for speaker notes.
+
+### Changed
+- `⇧→` while presenting only reveals children the story tells, never the
+  ones you left out.
+
 ## [0.21.0] - 2026-09-16
 
 ### Changed

@@ -1242,6 +1242,76 @@ group("presentation");
   await M(() => __mf.setLens("off"));
 }
 
+group("presentation: the end, the whole story, jumping");
+{
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(200); };
+  const P = () => M(() => __mf.pres);
+  await M(() => __mf.paste("Talk\n- One\n  - x\n  - y\n  - z\n- Two\n- Three"));
+  await page.waitForTimeout(280);
+  const root = await M(() => __mf.state.rootId);
+  const [One, x, y, z, Two, Three] = await Promise.all(["One","x","y","z","Two","Three"].map(idOf));
+  // story: root -> One -> Three ; inside One: z then x (y skipped)
+  await M(([r, a]) => __mf.storyLink(r, a), [root, One]);
+  await M(([a, b]) => __mf.storyLink(a, b), [One, Three]);
+  await M(([a, b]) => __mf.storyLink(a, b), [One, z]);
+  await M(([a, b]) => __mf.storyLink(a, b), [z, x]);
+  ok("the story is as picked", (await M(() => __mf.walk.map((i) => __mf.state.nodes[i].text).join(","))) === "Talk,One,z,x,Three");
+
+  await press("Meta+3");
+  await press("ArrowRight");
+  await press("Shift+ArrowRight");
+  ok("Shift reveals only the picked children", await M(([a, b, c]) => !!__mf.pos()[a] && !!__mf.pos()[b] && !__mf.pos()[c], [z, x, y]));
+  await press("Shift+ArrowRight");
+  ok("and on to picked siblings, never skipped ones", await M(([a, b]) => !!__mf.pos()[a] && !__mf.pos()[b], [Three, Two]));
+
+  await press("Home");
+  await press("Shift+KeyO");
+  ok("Shift+O shows the whole story", (await M(() => __mf.shown)) === 5, await M(() => __mf.shown));
+  ok("with nothing dimmed", await M(() => document.querySelectorAll(".node.past").length === 0));
+  ok("and nothing outside it", await M((t) => !__mf.pos()[t], Two));
+  await press("Shift+KeyO");
+  ok("Shift+O again goes back to the progress", (await M(() => __mf.shown)) === 1);
+
+  for (let i = 0; i < 4; i++) await press("ArrowRight");
+  ok("the last node is told", (await P()).here === Three && (await P()).shown === 5);
+  await press("ArrowRight");
+  await page.waitForTimeout(600);
+  ok("one more step lights the whole story", await M(() => document.querySelectorAll(".node.past").length === 0));
+  ok("and stands back", (await M(() => __mf.cam().z)) <= 1.0001);
+  await press("ArrowRight");
+  ok("then it stops", (await P()).shown === 5);
+  await press("ArrowLeft");
+  ok("back leaves the finale", await M(() => document.querySelectorAll(".node.past").length > 0));
+
+  // Cmd+K mid-talk
+  await press("Home");
+  await press("Meta+k");
+  ok("Cmd+K opens the jump box while presenting", await M(() => document.getElementById("jump").classList.contains("on")));
+  await page.keyboard.type("x");
+  await page.waitForTimeout(150);
+  await press("Enter");
+  ok("jumping tells everything up to that node", (await P()).here === x && (await P()).shown === 4, JSON.stringify(await P()));
+  await press("Meta+k");
+  await press("Escape");
+  ok("Esc closes the jump box without ending the talk", (await P()) !== null);
+  await press("Meta+k");
+  await page.keyboard.type("Two");
+  await page.waitForTimeout(150);
+  await press("Enter");
+  ok("a node outside the story is refused", (await P()).here === x);
+
+  // copy the story as an outline
+  await press("KeyR");
+  await M(() => document.querySelector('#crumbs button[data-copy]').click());
+  await page.waitForTimeout(250);
+  ok("the arrange bar copies the story as an outline", /story copied/.test(await M(() => document.getElementById("saveState").textContent)));
+  await press("Escape");
+}
+
 group("story order");
 {
   await M(() => document.getElementById("btnMaps").click());
@@ -1349,6 +1419,62 @@ group("story order");
   ok("an export shows no story arrows", !svg.includes('class="story"'));
 }
 
+group("cycling branches and networks");
+{
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const tab = async (shift) => { if (shift) await page.keyboard.down("Shift"); await page.keyboard.down("Tab"); await page.keyboard.up("Tab"); if (shift) await page.keyboard.up("Shift"); await page.waitForTimeout(220); };
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(220); };
+  await M(() => __mf.paste("Hub\n- A\n  - a1\n- B\n  - b1\n- C\n  - c1\n  - c2"));
+  await page.waitForTimeout(280);
+  const [A, B, C, a1, b1, c1, c2] = await Promise.all(["A","B","C","a1","b1","c1","c2"].map(idOf));
+
+  // focus: Tab cycles sibling branches and wraps
+  await M((x) => __mf.select(x), A);
+  await press("Meta+/");
+  await tab();
+  ok("Tab moves the focus to the next branch", (await M(() => __mf.focus)) === B, await M(() => __mf.focus));
+  ok("the bar counts branches", await M(() => /branch 2 of 3/.test(document.getElementById("crumbs").textContent)));
+  await tab(); await tab();
+  ok("and wraps round", (await M(() => __mf.focus)) === A);
+  await tab(true);
+  ok("Shift+Tab goes back", (await M(() => __mf.focus)) === C);
+  await M((x) => __mf.select(x), c1);
+  await tab();
+  ok("inside the branch, Tab still cycles the level", (await M(() => __mf.selected)) === c2 && (await M(() => __mf.focus)) === C);
+  await M(() => { while (__mf.focus) __mf.focusOut(); });
+
+  // two separate networks: a1-b1 and c1-c2
+  await M(([x, y]) => __mf.tie(x, y), [a1, b1]);
+  await M(([x, y]) => __mf.tie(x, y), [c1, c2]);
+  await M((x) => __mf.select(x), a1);
+  await press("Meta+2");
+  ok("dim counts the networks", await M(() => /network 1 of 2/.test(document.getElementById("crumbs").textContent)), await M(() => document.getElementById("crumbs").textContent));
+  await tab();
+  ok("Tab in dim jumps to the next network", (await M(() => __mf.selected)) === c1, await M(() => __mf.selected));
+  await tab();
+  ok("and wraps", (await M(() => __mf.selected)) === a1);
+  await press("ArrowRight");
+  ok("arrows step networks in dim too", (await M(() => __mf.selected)) === c1);
+  await press("ArrowRight");
+  ok("but stop at the end", (await M(() => __mf.selected)) === c1);
+  await press("ArrowLeft");
+  ok("and go back", (await M(() => __mf.selected)) === a1);
+
+  // focused network: on its centre, arrows and Tab switch network
+  await press("Meta+/");
+  ok("focus opens a1's network", (await M(() => __mf.lens)) === "one");
+  ok("the bar counts it", await M(() => /Network 1 of 2/.test(document.getElementById("crumbs").textContent)));
+  await press("ArrowDown");
+  ok("an arrow on the centre opens the next network", (await M(() => __mf.selected)) === c1 && (await M(() => __mf.lens)) === "one");
+  ok("showing only that network", await M(([x, y]) => !!__mf.pos()[x] && !__mf.pos()[y], [c2, b1]));
+  await tab();
+  ok("Tab on the centre goes round to the first again", (await M(() => __mf.selected)) === a1);
+  await press("Meta+1");
+}
+
 group("working inside a network");
 {
   await M(() => document.getElementById("btnMaps").click());
@@ -1367,6 +1493,7 @@ group("working inside a network");
   await page.waitForTimeout(350);
 
   // arrows never leave what is on screen
+  await M((x) => __mf.select(x), B);
   let allSeen = true, moved = 0;
   for (const k of ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp", "ArrowRight", "ArrowUp", "ArrowLeft", "ArrowDown"]) {
     const was = await M(() => __mf.selected);
@@ -1378,11 +1505,11 @@ group("working inside a network");
   ok("and do get somewhere", moved > 0, moved);
 
   // Tab walks the network, nearest first, and wraps
-  await M((x) => __mf.select(x), A);
+  await M((x) => __mf.select(x), B);
   await page.keyboard.down("Tab"); await page.keyboard.up("Tab"); await page.waitForTimeout(200);
   const t1 = await M(() => __mf.selected);
-  ok("Tab goes to a direct partner first", t1 === B || t1 === D, t1);
-  const seen = new Set([A, t1]);
+  ok("Tab goes on through the network, nearest first", t1 === D, t1);
+  const seen = new Set([B, t1]);
   for (let i = 0; i < 3; i++) { await page.keyboard.down("Tab"); await page.keyboard.up("Tab"); await page.waitForTimeout(150); seen.add(await M(() => __mf.selected)); }
   ok("and visits the whole network", [A, B, C, D].every((x) => seen.has(x)), [...seen].length);
   ok("and nothing outside it", seen.size === 4);
