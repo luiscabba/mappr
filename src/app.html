@@ -137,6 +137,9 @@
   .badge.skip{pointer-events:none;font-family:var(--font-ui);color:var(--muted);background:var(--panel);border-style:dashed}
   body.presenting #topbar, body.presenting #hint, body.presenting #zoombar,
   body.presenting #framebar, body.presenting #startHint{display:none}
+  body.presenting:not(.arranging) #crumbs{transition:opacity .5s}
+  body.presenting.idle:not(.arranging) #crumbs{opacity:0}
+  body.presenting.idle:not(.arranging), body.presenting.idle:not(.arranging) *{cursor:none !important}
   body.presenting #frames{pointer-events:none}
   body.presenting.arranging #nodes{pointer-events:auto}
   .badge.story{pointer-events:none;color:#fff;background:var(--sel);border-color:var(--sel);font-family:var(--font-ui);font-weight:700}
@@ -347,8 +350,19 @@
   body.presenting:not(.arranging) #modebar{display:none}
   @media (max-width:1180px){ #modebar{top:66px;right:14px} }
   @media (max-width:560px){ #modebar .ml{display:none} #modebar kbd{font-size:12px;opacity:1} }
-  #crumbs .c.story{font-size:12px}
-  #crumbs .srename{font:12px var(--font-ui);color:var(--ink);background:var(--panel);border:1.5px solid var(--sel);border-radius:6px;padding:3px 6px;width:140px;outline:none}
+  #crumbs .c.story{font-size:12.5px;border:1px solid var(--panel-line);border-radius:7px;padding:3px 9px;margin:0 4px}
+  #crumbs .caret{font-size:10px;color:var(--muted)}
+  #storyMenu{position:fixed;z-index:40;display:flex;flex-direction:column;padding:5px;min-width:220px;max-width:320px}
+  #storyMenu .mi{display:flex;align-items:center;gap:8px;border:0;background:none;text-align:left;font:13px var(--font-ui);color:var(--ink);padding:6px 9px;border-radius:7px;cursor:pointer}
+  #storyMenu .mi:hover{background:var(--panel-hover)}
+  #storyMenu .mi.on{font-weight:600}
+  #storyMenu .tick{width:14px;color:var(--sel);text-align:center}
+  #storyMenu .mk{margin-left:auto;font-size:11px;color:var(--muted)}
+  #storyMenu .danger{color:var(--danger)}
+  #storyMenu .armed{background:var(--panel-hover);font-weight:600}
+  #storyMenu .sep{height:1px;background:var(--panel-line);margin:4px 2px}
+  #storyMenu .srename{margin:3px 4px}
+  .srename{font:12px var(--font-ui);color:var(--ink);background:var(--panel);border:1.5px solid var(--sel);border-radius:6px;padding:3px 6px;width:140px;outline:none}
   #crumbs .c.sdel{font-size:12px;padding:2px 6px;color:var(--muted)}
   #crumbs .c.sdel.armed{color:var(--danger)}
   #crumbs .c{
@@ -367,6 +381,13 @@
     max-width:min(820px,calc(100vw - 210px));
   }
   #hint b{color:var(--ink);font-weight:600}
+  #hint{flex-wrap:nowrap;overflow:hidden;gap:4px 14px}
+  #hint > span{white-space:nowrap}
+  #hint .hm{font-weight:700;color:var(--sel);text-transform:uppercase;font-size:10px;letter-spacing:.05em}
+  #hint .hx{border:0;background:none;color:var(--muted);cursor:pointer;font:13px var(--font-ui);padding:0 2px;margin-left:2px}
+  #hint .hx:hover{color:var(--ink)}
+  #hint.min{padding:6px 10px;gap:6px}
+  body.presenting.arranging #hint{display:flex}
   kbd{
     font-family:var(--font-ui);font-size:10.5px;
     background:var(--panel-hover);border:1px solid var(--panel-line);
@@ -504,26 +525,7 @@
 </div>
 <div id="presProgress"></div>
 
-<div id="hint" class="bar">
-  <span><b>Branch</b> <kbd>⌘</kbd><kbd>←↑→↓</kbd></span>
-  <span><b>Same level</b> <kbd>Enter</kbd></span>
-  <span><b>Next branch</b> <kbd>⇧</kbd><kbd>⏎</kbd></span>
-  <span><b>Deeper</b> <kbd>⌘</kbd><kbd>⏎</kbd></span>
-  <span><b>Insert between</b> hold <kbd>Tab</kbd>+<kbd>←↑→↓</kbd></span>
-  <span><b>Retype</b> <kbd>Space</kbd></span>
-  <span><b>Cycle level</b> <kbd>Tab</kbd></span>
-  <span><b>Frame</b> <kbd>⌘</kbd><kbd>G</kbd></span>
-  <span><b>Jump</b> <kbd>⌘</kbd><kbd>K</kbd></span>
-  <span><b>Move node</b> <kbd>⌥</kbd><kbd>←↑→↓</kbd></span>
-  <span><b>Fold</b> <kbd>⌘</kbd><kbd>E</kbd></span>
-  <span><b>Select a level</b> <kbd>⇧</kbd>+click</span>
-  <span><b>Tie two nodes</b> <kbd>⌘</kbd>+click</span>
-  <span><b>Normal</b> <kbd>⌘</kbd><kbd>1</kbd></span>
-  <span><b>Connections</b> <kbd>⌘</kbd><kbd>2</kbd></span>
-  <span><b>Present</b> <kbd>⌘</kbd><kbd>3</kbd></span>
-  <span><b>Whole map</b> <kbd>⌘</kbd><kbd>0</kbd></span>
-  <span><b>All keys</b> <kbd>?</kbd></span>
-</div>
+<div id="hint" class="bar"></div>
 
 <div id="zoombar" class="bar">
   <button class="tb" id="btnZoomOut">−</button>
@@ -574,7 +576,7 @@
       <tr><td>A hollow end</td><td>The node you actually tied is folded away inside the one the arc reaches. Better than a line running into nothing.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>1</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>1</kbd></td><td><b>Normal view.</b> The number keys are views, and 1 is the plain map. From any other view it puts you back where you were, focus and all. The <kbd>⌥</kbd> versions are there because a browser tab may keep <kbd>⌘</kbd> plus a number for itself.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>3</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>3</kbd></td><td><b>Present.</b> Walks the map (or the focused branch) one node at a time in reading order, showing nothing you have not reached yet. Each node lands where it will stay and the camera follows. <kbd>→</kbd> or <kbd>Space</kbd> next, <kbd>⇧</kbd><kbd>→</kbd> the whole level at once, <kbd>←</kbd> back, <kbd>O</kbd> a look at everything so far, <kbd>Home</kbd> from the top. <kbd>⇧</kbd><kbd>O</kbd> shows the whole story at once. After the last node, one more step lights the whole story and stands back. <kbd>⌘</kbd><kbd>K</kbd> jumps to any node in the story, telling everything before it. A click moves on too, and a right-click goes back. Leave and come back and it picks up where you were. The bar has a full screen button. <kbd>Esc</kbd>, <kbd>⌘</kbd><kbd>1</kbd> or <kbd>⌘</kbd><kbd>3</kbd> ends it and puts you back where you were. Folded branches stay folded.</td></tr>
-      <tr><td><kbd>R</kbd> while presenting</td><td><b>Arrange the story.</b> The whole walk comes up, numbered. <kbd>⌘</kbd>+click a sibling to say <em>this, then that</em>, or from a parent to one of its children to say which child that level opens with; the same pair again undoes. From the keyboard, <kbd>Space</kbd> picks a node up and <kbd>Space</kbd> on another puts the picked one before it. <kbd>⌫</kbd> unpicks a node and resets every arrangement underneath it; unlinking a node does the same. Order only ever changes things inside one level. A level you never touch is told in map order; once you pick any of its children, the ones you did not pick are skipped, and arrange mode marks them so nothing goes missing by accident. <kbd>R</kbd> again presents the new order from the top. It is saved with the map, and a map can hold several stories: the chips in the bar switch between them (or <kbd>[</kbd> and <kbd>]</kbd>), <kbd>+</kbd> adds one, double-click the current one to rename it, and <kbd>×</kbd> deletes it after a second click.</td></tr>
+      <tr><td><kbd>R</kbd> while presenting</td><td><b>Arrange the story.</b> The whole walk comes up, numbered. <kbd>⌘</kbd>+click a sibling to say <em>this, then that</em>, or from a parent to one of its children to say which child that level opens with; the same pair again undoes. From the keyboard, <kbd>Space</kbd> picks a node up and <kbd>Space</kbd> on another puts the picked one before it. <kbd>⌫</kbd> unpicks a node and resets every arrangement underneath it; unlinking a node does the same. Order only ever changes things inside one level. A level you never touch is told in map order; once you pick any of its children, the ones you did not pick are skipped, and arrange mode marks them so nothing goes missing by accident. <kbd>R</kbd> again presents the new order from the top. It is saved with the map, and a map can hold several stories: the story menu in the bar switches between them (or <kbd>[</kbd> and <kbd>]</kbd>, or a number while it is open), adds, renames and deletes them. Delete asks twice, and <kbd>⌘</kbd><kbd>Z</kbd> brings one back.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>2</kbd> / <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Dim to the links.</b> The whole map stays put and everything no link touches drops to a ghost, so you keep your bearings while the arcs come forward. Pressed while focused on a tied branch, it goes straight to that node's network. Press it again, or <kbd>Esc</kbd>, to turn it off: you land back where you were, focus and all.</td></tr>
       <tr><td><kbd>⇧</kbd> + double-click in connections</td><td>Clear every link on that node. <kbd>⌘</kbd><kbd>Z</kbd> brings them back.</td></tr>
       <tr><td><kbd>Tab</kbd> / arrows in connections</td><td>Step from one network to the next. While dimmed, they move the selection network to network; in a focused network, they do it when the network's centre is selected, and move within the network otherwise. <kbd>Tab</kbd> wraps round, arrows stop at the ends.</td></tr>
@@ -758,17 +760,27 @@ function visibleEnd(id){
 /* The far ends of every link that currently lands on this node, which for a
    folded branch means everything tied up inside it. Returns the REAL far node,
    not its stand-in, so walking to it can open the branch on the way. */
-function linksAt(id){
-  var out=[];
-  (state.links||[]).forEach(function(l){
+/* Resolving a link's ends walks the tree, so doing it per node per link made
+   a render with a few hundred links cost hundreds of milliseconds. The ends are
+   resolved once per render (and again whenever focus or the link list
+   changes) and every lookup reads the index. */
+var linkIdx=null, renderGen=0;
+function linkEnds(){
+  var L=state.links||[];
+  if(linkIdx && linkIdx.gen===renderGen && linkIdx.links===L && linkIdx.len===L.length && linkIdx.focus===focusId) return linkIdx;
+  var by={}, ends=[];
+  L.forEach(function(l){
     var ea=visibleEnd(l.a), eb=visibleEnd(l.b);
+    ends.push([ea,eb]);
     if(!ea||!eb||ea.id===eb.id) return;
-    if(ea.id===id) out.push(l.b);
-    else if(eb.id===id) out.push(l.a);
+    (by[ea.id]=by[ea.id]||[]).push(l.b);
+    (by[eb.id]=by[eb.id]||[]).push(l.a);
   });
-  return out;
+  linkIdx={ gen:renderGen, links:L, len:L.length, focus:focusId, by:by, ends:ends };
+  return linkIdx;
 }
-function linkTally(id){ return linksAt(id).length; }
+function linksAt(id){ return (linkEnds().by[id]||[]).slice(); }
+function linkTally(id){ var x=linkEnds().by[id]; return x?x.length:0; }
 
 /* ---------- the connections lens ----------
    Two kinds of relationship now share one picture, and past a handful of links
@@ -1285,10 +1297,20 @@ function presStart(){
   }
   selected=pres.here;
   document.body.classList.add("presenting");
+  presWake();
   hardRender();
   presFrame(resumed && pres.frame ? pres.frame : [pres.here]);
   flashSave(resumed ? "picked up where you left off \u00b7 Home to start over" : "presenting");
 }
+/* While presenting, the bar and the pointer get out of the way after a few
+   quiet seconds and come back as soon as the mouse moves. */
+var presIdleT=null;
+function presWake(){
+  document.body.classList.remove("idle");
+  clearTimeout(presIdleT);
+  if(pres && !pres.arrange) presIdleT=setTimeout(function(){ if(pres && !pres.arrange) document.body.classList.add("idle"); },2600);
+}
+addEventListener("mousemove",function(){ if(pres) presWake(); },{passive:true});
 function presFull(){
   try{
     if(document.fullscreenElement) document.exitFullscreen();
@@ -1297,12 +1319,14 @@ function presFull(){
 }
 function presEnd(){
   if(!pres) return;
+  storyMenuClose();
   var h=pres.home;
   if(!pres.arrange) presLast={ root:VR(), sig:storyCur().id+"|"+pres.order.join(","), shown:pres.shown, here:pres.here,
                                lit:pres.lit, hist:pres.hist, frame:pres.frame };
   pres=null; stopCam();
   try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
-  document.body.classList.remove("presenting","arranging");
+  document.body.classList.remove("presenting","arranging","idle");
+  clearTimeout(presIdleT);
   if(h.focus && N(h.focus)) focusId=h.focus;
   if(h.sel && N(h.sel)) selected=h.sel;
   hardRender();
@@ -1399,6 +1423,7 @@ function presArrange(on){
   if(!pres) return;
   pres.arrange=on; pres.pick=null;
   document.body.classList.toggle("arranging",on);
+  presWake();
   if(on){ pres.over=false; render(true); presFrame(Object.keys(pos),1); flashSave("arranging the story"); return; }
   var r=VR(), sh={}; sh[r]=1;
   pres.order=presOrder(); pres.shown=sh; pres.here=r; pres.lit=presLitFor(r); pres.hist=[]; pres.finale=false; pres.full=false;
@@ -1426,6 +1451,7 @@ function presTie(a,b){
 }
 function arrangeKey(e){
   var k=e.key, mod=e.metaKey||e.ctrlKey;
+  if(elSMenu){ e.preventDefault(); if(!mod && /^[1-9]$/.test(k) && +k<=storiesReady().length){ storyMenuClose(); storyPick(+k-1); } return; }
   if(!mod && (k==="["||k==="]")){ e.preventDefault(); storySwitch(k==="]"?1:-1); return; }
   if(mod && (k==="z"||k==="Z")){ e.preventDefault(); e.shiftKey?redo():undo(); storySweep(); render(true); return; }
   if(mod) return;
@@ -1446,6 +1472,7 @@ function presKey(e){
   if(mod && (k==="k"||k==="K") && !pres.arrange){ e.preventDefault(); openJump(); return; }
   if(mod && k==="0"){ e.preventDefault(); presFrame(Object.keys(pos),1); if(!pres.arrange && !pres.full && !pres.finale){ pres.over=true; } return; }
   if(!mod && (k==="r"||k==="R")){ e.preventDefault(); pres.full=false; presArrange(!pres.arrange); return; }
+  if(k==="Escape" && elSMenu){ e.preventDefault(); storyMenuClose(); return; }
   if(pres.arrange && k==="Escape" && pres.pick){ e.preventDefault(); pres.pick=null; render(true); return; }
   if(pres.arrange && k!=="Escape" && !(mod&&/^[123]$/.test(k)) && !(e.altKey&&/^Digit[123]$/.test(code))){ arrangeKey(e); return; }
   var dig = (mod&&!e.shiftKey&&/^[123]$/.test(k)) ? k : ((e.altKey&&!mod&&/^Digit[123]$/.test(code)) ? code.slice(5) : null);
@@ -1900,6 +1927,7 @@ function markedRoots(){
 }
 
 function render(keepView,lead){
+  renderGen++;
   state.frames = state.frames || [];
   if(lensOne && !N(lensOne)){ lensOne=null; lensFold={}; lens=true; }
   storySweep();
@@ -2510,7 +2538,46 @@ function fitHere(){
 /* ---------- focus trail ---------- */
 var elCrumbs=document.getElementById("crumbs");
 function esc(t){ return String(t).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+/* The bottom bar: a handful of keys for the mode you are in, not all of them.
+   ? has the rest. It folds to a small pill and remembers that. */
+var HINTS={
+  map:[["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Child","⌘","⏎"],["Retype","Space"],["Fold","⌘","E"],["Focus","⌘","/"],["Jump","⌘","K"]],
+  focus:[["Next branch","Tab"],["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Fold","⌘","E"],["Out","Esc"]],
+  dim:[["Tie","⌘","+click"],["Next network","Tab"],["Open it","⌘","/"],["Clear links","⇧","+double-click"],["Fit","⌘","0"],["Map","⌘","1"]],
+  net:[["Move","←↑→↓"],["Walk","Tab"],["Fold beyond","⌘","E"],["New linked node","⏎"],["Back","Esc"]],
+  arrange:[["Pick next","⌘","+click"],["Pick up / drop","Space"],["Unpick","⌫"],["Story","[","]"],["Present","R"]]
+};
+var hintMin=false, hintSig="";
+try{ hintMin=localStorage.getItem("mappr.hint")==="min"; }catch(e){}
+function drawHint(){
+  var el=document.getElementById("hint"); if(!el) return;
+  var mode = pres ? (pres.arrange?"arrange":null) : (lensOne?"net":(lens?"dim":(focusId?"focus":"map")));
+  var sig=(mode||"")+"|"+hintMin;
+  if(sig===hintSig) return; hintSig=sig;
+  if(!mode){ el.innerHTML=""; return; }
+  var names={map:"Map",focus:"Focus",dim:"Connections",net:"Network",arrange:"Story"};
+  var h;
+  if(hintMin){
+    h='<span class="hm">'+names[mode]+'</span><span><b>Keys</b> <kbd>?</kbd></span><button class="hx" data-hint="1" title="Show key hints">\u25b4</button>';
+  } else {
+    h='<span class="hm">'+names[mode]+'</span>';
+    HINTS[mode].forEach(function(x){
+      h+='<span><b>'+x[0]+'</b> '+x.slice(1).map(function(k){ return k.charAt(0)==="+"?k:'<kbd>'+k+'</kbd>'; }).join("")+'</span>';
+    });
+    h+='<span><b>All</b> <kbd>?</kbd></span><button class="hx" data-hint="1" title="Hide key hints">\u00d7</button>';
+  }
+  el.className="bar"+(hintMin?" min":"");
+  el.innerHTML=IS_MAC?h:keyWords(h);
+}
+document.getElementById("hint").addEventListener("mousedown",function(e){ e.preventDefault(); });
+document.getElementById("hint").addEventListener("click",function(e){
+  if(!e.target.closest("[data-hint]")) return;
+  hintMin=!hintMin;
+  try{ localStorage.setItem("mappr.hint",hintMin?"min":""); }catch(x){}
+  drawHint();
+});
 function drawModebar(){
+  drawHint();
   var mb=document.getElementById("modebar"); if(!mb) return;
   var m=pres?"3":(lensActive()?"2":"1");
   [].forEach.call(mb.querySelectorAll("button"),function(b){
@@ -2536,15 +2603,11 @@ function drawCrumbs(){
   drawModebar();
   if(pres && pres.arrange){
     elCrumbs.className="bar on lensbar";
-    var SL=storiesReady(), chips='';
-    SL.forEach(function(st,i){
-      var on=i===state.storyAt;
-      chips+='<button class="c story'+(on?' here':'')+'" data-story="'+i+'" title="'+(on?'Double-click to rename':'Switch to this story')+'">'+esc(st.name)+'</button>'+
-        (on&&SL.length>1?'<button class="c sdel'+(storyDelArmed===st.id?' armed':'')+'" data-sdel="'+i+'" title="Delete this story">'+(storyDelArmed===st.id?'delete?':'\u00d7')+'</button>':'');
-    });
-    chips+='<button class="c" data-snew="1" title="New story">+</button>';
-    var ha='<span class="lk" style="color:var(--sel)">Arranging</span>'+chips+'<span class="meta">[ ] switch</span>'+
-      '<span class="meta">\u2318+click from a parent picks its first child, then siblings follow \u00b7 unpicked children are skipped \u00b7 Space pick, Space drop \u00b7 \u232b unpick (resets everything under it) \u00b7 R to present</span>'+
+    var cur=storyCur();
+    var ha='<span class="lk" style="color:var(--sel)">Arranging</span>'+
+      '<button class="c story here" data-smenu="1" title="Switch, add, rename or delete stories ([ and ] switch)">'+esc(cur.name)+
+      ' <span class="caret">\u25be</span></button>'+
+      '<span class="meta">'+storiesReady().length+(storiesReady().length===1?' story':' stories')+'</span>'+
       '<button class="out" data-copy="1">Copy as outline</button>'+
       '<button class="out" data-out="1">Esc to end</button>';
     if(elCrumbs.innerHTML!==ha) elCrumbs.innerHTML=ha;
@@ -2554,7 +2617,7 @@ function drawCrumbs(){
     elCrumbs.className="bar on lensbar";
     var total=pres.order.length, seen=pres.order.filter(function(id){ return pres.shown[id]; }).length;
     var hp='<span class="lk" style="color:var(--sel)">Presenting</span><span class="meta">'+esc(storyCur().name)+' \u00b7 '+seen+' / '+total+
-      '</span><span class="meta">\u2192 next \u00b7 \u21e7\u2192 whole level \u00b7 \u2190 back \u00b7 O so far \u00b7 \u21e7O whole story \u00b7 \u2318K jump \u00b7 R arrange</span>'+
+      '</span><span class="meta">\u2192 next \u00b7 \u21e7\u2192 level \u00b7 \u2190 back \u00b7 O / \u21e7O overview \u00b7 \u2318K jump \u00b7 R arrange</span>'+
       '<button class="out" data-full="1">'+(document.fullscreenElement?"Exit full screen":"Full screen")+'</button>'+
       '<button class="out" data-out="1">Esc to end</button>';
     if(elCrumbs.innerHTML!==hp) elCrumbs.innerHTML=hp;
@@ -2591,22 +2654,48 @@ function drawCrumbs(){
   var fh=h.join(""); if(elCrumbs.innerHTML!==fh) elCrumbs.innerHTML=fh;
 }
 elCrumbs.addEventListener("mousedown",function(e){ if(e.target.tagName==="INPUT") return; e.preventDefault(); });
-/* double-click the current story's chip to rename it in place */
-elCrumbs.addEventListener("dblclick",function(e){
-  var b=e.target.closest("button.story"); if(!b || !b.classList.contains("here")) return;
-  var i=+b.dataset.story;
-  var inp=document.createElement("input");
-  inp.className="srename"; inp.value=storiesReady()[i].name; inp.maxLength=40;
-  b.replaceWith(inp); inp.focus(); inp.select();
-  var done=false;
-  function fin(keep){ if(done) return; done=true; if(keep) storyRename(i,inp.value); drawCrumbs(); }
-  inp.addEventListener("keydown",function(k){
-    k.stopPropagation();
-    if(k.key==="Enter"){ k.preventDefault(); fin(true); }
-    else if(k.key==="Escape"){ k.preventDefault(); fin(false); }
+/* The story menu: every story, then new, rename and delete. */
+var elSMenu=null;
+function storyMenuClose(){ if(elSMenu){ elSMenu.remove(); elSMenu=null; storyDelArmed=null; } }
+function storyMenu(anchor){
+  if(elSMenu){ storyMenuClose(); return; }
+  var m=document.createElement("div"); m.id="storyMenu"; m.className="bar";
+  var r=anchor.getBoundingClientRect();
+  m.style.left=r.left+"px"; m.style.top=(r.bottom+6)+"px";
+  function draw(){
+    var L=storiesReady(), h='';
+    L.forEach(function(st,i){
+      h+='<button class="mi'+(i===state.storyAt?' on':'')+'" data-i="'+i+'"><span class="tick">'+(i===state.storyAt?'\u2713':'')+'</span>'+esc(st.name)+
+        '<span class="mk">'+(i<9?(i+1):'')+'</span></button>';
+    });
+    h+='<div class="sep"></div>'+
+      '<button class="mi" data-act="new"><span class="tick">+</span>New story</button>'+
+      '<button class="mi" data-act="ren"><span class="tick">\u270e</span>Rename \u201c'+esc(storyCur().name)+'\u201d</button>'+
+      (L.length>1?'<button class="mi danger'+(storyDelArmed===storyCur().id?' armed':'')+'" data-act="del"><span class="tick">\u00d7</span>'+
+        (storyDelArmed===storyCur().id?'Click again to delete':'Delete \u201c'+esc(storyCur().name)+'\u201d')+'</button>':'');
+    m.innerHTML=h;
+  }
+  draw();
+  m.addEventListener("mousedown",function(e){ if(e.target.tagName!=="INPUT") e.preventDefault(); e.stopPropagation(); });
+  m.addEventListener("click",function(e){
+    var b=e.target.closest("button"); if(!b) return;
+    if(b.dataset.i!=null){ storyMenuClose(); storyPick(+b.dataset.i); return; }
+    var a=b.dataset.act;
+    if(a==="new"){ storyMenuClose(); storyNew(); return; }
+    if(a==="del"){ storyDelete(state.storyAt); if(storyDelArmed){ draw(); } else storyMenuClose(); return; }
+    if(a==="ren"){
+      var inp=document.createElement("input"); inp.className="srename"; inp.value=storyCur().name; inp.maxLength=40;
+      b.replaceWith(inp); inp.focus(); inp.select();
+      var done=false, idx=state.storyAt;
+      var fin=function(keep){ if(done) return; done=true; if(keep) storyRename(idx,inp.value); storyMenuClose(); drawCrumbs(); };
+      inp.addEventListener("keydown",function(k){ k.stopPropagation();
+        if(k.key==="Enter"){ k.preventDefault(); fin(true); } else if(k.key==="Escape"){ k.preventDefault(); fin(false); } });
+      inp.addEventListener("blur",function(){ fin(true); });
+    }
   });
-  inp.addEventListener("blur",function(){ fin(true); });
-});
+  document.body.appendChild(m); elSMenu=m;
+}
+addEventListener("mousedown",function(e){ if(elSMenu && !elSMenu.contains(e.target) && !e.target.closest('[data-smenu]')) storyMenuClose(); },true);
 (function(){
   var mb=document.getElementById("modebar");
   mb.addEventListener("mousedown",function(e){ e.preventDefault(); e.stopPropagation(); });
@@ -2616,9 +2705,7 @@ elCrumbs.addEventListener("click",function(e){
   var b=e.target.closest("button"); if(!b) return;
   if(b.dataset.full){ presFull(); return; }
   if(b.dataset.copy){ storyOutline(); return; }
-  if(b.dataset.snew){ storyNew(); return; }
-  if(b.dataset.sdel){ storyDelete(+b.dataset.sdel); return; }
-  if(b.dataset.story){ storyDelArmed=null; storyPick(+b.dataset.story); return; }
+  if(b.dataset.smenu){ storyMenu(b); return; }
   if(b.dataset.out){
     if(pres){ presEnd(); return; }
     if(lensOne) lensSet(true,null); else if(lens) lensOff(); else exitFocus();

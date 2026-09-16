@@ -3,6 +3,27 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.24.0] - 2026-09-16
+
+### Changed
+- **Faster with links.** Working out where each link lands used to happen
+  once per node for every link, so a big map with a few hundred links spent
+  most of every keystroke on it. It now happens once per render: a
+  1200-node map with 150 links went from about 110 ms a render to about
+  10 ms. `npm run bench` now measures this, in each view.
+- **The story picker is a dropdown.** While arranging, the bar shows the
+  current story; its menu switches stories, adds one, renames the current
+  one in place, and deletes it (asking twice). `[` and `]` still switch, and
+  with the menu open a number picks that story.
+- **The key bar is short and follows you.** It shows a handful of keys for
+  the mode you are in (map, focus, connections, network or arranging a
+  story) instead of twenty at once, with `?` for the rest. `×` folds it to a
+  small pill, and it remembers.
+
+### Added
+- **Presenting gets out of the way.** After a few quiet seconds the bar
+  fades and the pointer hides; moving the mouse brings both back.
+
 ## [0.23.0] - 2026-09-16
 
 ### Added

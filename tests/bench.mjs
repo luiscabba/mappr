@@ -196,6 +196,29 @@ console.log("\nundo stack");
   console.log("  after 200 edits the stack holds " + r.heldMB + " MB over " + r.steps + " steps");
 }
 
+/* ---------- 5. renders with cross-links, in each view ---------- */
+console.log("\nrender with 150 cross-links in a 1200-node map (median of 9 selection renders)");
+{
+  const page = await build(1200);
+  await page.evaluate(() => {
+    const ids = Object.keys(__mf.state.nodes); let s = 7;
+    const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+    for (let i = 0; i < 150; i++) { const a = ids[Math.floor(r() * ids.length)], b = ids[Math.floor(r() * ids.length)]; if (a !== b) __mf.state.links.push({ a, b }); }
+  });
+  results.links = {};
+  const views = [["map", () => __mf.setLens("off")], ["connections", () => __mf.setLens("dim")],
+                 ["one network", () => __mf.setLens("one", __mf.state.links[0].a)], ["presenting", () => { __mf.setLens("off"); __mf.present(); }]];
+  for (const [label, fn] of views) {
+    await page.evaluate(fn); await page.waitForTimeout(250);
+    const ms = await page.evaluate(() => {
+      const ids = Object.keys(__mf.state.nodes), xs = [];
+      for (let i = 0; i < 9; i++) { const t0 = performance.now(); __mf.select(ids[i * 13 + 1]); xs.push(performance.now() - t0); }
+      xs.sort((a, b) => a - b); return Math.round(xs[4] * 10) / 10;
+    });
+    results.links[label] = ms; row("  " + label, ms);
+  }
+}
+
 await browser.close();
 if (jsonAt) { fs.writeFileSync(jsonAt, JSON.stringify(results, null, 2)); console.log("\nwrote " + jsonAt); }
 console.log("");
