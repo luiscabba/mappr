@@ -592,7 +592,7 @@
       <tr><td><kbd>⌫</kbd></td><td>Delete just the node. Its children move up and take its place, and flash so you can see where they went. With a selection up it deletes <em>exactly</em> what is selected, and anything underneath that you did not select moves up the same way.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⌫</kbd></td><td>Delete the whole branch, or every selected branch. <kbd>⌘</kbd><kbd>Z</kbd> brings any delete back.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>Z</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>Z</kbd></td><td>Undo / redo. Retyping a node is a step of its own, so overwriting one by accident comes back with <kbd>⌘</kbd><kbd>Z</kbd>, even while you are still typing.</td></tr>
-      <tr><td><kbd>⌥</kbd><kbd>←↑→↓</kbd></td><td>Move the node itself. Sideways reorders it among its siblings, outward tucks it under the sibling before it, back toward the centre promotes it a level. The whole branch travels with it. With a selection up, every selected branch moves together and stays selected, so you can keep pressing.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>←↑→↓</kbd></td><td>Move the node itself. Sideways reorders it among its siblings, and past the last one carries it on into the next branch along on that side, outward tucks it under the sibling before it, back toward the centre promotes it a level. The whole branch travels with it. With a selection up, every selected branch moves together and stays selected, so you can keep pressing.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>E</kbd></td><td>Fold or unfold a branch. A folded node wears a badge with the number hidden underneath; click the badge to open it. With a selection up it folds every selected node at once, so a whole level goes away in one press.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself. With a selection up, every selected branch is duplicated and the copies come out selected.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag (a small pennant).</td></tr>
@@ -3092,9 +3092,7 @@ function doNextBranch(){
     /* the next parent along, in the order they sit on screen: top to bottom
        for sideways branches, left to right for up and down ones, staying on
        this side of the map */
-    var pd=dirOf(p.id);
-    var row=levelOrder(depthRel(p)).filter(function(x){ return dirOf(x)===pd && pos[x]; });
-    row.sort(function(a,b){ return horiz(pd) ? pos[a].cy-pos[b].cy : pos[a].cx-pos[b].cx; });
+    var row=screenRow(p.id);
     if(row.length<2) row=levelOrder(depthRel(p));
     var i2=row.indexOf(p.id);
     var q=(i2<0)?p.id:row[(i2+1)%row.length];
@@ -3205,6 +3203,36 @@ function doDelete(whole){
 }
 function setDirDeep(id,d){ N(id).dir=d; N(id).children.forEach(function(c){ setDirDeep(c,d); }); }
 
+/* The nodes at one node's level on its side of the map, in the order they sit
+   on screen: top to bottom for sideways branches, left to right for up and
+   down ones. */
+function screenRow(id){
+  var d=dirOf(id);
+  var row=levelOrder(depthRel(N(id))).filter(function(x){ return dirOf(x)===d && pos[x]; });
+  row.sort(function(a,b){ return horiz(d) ? pos[a].cy-pos[b].cy : pos[a].cx-pos[b].cx; });
+  return row;
+}
+/* Past the end of its siblings, Option+arrow carries a node on into the next
+   branch along, the way a plain arrow does: over the edge downward it becomes
+   the first child of the next parent, upward the last child of the one before.
+   It stays on its side of the map and does not wrap, and a top-level branch
+   has nowhere to go. */
+function hopTarget(n,up){
+  var p=N(n.parent);
+  if(!p || isVR(p)) return null;
+  var row=screenRow(p.id), i=row.indexOf(p.id);
+  if(i<0) return null;
+  var q=row[i+(up?-1:1)];
+  return (q && N(q)) ? q : null;
+}
+function hopInto(id,q,up){
+  var n=N(id), p=N(n.parent), host=N(q);
+  p.children.splice(p.children.indexOf(id),1);
+  n.parent=q;
+  if(up) host.children.push(id); else host.children.unshift(id);
+  host.collapsed=false;
+  setDirDeep(id, dirOf(q));
+}
 /* Option+arrow with a selection moves every selected branch at once, each by
    the same rule a single node follows, and the selection stays in hand so the
    next press keeps going. If none of them can move, nothing does. */
@@ -3236,7 +3264,12 @@ function moveMarked(dir){
       setDirDeep(id, dirOf(p.id)); moved++;
     } else {
       var g2=sibGroup(n), i2=g2.indexOf(id), j=i2+(up?-1:1);
-      if(j<0||j>=g2.length||moving[g2[j]]) return;   /* the edge, or a selected neighbour that could not move */
+      if(j<0||j>=g2.length){
+        var q=hopTarget(n,up);
+        if(q && !moving[q]){ hopInto(id,q,up); moved++; }
+        return;
+      }
+      if(moving[g2[j]]) return;   /* a selected neighbour that could not move */
       var a=p.children.indexOf(g2[i2]), b=p.children.indexOf(g2[j]);
       p.children[a]=g2[j]; p.children[b]=g2[i2]; moved++;
     }
@@ -3267,8 +3300,15 @@ function moveNode(dir){
     setDirDeep(n.id, dirOf(p.id));
   } else {
     var g2=sibGroup(n), i2=g2.indexOf(n.id);
-    var j=i2+((dir==="U"||dir==="L")?-1:1);
-    if(j<0||j>=g2.length){ flash(selected); return; }
+    var up1=(dir==="U"||dir==="L"), j=i2+(up1?-1:1);
+    if(j<0||j>=g2.length){
+      var q1=hopTarget(n,up1);
+      if(!q1){ flash(selected); return; }
+      snap(); hopInto(n.id,q1,up1);
+      clearMarks(); render(); saveSoon();
+      flashSave("moved into \u201c"+trunc(N(q1).text||"\u2026")+"\u201d");
+      return;
+    }
     snap();
     var a=p.children.indexOf(g2[i2]), b=p.children.indexOf(g2[j]);
     p.children[a]=g2[j]; p.children[b]=g2[i2];

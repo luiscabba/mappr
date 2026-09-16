@@ -1334,7 +1334,10 @@ group("story order");
   ok("the bar says so", await M(() => /Arranging/.test(document.getElementById("crumbs").textContent)));
 
   const clickNode = async (id, mods) => {
-    const r = await M((x) => { const b = document.querySelector('.node[data-id="' + x + '"]').getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; }, id);
+    // the camera may still be gliding: wait until the node holds still
+    const at = () => M((x) => { const b = document.querySelector('.node[data-id="' + x + '"]').getBoundingClientRect(); return { x: b.left + b.width / 2, y: b.top + b.height / 2 }; }, id);
+    let r = await at();
+    for (let t = 0; t < 20; t++) { await page.waitForTimeout(60); const q = await at(); if (Math.abs(q.x - r.x) < 0.5 && Math.abs(q.y - r.y) < 0.5) break; r = q; }
     for (const m of mods || []) await page.keyboard.down(m);
     await page.mouse.click(r.x, r.y);
     for (const m of (mods || []).reverse()) await page.keyboard.up(m);
@@ -1967,7 +1970,12 @@ group("selecting, copying, moving and deleting several nodes");
   ok("Option+arrow moves every selected node together", order === "Gamma,Delta,B1", order);
   ok("and keeps them selected", (await marks()) === "Delta,Gamma", await marks());
   await press(sideUp);
-  ok("at the edge nothing moves and nothing is recorded", (await M(() => { const b = Object.values(__mf.state.nodes).find((n) => n.text === "B1"); return __mf.state.nodes[b.parent].children.map((c) => __mf.state.nodes[c].text).join(); })) === "Gamma,Delta,B1");
+  // at the edge they carry on into the branch before, if the side has one
+  const hopped = await M(() => { const g = Object.values(__mf.state.nodes).find((n) => n.text === "Gamma"); return __mf.state.nodes[g.parent].text; });
+  ok("at the edge the selection carries on into the branch before, or stays", hopped === "Beta" || hopped === "Alpha", hopped);
+  if (hopped !== "Beta") await press("Meta+z");
+  ok("and undo brings it back", (await M(() => { const b = Object.values(__mf.state.nodes).find((n) => n.text === "B1"); return __mf.state.nodes[b.parent].children.map((c) => __mf.state.nodes[c].text).join(); })) === "Gamma,Delta,B1");
+  await M(async (ids) => __mf.mark(ids), [await id("Gamma"), await id("Delta")]);
   const bdir = await M(() => __mf.dir(Object.values(__mf.state.nodes).find((n) => n.text === "B1").id));
   const BOUT = { L: "Alt+ArrowLeft", R: "Alt+ArrowRight", U: "Alt+ArrowUp", D: "Alt+ArrowDown" }[bdir];
   await pick("B1"); await M(async (ids) => __mf.mark(ids), [await id("B1")]);
@@ -2157,6 +2165,58 @@ group("corners, Shift+Enter order, and selection extras");
   await M(() => { const dt = new DataTransfer(); dt.setData("text/plain", "Q1\nQ2"); document.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true })); });
   await page.waitForTimeout(200);
   ok("pasting while typing in a new blank node does the same", await M(() => { const c = Object.values(__mf.state.nodes).find((n) => n.text === "C"); return c.children.map((k) => __mf.state.nodes[k].text).join().startsWith("c1,Q1,Q2,"); }), await M(() => { const c = Object.values(__mf.state.nodes).find((n) => n.text === "C"); return c.children.map((k) => __mf.state.nodes[k].text); }));
+  await M(() => __mf.spread("sides"));
+}
+
+group("Option+arrow carries on past the edge");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(200); };
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  await M(() => __mf.spread("right"));
+  await M((t) => __mf.paste(t), "Hub\n- A\n  - a1\n  - a2\n- B\n  - b1\n  - b2\n- C");
+  await page.waitForTimeout(250);
+  const id = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const kids = async (t) => (await node(t)).kids.join();
+  // single node, downward over the edge
+  await pick("a2");
+  await press("Alt+ArrowDown");
+  ok("past the last sibling it moves into the next branch, first", (await kids("B")) === "a2,b1,b2" && (await kids("A")) === "a1", [await kids("A"), await kids("B")]);
+  ok("and stays selected", (await M(() => __mf.selected)) === (await id("a2")));
+  await press("Alt+ArrowUp");
+  ok("and back up over the edge, last", (await kids("A")) === "a1,a2" && (await kids("B")) === "b1,b2", [await kids("A"), await kids("B")]);
+  await pick("a1");
+  await press("Alt+ArrowUp");
+  ok("nothing above the first branch: it stays", (await kids("A")) === "a1,a2");
+  // into a leaf and into a folded branch
+  await pick("b2");
+  await press("Alt+ArrowDown");
+  ok("a leaf can take it", (await kids("C")) === "b2");
+  await press("Meta+z");
+  await pick("B"); await press("Meta+e");
+  await pick("a2");
+  await press("Alt+ArrowDown");
+  ok("a folded branch opens to take it", (await kids("B")).startsWith("a2") && !(await node("B")).collapsed);
+  await press("Meta+z"); await press("Meta+z");
+  // top-level branches have nowhere to go
+  await pick("C");
+  await press("Alt+ArrowDown");
+  ok("a top-level branch does not hop", (await node("C")).parent === "Hub");
+  // a selection moves over together, in order
+  await M(async (ids) => __mf.mark(ids), [await id("a1"), await id("a2")]);
+  await pick("a1"); await M(async (ids) => __mf.mark(ids), [await id("a1"), await id("a2")]);
+  await press("Alt+ArrowDown");
+  ok("a selection at the edge hops together, in order", (await kids("B")) === "a1,a2,b1,b2" && (await kids("A")) === "", [await kids("A"), await kids("B")]);
+  ok("still selected", (await M(() => __mf.rawMarked.length)) === 2);
+  await press("Alt+ArrowUp");
+  ok("and back", (await kids("A")) === "a1,a2" && (await kids("B")) === "b1,b2", [await kids("A"), await kids("B")]);
+  await M(async (ids) => __mf.mark(ids), [await id("a2"), await id("b1")]);
+  await press("Alt+ArrowDown");
+  ok("a mixed selection: one hops, one steps", (await kids("A")) === "a1" && (await kids("B")) === "a2,b2,b1", [await kids("A"), await kids("B")]);
+  await press("Meta+z");
+  ok("one undo puts it all back", (await kids("A")) === "a1,a2" && (await kids("B")) === "b1,b2");
+  await M(() => __mf.mark([]));
   await M(() => __mf.spread("sides"));
 }
 

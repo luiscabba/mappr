@@ -3,6 +3,16 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.28.0] - 2026-09-16
+
+### Added
+- **`⌥`+arrow carries on past the edge.** Moving a node past the last of its
+  siblings takes it into the next branch along, the way a plain arrow walks
+  there: going down it becomes that branch's first child, going up the last
+  child of the branch before. A folded branch opens to take it. It stays on
+  its side of the map and does not wrap, and a top-level branch stays put. A
+  selection hops over together, in order, and one undo puts it all back.
+
 ## [0.27.0] - 2026-09-16
 
 ### Added

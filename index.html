@@ -483,7 +483,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v0.27.0">Mappr</span>
+  <span class="brand" id="brand" title="Mappr v0.28.0">Mappr</span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -558,7 +558,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.27.0</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.28.0</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <div id="helpBody">
@@ -592,7 +592,7 @@
       <tr><td><kbd>⌫</kbd></td><td>Delete just the node. Its children move up and take its place, and flash so you can see where they went. With a selection up it deletes <em>exactly</em> what is selected, and anything underneath that you did not select moves up the same way.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⌫</kbd></td><td>Delete the whole branch, or every selected branch. <kbd>⌘</kbd><kbd>Z</kbd> brings any delete back.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>Z</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>Z</kbd></td><td>Undo / redo. Retyping a node is a step of its own, so overwriting one by accident comes back with <kbd>⌘</kbd><kbd>Z</kbd>, even while you are still typing.</td></tr>
-      <tr><td><kbd>⌥</kbd><kbd>←↑→↓</kbd></td><td>Move the node itself. Sideways reorders it among its siblings, outward tucks it under the sibling before it, back toward the centre promotes it a level. The whole branch travels with it. With a selection up, every selected branch moves together and stays selected, so you can keep pressing.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>←↑→↓</kbd></td><td>Move the node itself. Sideways reorders it among its siblings, and past the last one carries it on into the next branch along on that side, outward tucks it under the sibling before it, back toward the centre promotes it a level. The whole branch travels with it. With a selection up, every selected branch moves together and stays selected, so you can keep pressing.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>E</kbd></td><td>Fold or unfold a branch. A folded node wears a badge with the number hidden underneath; click the badge to open it. With a selection up it folds every selected node at once, so a whole level goes away in one press.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself. With a selection up, every selected branch is duplicated and the copies come out selected.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag (a small pennant).</td></tr>
@@ -658,9 +658,9 @@
      panel cannot drift from the record of what actually shipped. -->
 <div id="notes">
   <div id="notesCard">
-    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.27.0</span></h2>
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.28.0</span></h2>
     <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
-    <div id="notesBody"><h3 class="rel">0.27.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b><code>⌘A</code> selects a level.</b> The selected node&#x27;s whole level, across the map; press it again for everything on screen.</li><li><b><code>⌘D</code> duplicates a selection.</b> Every selected branch is copied right below itself, and the copies come out selected.</li><li><b>A selection chip in the top bar</b> shows how many nodes are selected, with Copy, Duplicate and Delete buttons, and an <code>×</code> to clear.</li><li><b>Paste into a blank node.</b> Make a node, then paste: the pasted nodes take its place instead of hanging off an empty box, and one undo takes both back.</li><li><b>Deleting shows where the children went.</b> They flash in their new place.</li></ul><h4>Fixed</h4><ul><li><b>Branches no longer overlap in the corners.</b> When a map branches both sideways and up or down, a wide up or down branch used to run into a tall sideways one. It now steps just far enough away to clear.</li><li><b><code>⇧⏎</code> goes to the next parent you can see.</b> It used to follow the order the branches were made in, which often meant the top of the map. It now goes top to bottom on a sideways branch and left to right on an up or down one, and wraps round without leaving that side.</li><li><b><code>⌘A</code> selects every node again</b>, not just the top level, now that a selection shows exactly what is selected.</li></ul><h3 class="rel">0.26.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>Select with the keyboard.</b> <code>⇧</code>+arrow grows a selection node by node, and stepping back lets go of the last one, the way Shift works in text. <code>⌘⇧</code>+arrow takes whole branches: outward this branch, sideways every sibling that way, inward the parent&#x27;s branch, and from the centre a whole side. The key bar switches to selection keys while something is selected.</li><li><b>Move a selection.</b> <code>⌥</code>+arrow moves every selected branch at once, by the same rules as a single node, and keeps them selected so you can keep going.</li><li><b>Copy, cut and paste that keep their shape.</b> <code>⌘C</code> copies exactly what is selected, each node under its nearest selected parent, or with nothing selected, the selected node&#x27;s branch. <code>⌘X</code> cuts. <code>⌘V</code> pastes as children, <code>⇧⌘V</code> as siblings right after the selection. Pasted nodes point the way their new parent does and arrive selected. Copies made in Mappr also keep done and flag marks, folds, and links between the copied nodes.</li></ul><h4>Changed</h4><ul><li><b>Deleting a node keeps its children.</b> <code>⌫</code> takes just the node, and its children move up into its place. <code>⌘⌫</code> deletes the whole branch. A frame whose top node is deleted keeps wrapping what moved up.</li><li><b>New nodes are selected, not opened.</b> No cursor blinks in an empty box; your first letter starts typing, and a new node left blank is dropped when you move on, press <code>Esc</code> or click away. <em>Cursor in new nodes</em> in the style panel brings the old behaviour back.</li></ul><h4>Fixed</h4><ul><li><b>The cursor sits in the middle of an empty node</b> instead of its corner.</li></ul><h3 class="rel">0.25.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>Copy what you are looking at.</b> In a network, <code>⌘C</code> copies the network as an outline (the centre, what is tied to it, what is tied to those) and <code>⇧⌘C</code> copies a picture of just the network. While presenting, they copy the story told so far, so you can paste it mid-talk; from the overview, the finale or arrange mode they copy the whole story. A <b>Copy</b> menu in the bar has every option, whole story included, and a number picks while it is open. Story pictures carry their frames and leave out what the story skips.</li><li><b>The key list has tabs.</b> Create, Move, Edit, Frames, Links, Present, Maps and Canvas each get their own page. Arrows or a number switch tabs, it opens where you left it, and keys no longer reach the map behind it.</li></ul><h4>Changed</h4><ul><li><b><code>⌘/</code> again takes you back.</b> Pressing Focus on the branch you are focused on returns you to exactly the view you had before, zoom and all, even after stepping across to a sibling branch. On a network&#x27;s centre it goes back to wherever you opened the network from. <code>Esc</code> still steps out one level.</li><li><b>Frames follow the view.</b> While presenting, a frame grows as its nodes are revealed and its title can no longer be clicked by accident; in a network, where the tree steps aside, frames do too.</li><li><b>The Paste outline button is gone.</b> <code>⌘V</code> does the same job.</li></ul><h4>Fixed</h4><ul><li><b>Retyping a node can be undone.</b> Overwriting a node&#x27;s text is now an undo step of its own, so <code>⌘Z</code> brings the old text back, even mid-retype. A node made and dropped without a word no longer leaves an undo step that does nothing.</li></ul><h3 class="rel">0.24.0 <span>2026-09-16</span></h3><h4>Changed</h4><ul><li><b>Faster with links.</b> Working out where each link lands used to happen once per node for every link, so a big map with a few hundred links spent most of every keystroke on it. It now happens once per render: a 1200-node map with 150 links went from about 110 ms a render to about 10 ms. <code>npm run bench</code> now measures this, in each view.</li><li><b>The story picker is a dropdown.</b> While arranging, the bar shows the current story; its menu switches stories, adds one, renames the current one in place, and deletes it (asking twice). <code>[</code> and <code>]</code> still switch, and with the menu open a number picks that story.</li><li><b>The key bar is short and follows you.</b> It shows a handful of keys for the mode you are in (map, focus, connections, network or arranging a story) instead of twenty at once, with <code>?</code> for the rest. <code>×</code> folds it to a small pill, and it remembers.</li></ul><h4>Added</h4><ul><li><b>Presenting gets out of the way.</b> After a few quiet seconds the bar fades and the pointer hides; moving the mouse brings both back.</li></ul><h3 class="rel">0.23.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>A mode bar</b>, top right: Map, Connections and Story, with their number keys. It shows where you are and switches on a click. It steps aside while you present, so the audience only sees the map.</li><li><b>Several stories per map.</b> While arranging, the bar lists the map&#x27;s stories: click one to switch (or <code>[</code> and <code>]</code>), <code>+</code> adds one, double-click the current one to rename it, and <code>×</code> deletes it after a second click. A new story starts empty, so it tells the whole map until you pick. Presenting names the story you are telling, and resuming is per story. Maps saved before this keep their order as &quot;Story 1&quot;.</li><li><b><code>⇧</code> + double-click in connections</b> clears every link on that node, and <code>⌘Z</code> brings them back. In connections, <code>⇧</code>+click only selects, so the gesture never marks a row by accident.</li></ul><h4>Changed</h4><ul><li><b>Switching to connections keeps your camera.</b> <code>⌘2</code> no longer zooms out; the view only moves when the picture itself changes (opening a network, or coming from a focused branch), and then it keeps your zoom.</li><li><b><code>⌘0</code> fits whatever you are in</b>: the whole map, all the links, a focused network, or while presenting, what is on screen.</li><li><b><code>Esc</code> goes back to your zoom, not to the whole map.</b> Leaving a focus puts the camera back where it was before you went in, and <code>Esc</code> after <code>⌘.</code> undoes the jump to 100%.</li></ul><h3 class="rel">0.22.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b><code>Tab</code> cycles focused branches.</b> On a focused branch&#x27;s own node, <code>Tab</code> and <code>⇧Tab</code> move the focus round its sibling branches, like the arrows do, and wrap. Deeper inside the branch, <code>Tab</code> still cycles the level. The bar says which branch you are on: <code>branch 2 of 4</code>.</li><li><b>Step through networks.</b> With the links dimmed (<code>⌘2</code>), <code>Tab</code> and the arrows move the selection from one network to the next. In a focused network, they switch to the next network when its centre is selected, and move within the network otherwise. <code>Tab</code> wraps round; arrows stop at the ends. The bar counts them: <code>network 2 of 5</code>.</li><li><b>The whole story, <code>⇧O</code>.</b> While presenting, <code>⇧O</code> shows every node the story will tell, lit, not just what you have covered. <code>⇧O</code> again (or any step) goes back to where you were.</li><li><b>The story has an ending.</b> After the last node, one more step lights the whole story and stands back to show it; after that, it stops. <code>←</code> steps back out of it.</li><li><b><code>⌘K</code> while presenting</b> jumps to any node in the story and tells everything before it on the way. <code>←</code> undoes the jump.</li><li><b>Copy as outline</b> in the arrange bar copies the story, in story order and skipping what the story skips, as nested bullets for speaker notes.</li></ul><h4>Changed</h4><ul><li><code>⇧→</code> while presenting only reveals children the story tells, never the ones you left out.</li></ul></div>
+    <div id="notesBody"><h3 class="rel">0.28.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b><code>⌥</code>+arrow carries on past the edge.</b> Moving a node past the last of its siblings takes it into the next branch along, the way a plain arrow walks there: going down it becomes that branch&#x27;s first child, going up the last child of the branch before. A folded branch opens to take it. It stays on its side of the map and does not wrap, and a top-level branch stays put. A selection hops over together, in order, and one undo puts it all back.</li></ul><h3 class="rel">0.27.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b><code>⌘A</code> selects a level.</b> The selected node&#x27;s whole level, across the map; press it again for everything on screen.</li><li><b><code>⌘D</code> duplicates a selection.</b> Every selected branch is copied right below itself, and the copies come out selected.</li><li><b>A selection chip in the top bar</b> shows how many nodes are selected, with Copy, Duplicate and Delete buttons, and an <code>×</code> to clear.</li><li><b>Paste into a blank node.</b> Make a node, then paste: the pasted nodes take its place instead of hanging off an empty box, and one undo takes both back.</li><li><b>Deleting shows where the children went.</b> They flash in their new place.</li></ul><h4>Fixed</h4><ul><li><b>Branches no longer overlap in the corners.</b> When a map branches both sideways and up or down, a wide up or down branch used to run into a tall sideways one. It now steps just far enough away to clear.</li><li><b><code>⇧⏎</code> goes to the next parent you can see.</b> It used to follow the order the branches were made in, which often meant the top of the map. It now goes top to bottom on a sideways branch and left to right on an up or down one, and wraps round without leaving that side.</li><li><b><code>⌘A</code> selects every node again</b>, not just the top level, now that a selection shows exactly what is selected.</li></ul><h3 class="rel">0.26.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>Select with the keyboard.</b> <code>⇧</code>+arrow grows a selection node by node, and stepping back lets go of the last one, the way Shift works in text. <code>⌘⇧</code>+arrow takes whole branches: outward this branch, sideways every sibling that way, inward the parent&#x27;s branch, and from the centre a whole side. The key bar switches to selection keys while something is selected.</li><li><b>Move a selection.</b> <code>⌥</code>+arrow moves every selected branch at once, by the same rules as a single node, and keeps them selected so you can keep going.</li><li><b>Copy, cut and paste that keep their shape.</b> <code>⌘C</code> copies exactly what is selected, each node under its nearest selected parent, or with nothing selected, the selected node&#x27;s branch. <code>⌘X</code> cuts. <code>⌘V</code> pastes as children, <code>⇧⌘V</code> as siblings right after the selection. Pasted nodes point the way their new parent does and arrive selected. Copies made in Mappr also keep done and flag marks, folds, and links between the copied nodes.</li></ul><h4>Changed</h4><ul><li><b>Deleting a node keeps its children.</b> <code>⌫</code> takes just the node, and its children move up into its place. <code>⌘⌫</code> deletes the whole branch. A frame whose top node is deleted keeps wrapping what moved up.</li><li><b>New nodes are selected, not opened.</b> No cursor blinks in an empty box; your first letter starts typing, and a new node left blank is dropped when you move on, press <code>Esc</code> or click away. <em>Cursor in new nodes</em> in the style panel brings the old behaviour back.</li></ul><h4>Fixed</h4><ul><li><b>The cursor sits in the middle of an empty node</b> instead of its corner.</li></ul><h3 class="rel">0.25.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>Copy what you are looking at.</b> In a network, <code>⌘C</code> copies the network as an outline (the centre, what is tied to it, what is tied to those) and <code>⇧⌘C</code> copies a picture of just the network. While presenting, they copy the story told so far, so you can paste it mid-talk; from the overview, the finale or arrange mode they copy the whole story. A <b>Copy</b> menu in the bar has every option, whole story included, and a number picks while it is open. Story pictures carry their frames and leave out what the story skips.</li><li><b>The key list has tabs.</b> Create, Move, Edit, Frames, Links, Present, Maps and Canvas each get their own page. Arrows or a number switch tabs, it opens where you left it, and keys no longer reach the map behind it.</li></ul><h4>Changed</h4><ul><li><b><code>⌘/</code> again takes you back.</b> Pressing Focus on the branch you are focused on returns you to exactly the view you had before, zoom and all, even after stepping across to a sibling branch. On a network&#x27;s centre it goes back to wherever you opened the network from. <code>Esc</code> still steps out one level.</li><li><b>Frames follow the view.</b> While presenting, a frame grows as its nodes are revealed and its title can no longer be clicked by accident; in a network, where the tree steps aside, frames do too.</li><li><b>The Paste outline button is gone.</b> <code>⌘V</code> does the same job.</li></ul><h4>Fixed</h4><ul><li><b>Retyping a node can be undone.</b> Overwriting a node&#x27;s text is now an undo step of its own, so <code>⌘Z</code> brings the old text back, even mid-retype. A node made and dropped without a word no longer leaves an undo step that does nothing.</li></ul><h3 class="rel">0.24.0 <span>2026-09-16</span></h3><h4>Changed</h4><ul><li><b>Faster with links.</b> Working out where each link lands used to happen once per node for every link, so a big map with a few hundred links spent most of every keystroke on it. It now happens once per render: a 1200-node map with 150 links went from about 110 ms a render to about 10 ms. <code>npm run bench</code> now measures this, in each view.</li><li><b>The story picker is a dropdown.</b> While arranging, the bar shows the current story; its menu switches stories, adds one, renames the current one in place, and deletes it (asking twice). <code>[</code> and <code>]</code> still switch, and with the menu open a number picks that story.</li><li><b>The key bar is short and follows you.</b> It shows a handful of keys for the mode you are in (map, focus, connections, network or arranging a story) instead of twenty at once, with <code>?</code> for the rest. <code>×</code> folds it to a small pill, and it remembers.</li></ul><h4>Added</h4><ul><li><b>Presenting gets out of the way.</b> After a few quiet seconds the bar fades and the pointer hides; moving the mouse brings both back.</li></ul><h3 class="rel">0.23.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>A mode bar</b>, top right: Map, Connections and Story, with their number keys. It shows where you are and switches on a click. It steps aside while you present, so the audience only sees the map.</li><li><b>Several stories per map.</b> While arranging, the bar lists the map&#x27;s stories: click one to switch (or <code>[</code> and <code>]</code>), <code>+</code> adds one, double-click the current one to rename it, and <code>×</code> deletes it after a second click. A new story starts empty, so it tells the whole map until you pick. Presenting names the story you are telling, and resuming is per story. Maps saved before this keep their order as &quot;Story 1&quot;.</li><li><b><code>⇧</code> + double-click in connections</b> clears every link on that node, and <code>⌘Z</code> brings them back. In connections, <code>⇧</code>+click only selects, so the gesture never marks a row by accident.</li></ul><h4>Changed</h4><ul><li><b>Switching to connections keeps your camera.</b> <code>⌘2</code> no longer zooms out; the view only moves when the picture itself changes (opening a network, or coming from a focused branch), and then it keeps your zoom.</li><li><b><code>⌘0</code> fits whatever you are in</b>: the whole map, all the links, a focused network, or while presenting, what is on screen.</li><li><b><code>Esc</code> goes back to your zoom, not to the whole map.</b> Leaving a focus puts the camera back where it was before you went in, and <code>Esc</code> after <code>⌘.</code> undoes the jump to 100%.</li></ul></div>
     <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
 </div>
@@ -674,7 +674,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="0.27.0";
+var VERSION="0.28.0";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid",
   width:2, dash:"solid", slop:1, edges:"round",
@@ -3092,9 +3092,7 @@ function doNextBranch(){
     /* the next parent along, in the order they sit on screen: top to bottom
        for sideways branches, left to right for up and down ones, staying on
        this side of the map */
-    var pd=dirOf(p.id);
-    var row=levelOrder(depthRel(p)).filter(function(x){ return dirOf(x)===pd && pos[x]; });
-    row.sort(function(a,b){ return horiz(pd) ? pos[a].cy-pos[b].cy : pos[a].cx-pos[b].cx; });
+    var row=screenRow(p.id);
     if(row.length<2) row=levelOrder(depthRel(p));
     var i2=row.indexOf(p.id);
     var q=(i2<0)?p.id:row[(i2+1)%row.length];
@@ -3205,6 +3203,36 @@ function doDelete(whole){
 }
 function setDirDeep(id,d){ N(id).dir=d; N(id).children.forEach(function(c){ setDirDeep(c,d); }); }
 
+/* The nodes at one node's level on its side of the map, in the order they sit
+   on screen: top to bottom for sideways branches, left to right for up and
+   down ones. */
+function screenRow(id){
+  var d=dirOf(id);
+  var row=levelOrder(depthRel(N(id))).filter(function(x){ return dirOf(x)===d && pos[x]; });
+  row.sort(function(a,b){ return horiz(d) ? pos[a].cy-pos[b].cy : pos[a].cx-pos[b].cx; });
+  return row;
+}
+/* Past the end of its siblings, Option+arrow carries a node on into the next
+   branch along, the way a plain arrow does: over the edge downward it becomes
+   the first child of the next parent, upward the last child of the one before.
+   It stays on its side of the map and does not wrap, and a top-level branch
+   has nowhere to go. */
+function hopTarget(n,up){
+  var p=N(n.parent);
+  if(!p || isVR(p)) return null;
+  var row=screenRow(p.id), i=row.indexOf(p.id);
+  if(i<0) return null;
+  var q=row[i+(up?-1:1)];
+  return (q && N(q)) ? q : null;
+}
+function hopInto(id,q,up){
+  var n=N(id), p=N(n.parent), host=N(q);
+  p.children.splice(p.children.indexOf(id),1);
+  n.parent=q;
+  if(up) host.children.push(id); else host.children.unshift(id);
+  host.collapsed=false;
+  setDirDeep(id, dirOf(q));
+}
 /* Option+arrow with a selection moves every selected branch at once, each by
    the same rule a single node follows, and the selection stays in hand so the
    next press keeps going. If none of them can move, nothing does. */
@@ -3236,7 +3264,12 @@ function moveMarked(dir){
       setDirDeep(id, dirOf(p.id)); moved++;
     } else {
       var g2=sibGroup(n), i2=g2.indexOf(id), j=i2+(up?-1:1);
-      if(j<0||j>=g2.length||moving[g2[j]]) return;   /* the edge, or a selected neighbour that could not move */
+      if(j<0||j>=g2.length){
+        var q=hopTarget(n,up);
+        if(q && !moving[q]){ hopInto(id,q,up); moved++; }
+        return;
+      }
+      if(moving[g2[j]]) return;   /* a selected neighbour that could not move */
       var a=p.children.indexOf(g2[i2]), b=p.children.indexOf(g2[j]);
       p.children[a]=g2[j]; p.children[b]=g2[i2]; moved++;
     }
@@ -3267,8 +3300,15 @@ function moveNode(dir){
     setDirDeep(n.id, dirOf(p.id));
   } else {
     var g2=sibGroup(n), i2=g2.indexOf(n.id);
-    var j=i2+((dir==="U"||dir==="L")?-1:1);
-    if(j<0||j>=g2.length){ flash(selected); return; }
+    var up1=(dir==="U"||dir==="L"), j=i2+(up1?-1:1);
+    if(j<0||j>=g2.length){
+      var q1=hopTarget(n,up1);
+      if(!q1){ flash(selected); return; }
+      snap(); hopInto(n.id,q1,up1);
+      clearMarks(); render(); saveSoon();
+      flashSave("moved into \u201c"+trunc(N(q1).text||"\u2026")+"\u201d");
+      return;
+    }
     snap();
     var a=p.children.indexOf(g2[i2]), b=p.children.indexOf(g2[j]);
     p.children[a]=g2[j]; p.children[b]=g2[i2];
