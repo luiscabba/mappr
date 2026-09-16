@@ -1131,7 +1131,9 @@ group("the number row is views");
   await press("Alt+Digit1");
   ok("Alt+1 mirrors Cmd+1", (await lensIs()) === "off", await lensIs());
   await press("Alt+Digit3");
-  ok("Alt+3 is reserved and changes nothing", (await lensIs()) === "off");
+  ok("Alt+3 starts a presentation", (await M(() => __mf.pres)) !== null);
+  await press("Alt+Digit3");
+  ok("and Alt+3 again ends it", (await M(() => __mf.pres)) === null);
 
   // typing keeps the Alt digits
   await M((x) => __mf.select(x), B);
@@ -1148,6 +1150,96 @@ group("the number row is views");
   const off = await M((x) => { const r = document.querySelector('.node[data-id="' + x + '"]').getBoundingClientRect(); return Math.abs(r.left + r.width / 2 - innerWidth / 2) + Math.abs(r.top + r.height / 2 - innerHeight / 2); }, A);
   ok("Cmd+. resets zoom to 100%", Math.abs(cam.z - 1) < 1e-6, cam.z);
   ok("and centres the selection", off < 260, off);
+}
+
+group("presentation");
+{
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(200); };
+  const P = () => M(() => __mf.pres);
+  const shown = () => M(() => __mf.shown);
+  await M(() => __mf.paste("Pitch\n- Problem\n  - Slow\n  - Lost\n- Bet\n  - Keys\n    - Every control\n  - Layout\n  - Camera\n- Next"));
+  await page.waitForTimeout(280);
+  const root = await M(() => __mf.state.rootId);
+  const [Prob, Slow, Lost, Bet, Keys, Every, Lay, Cam, Next] = await Promise.all(["Problem","Slow","Lost","Bet","Keys","Every control","Layout","Camera","Next"].map(idOf));
+  const tie = await M(([a, b]) => __mf.tie(a, b), [Slow, Cam]);
+  await M(() => __mf.select(__mf.state.rootId));
+  const cam0 = await M(() => JSON.stringify(__mf.cam()));
+  const fullPos = await M(() => JSON.stringify(__mf.pos()));
+
+  await press("Meta+3");
+  ok("Cmd+3 starts presenting", (await P()) !== null);
+  ok("it starts on the centre alone", (await shown()) === 1 && (await P()).here === root, await shown());
+  ok("the toolbar steps aside", await M(() => getComputedStyle(document.getElementById("topbar")).display === "none"));
+  ok("no badges give the story away", await M(() => document.querySelectorAll(".badge").length === 0));
+  ok("the bar says so", await M(() => /Presenting/.test(document.getElementById("crumbs").textContent)));
+
+  await press("ArrowRight");
+  ok("next reveals one node, in reading order", (await P()).here === Prob && (await shown()) === 2);
+  ok("and selects it", (await M(() => __mf.selected)) === Prob);
+  await press("Space");
+  ok("Space steps too", (await P()).here === Slow);
+  ok("a node lands exactly where the full layout puts it",
+    await M(([s, full]) => JSON.stringify(__mf.pos()[s]) === JSON.stringify(JSON.parse(full)[s]), [Slow, fullPos]));
+  ok("a link waits until both ends are on screen", await M(() => document.querySelectorAll("#paintLayer path.lk").length === 0));
+  ok("covered nodes step back", await M(() => document.querySelector(".node.past") !== null));
+  ok("but the path to here does not", await M((x) => !document.querySelector('.node[data-id="' + x + '"]').classList.contains("past"), Prob));
+
+  await press("Shift+ArrowRight");
+  ok("Shift reveals the rest of the level at once", await M((x) => !!__mf.pos()[x], Lost));
+  await press("ArrowRight");
+  ok("then next carries on past them", (await P()).here === Bet, (await P()).here);
+  await press("Shift+ArrowRight");
+  ok("Shift on a parent reveals all its children", await M((ids) => ids.every((i) => !!__mf.pos()[i]), [Keys, Lay, Cam]));
+  ok("and the link appears once both ends are shown", await M(() => document.querySelectorAll("#paintLayer path.lk").length > 0));
+  ok("but not the grandchildren", await M((x) => !__mf.pos()[x], Every));
+  await press("ArrowRight");
+  ok("next goes into the first thing still hidden", (await P()).here === Every, (await P()).here);
+  await press("ArrowLeft");
+  ok("back undoes one step exactly", (await P()).here === Bet && await M((x) => !__mf.pos()[x], Every));
+  await press("ArrowLeft");
+  ok("including a whole level", await M((x) => !__mf.pos()[x], Keys));
+  await press("ArrowRight"); await press("ArrowRight"); await press("ArrowRight"); await press("ArrowRight"); await press("ArrowRight"); await press("ArrowRight");
+  ok("it reaches the end", (await P()).shown === 10, (await P()).shown);
+  await press("ArrowRight");
+  ok("and stops there", (await P()).shown === 10);
+  await press("KeyO");
+  await page.waitForTimeout(650);
+  ok("O shows everything so far", (await M(() => __mf.cam().z)) <= 1.0001);
+
+  // it is a view: typing and deleting do nothing
+  const text = await M((x) => __mf.state.nodes[x].text, Next);
+  await press("x"); await press("Backspace"); await press("Meta+z");
+  ok("the keyboard cannot edit while presenting", (await M((x) => __mf.state.nodes[x] && __mf.state.nodes[x].text, Next)) === text && (await M(() => Object.keys(__mf.state.nodes).length)) === 10);
+
+  await press("Home");
+  ok("Home goes back to the start", (await shown()) === 1);
+  await press("Escape");
+  await page.waitForTimeout(300);
+  ok("Esc ends it", (await P()) === null);
+  ok("everything is back", (await shown()) === 10);
+  ok("the camera is where it was", (await M(() => JSON.stringify(__mf.cam()))) === cam0);
+  ok("and the toolbar returns", await M(() => getComputedStyle(document.getElementById("topbar")).display !== "none"));
+
+  // from a focused branch, only that branch is told, and focus comes back
+  await M((x) => __mf.select(x), Bet);
+  await press("Meta+/");
+  await press("Meta+3");
+  ok("presenting a focus walks just that branch", (await P()).total === 5, (await P()).total);
+  await press("Meta+1");
+  ok("Cmd+1 ends it and the focus is still there", (await P()) === null && (await M(() => __mf.focus)) === Bet);
+  await M(() => __mf.focusOut());
+
+  // folded branches stay folded
+  await M((x) => { __mf.select(x); __mf.fold(x); }, Prob);
+  await press("Meta+3");
+  ok("a folded branch is left out of the walk", (await P()).total === 8, (await P()).total);
+  await press("Meta+2");
+  ok("Cmd+2 ends it and opens connections", (await P()) === null && (await M(() => __mf.lens)) === "dim");
+  await M(() => __mf.setLens("off"));
 }
 
 group("working inside a network");

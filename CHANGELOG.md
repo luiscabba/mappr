@@ -3,6 +3,34 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.19.0] - 2026-09-16
+
+### Added
+- **Presentation mode, on `⌘3`** (or `⌥3`). Walk a story through your map
+  without showing anything you have not said yet. It starts on the centre
+  alone; each `→` or `Space` reveals the next node in reading order, and the
+  camera glides to frame it with its parent. What you have already covered
+  stays on screen, stepped back, so the shape of the argument builds up as you
+  talk. The toolbar, badges and hints step aside while you present.
+
+  Nodes appear exactly where they will stay. The map is laid out in full and
+  the parts you have not reached are simply not drawn yet, so nothing shuffles
+  around as the story unfolds.
+
+- **`⇧→` reveals a whole level at once**, for points that belong together: on
+  a node with hidden children it shows them all; on a node without, it shows
+  the rest of its siblings. The next `→` carries on to whatever is still
+  hidden.
+
+- **`←` steps back** exactly one step, whole levels included. `O` shows
+  everything covered so far and `O` again returns; `Home` starts over.
+
+- **`Esc`, `⌘1` or `⌘3` ends it** and puts you back where you were. Presenting
+  from a focused branch tells just that branch, and folded branches stay
+  folded, so folding is how you leave something out. Cross-links appear once
+  both of their ends are on screen. While presenting, the keyboard and mouse
+  cannot edit the map.
+
 ## [0.18.0] - 2026-09-16
 
 ### Changed

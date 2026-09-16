@@ -125,6 +125,13 @@
   /* dimmed by the connections lens: still there, still where you put it */
   .node.ghost{opacity:.17}
   .node.lenshide{display:none}
+  /* already covered in a presentation: still there, stepped back */
+  .node.past{opacity:.38;transition:opacity .35s}
+  /* not reached yet: invisible but still measured, so the layout is the real one */
+  .node.preshide{visibility:hidden}
+  body.presenting #topbar, body.presenting #hint, body.presenting #zoombar,
+  body.presenting #framebar, body.presenting #startHint{display:none}
+  body.presenting #nodes, body.presenting #frames{pointer-events:none}
 
   /* collapse badges live in world space */
   #badges{position:absolute;left:0;top:0;width:0;height:0}
@@ -486,6 +493,7 @@
   <span><b>Tie two nodes</b> <kbd>⌘</kbd>+click</span>
   <span><b>Normal</b> <kbd>⌘</kbd><kbd>1</kbd></span>
   <span><b>Connections</b> <kbd>⌘</kbd><kbd>2</kbd></span>
+  <span><b>Present</b> <kbd>⌘</kbd><kbd>3</kbd></span>
   <span><b>Whole map</b> <kbd>⌘</kbd><kbd>0</kbd></span>
   <span><b>All keys</b> <kbd>?</kbd></span>
 </div>
@@ -538,6 +546,7 @@
       <tr><td>The <b>∿</b> badge</td><td>How many links land on this node. Click it to walk to the other end, which is usually off screen; clicking again cycles through the rest. A folded branch carries the badge for everything tied up inside it, and walking there opens it.</td></tr>
       <tr><td>A hollow end</td><td>The node you actually tied is folded away inside the one the arc reaches. Better than a line running into nothing.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>1</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>1</kbd></td><td><b>Normal view.</b> The number keys are views, and 1 is the plain map. From any other view it puts you back where you were, focus and all. The <kbd>⌥</kbd> versions are there because a browser tab may keep <kbd>⌘</kbd> plus a number for itself.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>3</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>3</kbd></td><td><b>Present.</b> Walks the map (or the focused branch) one node at a time in reading order, showing nothing you have not reached yet. Each node lands where it will stay and the camera follows. <kbd>→</kbd> or <kbd>Space</kbd> next, <kbd>⇧</kbd><kbd>→</kbd> the whole level at once, <kbd>←</kbd> back, <kbd>O</kbd> a look at everything so far, <kbd>Home</kbd> from the top. <kbd>Esc</kbd>, <kbd>⌘</kbd><kbd>1</kbd> or <kbd>⌘</kbd><kbd>3</kbd> ends it and puts you back where you were. Folded branches stay folded.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>2</kbd> / <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Dim to the links.</b> The whole map stays put and everything no link touches drops to a ghost, so you keep your bearings while the arcs come forward. Pressed while focused on a tied branch, it goes straight to that node's network. Press it again, or <kbd>Esc</kbd>, to turn it off: you land back where you were, focus and all.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>/</kbd> with a lens up</td><td>On a tied node, Focus shows <em>its whole network</em>: the node, everything tied to it, and everything tied to those, and nothing else. It is laid out <em>by the links</em> rather than by the tree, so a chain reads as a chain; nothing is moved for good. <kbd>Esc</kbd> steps back to dimmed. While dimmed, Focus on an untied node does what it always did.</td></tr>
       <tr><td>Moving in a network</td><td>The tree is hidden, so the keys follow what is on screen: arrows go to the nearest node that way, <kbd>Tab</kbd> walks the network nearest first, and anything you make with <kbd>Enter</kbd> or <kbd>⌘</kbd>+arrow is tied to the node you made it from, so it stays in view. Moving nodes and inserting between them are off until you leave.</td></tr>
@@ -958,8 +967,140 @@ function arrangeByLinks(){
   live.forEach(function(id){ pos[id]={cx:S[id].x, cy:S[id].y}; });
 }
 
+/* ---------- presentation ----------
+   Walk a story through the map without showing what you have not said yet.
+   The map is laid out in full, as always, and then everything not yet reached
+   is simply not drawn, so nodes never jump as they appear: each one lands
+   exactly where it will stay. Arrows step in reading order (the tree, depth
+   first, as folded on screen); Shift steps a whole level at once, for points
+   that belong together. The camera frames every step. Like a lens it is a
+   view: nothing is saved and leaving puts you back where you were. */
+var pres=null;
+function presOrder(){
+  var out=[];
+  (function w(id){ out.push(id); kids(N(id)).forEach(w); })(VR());
+  return out;
+}
+function presLitFor(here,group){
+  var lit={}, x=here;
+  while(x){ lit[x]=1; x=N(x).parent; }
+  (group||[]).forEach(function(g){ lit[g]=1; });
+  return lit;
+}
+function presDim(id){ return !!pres && !pres.lit[id]; }
+function presStart(){
+  if(editing) commitEdit();
+  if(lensActive()) lensOff();
+  clearMarks();
+  var r=VR(), sh={}; sh[r]=1;
+  pres={ order:presOrder(), shown:sh, here:r, lit:presLitFor(r), hist:[], over:false,
+         home:{ focus:focusId, sel:selected, view:{x:view.x,y:view.y,z:view.z} } };
+  selected=r;
+  document.body.classList.add("presenting");
+  hardRender();
+  presFrame([r]);
+}
+function presEnd(){
+  if(!pres) return;
+  var h=pres.home; pres=null; stopCam();
+  document.body.classList.remove("presenting");
+  if(h.focus && N(h.focus)) focusId=h.focus;
+  if(h.sel && N(h.sel)) selected=h.sel;
+  hardRender();
+  if(focusId) fit();
+  else { view.x=h.view.x; view.y=h.view.y; view.z=h.view.z; applyView(); }
+}
+function presShot(){
+  return { shown:Object.assign({},pres.shown), here:pres.here, lit:pres.lit, frame:pres.frame };
+}
+function presNext(group){
+  if(!pres) return false;
+  var P=pres, before=presShot(), frame=null;
+  P.over=false;
+  if(group){
+    var x=N(P.here), ks=kids(x).filter(function(k){ return !P.shown[k]; });
+    var owner=x;
+    if(!ks.length && x.parent && x.id!==VR()){
+      owner=N(x.parent);
+      ks=kids(owner).filter(function(k){ return !P.shown[k]; });
+    }
+    if(ks.length){
+      ks.forEach(function(k){ P.shown[k]=1; });
+      P.lit=presLitFor(P.here,kids(owner));
+      frame=[owner.id].concat(kids(owner));
+    }
+  }
+  if(!frame){
+    var i=P.order.indexOf(P.here), nx=null;
+    for(var j=i+1;j<P.order.length;j++) if(!P.shown[P.order[j]]){ nx=P.order[j]; break; }
+    if(!nx){ flash(P.here); flashSave("that's everything"); P.frame && presFrame(P.frame); return false; }
+    P.shown[nx]=1; P.here=nx; P.lit=presLitFor(nx);
+    frame=[nx]; if(N(nx).parent) frame.push(N(nx).parent);
+  }
+  P.hist.push(before);
+  selected=P.here;
+  render(true);
+  presFrame(frame);
+  return true;
+}
+function presBack(){
+  if(!pres) return false;
+  var h=pres.hist.pop();
+  if(!h){ flash(pres.here); return false; }
+  pres.shown=h.shown; pres.here=h.here; pres.lit=h.lit; pres.over=false;
+  selected=h.here;
+  render(true);
+  presFrame(h.frame||[h.here]);
+  return true;
+}
+function presRestart(){
+  if(!pres) return;
+  while(pres.hist.length) presBack();
+}
+function presOverview(){
+  if(!pres) return;
+  pres.over=!pres.over;
+  if(pres.over){ var keep=pres.frame; presFrame(Object.keys(pos),1); pres.frame=keep; }
+  else presFrame(pres.frame);
+}
+/* Frame a set of nodes, gliding the camera there, never closer than a
+   comfortable reading size. */
+function presFrame(ids,maxZ){
+  if(pres) pres.frame=ids;
+  ids=ids.filter(function(id){ return pos[id]; });
+  var b=boundsOf(ids); if(!b) return;
+  var LI=leftInset(), W=innerWidth-LI, top=70, bot=60, pad=70;
+  var z=Math.max(.2,Math.min(maxZ||1.35,(W-pad*2)/Math.max(1,b.w),(innerHeight-top-bot-pad)/Math.max(1,b.h)));
+  glideTo(LI+W/2-(b.x+b.w/2)*z, top+(innerHeight-top-bot)/2-(b.y+b.h/2)*z, z);
+}
+function glideTo(tx,ty,tz){
+  stopCam();
+  var x0=view.x,y0=view.y,z0=view.z,t0=performance.now(),dur=520;
+  (function step(t){
+    var k=Math.min(1,(t-t0)/dur), e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+    view.x=x0+(tx-x0)*e; view.y=y0+(ty-y0)*e; view.z=z0+(tz-z0)*e; applyView();
+    camAnim=k<1?requestAnimationFrame(step):null;
+  })(t0);
+}
+function presKey(e){
+  var k=e.key, mod=e.metaKey||e.ctrlKey, code=e.code||"";
+  var dig = (mod&&!e.shiftKey&&/^[123]$/.test(k)) ? k : ((e.altKey&&!mod&&/^Digit[123]$/.test(code)) ? code.slice(5) : null);
+  if(k==="Escape"||dig==="1"||dig==="3"){ e.preventDefault(); presEnd(); flashSave("normal view"); return; }
+  if(dig==="2"){ e.preventDefault(); presEnd(); return "lens"; }
+  if(mod) return;                       /* leave the browser its own chords */
+  e.preventDefault();
+  if(k==="ArrowRight"||k==="ArrowDown"||k===" "||k==="PageDown"||k==="Enter") presNext(e.shiftKey);
+  else if(k==="ArrowLeft"||k==="ArrowUp"||k==="PageUp"||k==="Backspace") presBack();
+  else if(k==="Home") presRestart();
+  else if(k==="o"||k==="O") presOverview();
+}
+
 /* Run after layout(), before anything is positioned or painted. */
 function lensLayout(){
+  if(pres){
+    Object.keys(pos).forEach(function(id){ if(!pres.shown[id]) delete pos[id]; });
+    return;
+  }
   if(!lensSolo()) return;
   var keep=lensParts(); keep[VR()]=1;
   Object.keys(pos).forEach(function(id){ if(!keep[id]) delete pos[id]; });
@@ -1411,7 +1552,9 @@ function render(keepView,lead){
     el.className="node"+(isVR(n)?" root":"")+(id===editing?" editing":"")+
       (n.mark==="done"?" done":"")+(n.mark==="flag"?" flag":"")+
       (ghosts && !ghosts[id] && !isVR(n) ? " ghost" : "")+
-      (solo && !solo[id] ? " lenshide" : "");
+      (solo && !solo[id] ? " lenshide" : "")+
+      (pres && !pres.shown[id] ? " preshide" : "")+
+      (presDim(id) ? " past" : "");
   });
   Object.keys(els).forEach(function(id){ if(!showing[id]){ els[id].remove(); delete els[id]; } });
 
@@ -1475,6 +1618,7 @@ function badgeAt(id,key,cls,text){
 }
 function drawBadges(){
   var live={};
+  if(pres){ Object.keys(bdEls).forEach(function(k){ bdEls[k].remove(); delete bdEls[k]; }); return; }
   /* in a network view the tree's fold badges mean nothing; the network's do */
   var lr=lensOne ? lensReach(lensOne) : null;
   Object.keys(pos).forEach(function(id){
@@ -1611,6 +1755,7 @@ function shapes(ids, opt){
       if(!inSet[ea.id]||!inSet[eb.id]||!pos[ea.id]||!pos[eb.id]) return;
       var A=pos[ea.id], B=pos[eb.id];
       if(lensOne && !opt.exporting && (!reachSet[ea.id] || !reachSet[eb.id])) return;
+      if(pres && !opt.exporting && (!pres.shown[ea.id] || !pres.shown[eb.id])) return;
       var on=!opt.exporting && (lensActive() || selected===ea.id || selected===eb.id);
       var lkey="lk"+l.a+"_"+l.b+"|"+SC.gen+"|"+geo(ea.id)+"|"+geo(eb.id)+"|"+
                (ea.proxy?1:0)+(eb.proxy?1:0)+"|"+(on?1:0)+"|"+lensSig();
@@ -1648,6 +1793,7 @@ function shapes(ids, opt){
      those is that the tree is out of the way. Never in an export: an exported
      map is the map, not whatever lens you happened to have up. */
   var lensQuiet = !opt.exporting && lens && !lensSolo();
+  function presFade(id){ return !opt.exporting && presDim(id); }
   var lensHideTree = !opt.exporting && lensSolo();
   var lensGhosts = lensQuiet ? lensParts() : {};
   ids.forEach(function(id){
@@ -1656,7 +1802,7 @@ function shapes(ids, opt){
       if(!pos[cid] || !inSet[cid]) return;
       var d=dirOf(cid), col=paletteFor(N(cid)).line, key=null;
       if(cache){
-        key=cid+"|"+SC.gen+"|"+geo(id)+"|"+geo(cid)+"|"+d+"|"+col+"|"+(lensQuiet?1:0);
+        key=cid+"|"+SC.gen+"|"+geo(id)+"|"+geo(cid)+"|"+d+"|"+col+"|"+(lensQuiet?1:0)+"|"+(presFade(cid)?1:0);
         var hit=SC.edge[key];
         if(hit!==undefined){ nEdge[key]=hit; emit(key,hit); return; }
       }
@@ -1680,6 +1826,7 @@ function shapes(ids, opt){
       }
       var str=out.join("");
       if(lensQuiet) str='<g opacity=".22">'+str+'</g>';
+      else if(presFade(cid)) str='<g opacity=".35">'+str+'</g>';
       if(cache) nEdge[key]=str;
       emit(key,str);
     });
@@ -1689,7 +1836,7 @@ function shapes(ids, opt){
     var n=N(id), P=paletteFor(n), key=null;
     if(cache){
       key=id+"|"+SC.gen+"|"+geo(id)+"|"+P.line+"|"+(P.fill||"")+"|"+(n.mark||"")+"|"+(isVR(n)?1:0)+
-          "|"+((lensQuiet && !lensGhosts[id] && !isVR(n))?1:0);
+          "|"+((lensQuiet && !lensGhosts[id] && !isVR(n))?1:0)+"|"+(presFade(id)?1:0);
       var hit=SC.body[key];
       if(hit!==undefined){ nBody[key]=hit; emit(key,hit.b); if(hit.d) defs.push(hit.d); return; }
     }
@@ -1717,6 +1864,7 @@ function shapes(ids, opt){
     }
     var body=out.join("");
     if(lensQuiet && !lensGhosts[id] && !isVR(n)) body='<g opacity=".17">'+body+'</g>';
+    else if(presFade(id)) body='<g opacity=".38">'+body+'</g>';
     var rec={b:body, d:def};
     if(cache) nBody[key]=rec;
     emit(key,rec.b); if(rec.d) defs.push(rec.d);
@@ -1925,6 +2073,15 @@ function fitHere(){
 var elCrumbs=document.getElementById("crumbs");
 function esc(t){ return String(t).replace(/[&<>"]/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
 function drawCrumbs(){
+  if(pres){
+    elCrumbs.className="bar on lensbar";
+    var total=pres.order.length, seen=pres.order.filter(function(id){ return pres.shown[id]; }).length;
+    var hp='<span class="lk" style="color:var(--sel)">Presenting</span><span class="meta">'+seen+' / '+total+
+      '</span><span class="meta">\u2192 next \u00b7 \u21e7\u2192 whole level \u00b7 \u2190 back \u00b7 O overview</span>'+
+      '<button class="out" data-out="1">Esc to end</button>';
+    if(elCrumbs.innerHTML!==hp) elCrumbs.innerHTML=hp;
+    return;
+  }
   if(lensActive()){
     elCrumbs.className="bar on lensbar";
     var hh;
@@ -1954,6 +2111,7 @@ elCrumbs.addEventListener("mousedown",function(e){ e.preventDefault(); });
 elCrumbs.addEventListener("click",function(e){
   var b=e.target.closest("button"); if(!b) return;
   if(b.dataset.out){
+    if(pres){ presEnd(); return; }
     if(lensOne) lensSet(true,null); else if(lens) lensOff(); else exitFocus();
     return;
   }
@@ -3081,6 +3239,13 @@ addEventListener("keyup",function(e){
 });
 document.addEventListener("keydown",function(e){
   var mod=e.metaKey||e.ctrlKey;
+  /* a presentation owns the keyboard, except for the browser's own chords */
+  if(pres){
+    if(presKey(e)!=="lens") return;
+    e={ key:"2", code:"Digit2", metaKey:true, ctrlKey:false, altKey:false, shiftKey:false,
+        repeat:false, preventDefault:function(){}, target:e.target };
+    mod=true;
+  }
   if(document.getElementById("notes").classList.contains("open") && e.key!=="Escape"){
     e.preventDefault(); return;
   }
@@ -3151,6 +3316,11 @@ document.addEventListener("keydown",function(e){
      Pressed again it turns the lens off and puts you back where you were.
      Alt+L does the same, because Cmd plus a digit is how every browser
      switches tabs and a tab may never hand it to the page. */
+  if((mod&&!e.shiftKey&&e.key==="3") || altDigit==="3"){
+    e.preventDefault(); if(editing) commitEdit();
+    presStart(); flashSave("presenting");
+    return;
+  }
   if((mod&&!e.shiftKey&&e.key==="2") || altDigit==="2" || (e.altKey&&(e.key==="l"||e.key==="L"||e.key==="¬"))){
     e.preventDefault(); if(editing) commitEdit();
     if(lensActive()){ lensOff(); flashSave("lens off"); }
@@ -3276,6 +3446,7 @@ elNodes.addEventListener("dblclick",function(e){
    exception is the node you are currently typing in, where the browser's own
    cut/copy/paste menu is the useful thing. */
 elStage.addEventListener("contextmenu",function(e){
+  if(pres){ e.preventDefault(); return; }
   var el=e.target.closest(".node");
   if(el && editing===el.dataset.id) return;
   e.preventDefault();
@@ -3307,7 +3478,7 @@ elStage.addEventListener("mousedown",function(e){
   if(editFrame) commitFrameEdit();
   if(editing){ var wi=editing; commitEdit(); pruneIfBlank(wi); render(true); }
   stopCam();
-  if(e.shiftKey||selectMode){
+  if((e.shiftKey||selectMode) && !pres){
     marked={}; selFrame=null;
     marq={ x0:(e.clientX-view.x)/view.z, y0:(e.clientY-view.y)/view.z, x1:0, y1:0, seed:seedOf("m"+Date.now()) };
     marq.x1=marq.x0; marq.y1=marq.y0;
@@ -3630,6 +3801,8 @@ window.__mf={
   linksAt:linksAt, hop:hopLink,
   get lens(){ return lensOne?"one":(lens?"dim":"off"); },
   get lensFold(){ return Object.keys(lensFold); },
+  get pres(){ return pres ? { here:pres.here, shown:Object.keys(pres.shown).length, total:pres.order.length } : null; },
+  present:presStart, presNext:presNext, presBack:presBack, presEnd:presEnd,
   setLens:function(k,id){
     if(k==="off"){ lensOff(); return; }
     lensSet(k==="dim", k==="one"?(id||selected):null);
