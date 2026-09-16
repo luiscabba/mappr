@@ -891,6 +891,49 @@ group("cross-links");
   ok("the badges go too", (await M(() => document.querySelectorAll(".badge.link").length)) === 0);
 }
 
+group("what's new");
+{
+  const open = () => M(() => document.getElementById("notes").classList.contains("open"));
+  // Not on a first ever run: the panel only fires on an actual upgrade.
+  ok("it does not greet a first run", !(await open()));
+  ok("but the version was recorded anyway", (await M(() => __mf.seen)) === (await M(() => __mf.version)));
+
+  ok("the wordmark opens it", await (async () => {
+    await M(() => document.getElementById("brand").click());
+    await page.waitForTimeout(150);
+    return await open();
+  })());
+  ok("it carries the current version's entry",
+    (await M(() => document.getElementById("notesBody").textContent)).includes("Cross-links"));
+  ok("and several releases of history",
+    (await M(() => document.querySelectorAll("#notesBody h3.rel").length)) >= 3,
+    await M(() => document.querySelectorAll("#notesBody h3.rel").length));
+  ok("the newest release is first",
+    (await M(() => document.querySelector("#notesBody h3.rel").textContent)).includes(await M(() => __mf.version)));
+  ok("the changelog's markup came through", await M(() => !!document.querySelector("#notesBody code")));
+
+  // While it is open the keyboard belongs to it, so a stray key cannot retype a node.
+  const before = await M(() => Object.keys(__mf.state.nodes).length);
+  await page.keyboard.press("x");
+  await page.waitForTimeout(150);
+  ok("keys do not reach the map behind it", (await M(() => Object.keys(__mf.state.nodes).length)) === before);
+  await key("Escape");
+  await page.waitForTimeout(150);
+  ok("Escape closes it", !(await open()));
+
+  // A version it has not run before opens it; the same version again does not.
+  await M(() => { try { localStorage.setItem("mappr.seen", "0.0.1"); } catch (e) {} });
+  await page.reload();
+  await page.waitForFunction(() => !!window.__mf);
+  await page.waitForTimeout(350);
+  ok("an upgrade shows it once", await open());
+  await M(() => __mf.notes(false));
+  await page.reload();
+  await page.waitForFunction(() => !!window.__mf);
+  await page.waitForTimeout(350);
+  ok("and not again on the next run", !(await open()));
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 

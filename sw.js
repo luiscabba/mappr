@@ -9,7 +9,7 @@
  * so it can offer a reload. Everything else is cache-first, since the icons and
  * the manifest never change within a version.
  */
-var VERSION = "0.12.0";
+var VERSION = "0.13.0";
 var CACHE = "mappr-v" + VERSION;
 var SHELL = [
   "./",

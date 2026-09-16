@@ -355,6 +355,23 @@
   table.keys td{padding:5px 0;vertical-align:top}
   table.keys td:first-child{width:190px;white-space:nowrap}
   table.keys td:last-child{opacity:.82}
+  #notes{position:fixed;inset:0;z-index:21;background:rgba(10,10,14,.5);display:none;align-items:center;justify-content:center;padding:20px}
+  #notes.open{display:flex}
+  #notesCard{background:var(--panel);color:var(--ink);border-radius:16px;padding:22px 26px;max-width:640px;width:100%;max-height:86vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  #notesCard h2{margin:0 0 4px;font-size:22px;font-family:var(--font-sketch);font-weight:400}
+  #notesCard p.sub{margin:0 0 16px;font-size:12.5px;color:var(--muted)}
+  #notesBody h3.rel{
+    margin:20px 0 2px;font-size:15px;font-family:var(--font-sketch);font-weight:400;
+    border-top:1px solid var(--panel-line);padding-top:14px;
+  }
+  #notesBody h3.rel:first-child{border-top:0;padding-top:0;margin-top:4px}
+  #notesBody h3.rel span{font-family:var(--font-ui);font-size:11px;color:var(--muted);margin-left:7px}
+  #notesBody h4{margin:10px 0 4px;font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)}
+  #notesBody ul{margin:0;padding-left:17px}
+  #notesBody li{font-size:13px;line-height:1.55;margin-bottom:7px;opacity:.88}
+  #notesBody code{font-size:12px;background:var(--panel-hover);border-radius:4px;padding:1px 4px}
+  .brand{cursor:pointer}
+  .brand:hover{color:var(--sel)}
   @media (max-width:900px){ #hint{display:none} }
 </style>
 </head>
@@ -390,7 +407,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v0.12.0">Mappr</span>
+  <span class="brand" id="brand" title="Mappr v0.13.0">Mappr</span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -475,7 +492,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.12.0</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.13.0</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <h3>Create</h3>
@@ -559,6 +576,17 @@
   </div>
 </div>
 
+<!-- What's new. The body is stamped in from CHANGELOG.md at build time, so the
+     panel cannot drift from the record of what actually shipped. -->
+<div id="notes">
+  <div id="notesCard">
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.13.0</span></h2>
+    <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
+    <div id="notesBody"><h3 class="rel">0.13.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>What&#x27;s new.</b> The first time you run a version you have not run before, a panel says what changed. Click the Mappr wordmark to read it again any time. It is stamped in from <code>CHANGELOG.md</code> at build time rather than written a second time by hand, so it cannot drift from the record of what actually shipped: the changelog stays the single source and the panel is a view of it. It carries the last six releases. It does not greet a first ever run. Someone opening Mappr for the first time wants the map, not a list of changes to things they have never seen. The version is recorded on every run whether or not the panel appeared, so it can only ever fire on a real upgrade, and while it is open the keyboard belongs to it, so a stray key cannot retype the node behind it.</li></ul><h3 class="rel">0.12.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b>Cross-links.</b> <code>⌘</code> (or <code>Ctrl</code>) + click ties the selected node to the one you click, anywhere on the map, and a faint arc joins them. The same pair again unties. This is the first thing in Mappr that is not a tree edge, so it is built to stay out of the tree&#x27;s way: links live beside <code>state.nodes</code> rather than in it, layout never sees one, and tying two nodes never moves the picture. A pair is stored once and matched either way round. The line is an arc rather than the short way round. A taut line takes the direct path, which on a mindmap runs straight through whatever sits between the two ends; bowing it out costs space and keeps several links readable when they overlap. It is sampled into points and drawn through the same roughness as everything else, so it is in the app&#x27;s own hand.</li><li><b>A <code>∿</code> badge on a tied node</b>, counting the links that land on it. The far end of a link is usually off screen, so the badge is a button: it walks you there, and clicking again cycles the rest. It opens folded branches and steps out of focus to get there, the same way Jump does.</li><li><b>Folded ends stay honest.</b> When the node you tied is folded away, the arc retargets to the visible ancestor and ends in a hollow dot rather than a solid one, and that branch carries the badge for everything tied up inside it. A line running into nothing would be worse than a stand-in that says so.</li></ul><h3 class="rel">0.11.0 <span>2026-09-15</span></h3><h4>Added</h4><ul><li><b>Touch moves the camera.</b> One finger pans, two fingers pinch and pan together with the point between them staying put. Nothing else on touch creates, retypes, lassoes or marks: Mappr is a keyboard app and a thumb has no keyboard, so touch is for reading a map you already made rather than a second half-built way to build one. A tap on a node still selects, which is how you open a folded branch. Until now the app shipped a manifest, an icon and an install prompt, then handed anyone who installed it a map they could not pan.</li><li><b>Key labels read in words off a Mac.</b> The hint bar, the Keys dialog and every button tooltip showed <code>⌘</code> and <code>⌥</code> to everyone, so Windows and Linux visitors were reading instructions for keys they do not have. Handling was always cross-platform; only the labels were not. The map itself is never rewritten, so a node whose text is literally <code>⌘</code> stays as typed.</li><li><b>Deleted maps wait in a bin.</b> A deleted map is set aside under its own key instead of dropped, and the last few show under <em>Recently deleted</em> in the maps panel with a Restore button. Only the last few: localStorage is about 5MB with no eviction, and a bin that grew without limit would eventually cost you the maps you still want.</li><li><b>Arrows carry on past a sibling group.</b> At the edge of a node&#x27;s own siblings the arrow continues into the next branch along at the same level, the way <code>Tab</code> cycling does. Two deliberate differences: it stays among branches pointing the same way, so you never teleport across the centre, and it does not wrap, because an arrow is a direction and running out of map should stop rather than reappear at the far end.</li><li><b>Arrows work inside focus.</b> On the focused node itself a sideways arrow carries the focus to the branch beside it and the inward arrow lifts it a level, so a large map can be walked branch by branch without stepping out and back in each time. Outward still goes to the first child, so in and out remain opposites.</li></ul><h3 class="rel">0.10.2 <span>2026-09-15</span></h3><h4>Changed</h4><ul><li><b>Deleting a map asks once.</b> It was a single unconfirmed click that removed the map&#x27;s storage key outright, with no undo: the node undo stack does not reach map-level operations, so a slip lost the map for good. The button now arms on the first click, reading <code>Sure?</code>, and only the second click on that same map deletes it. It disarms itself after a few seconds, when the panel closes, and when anything else in the panel is clicked, so an armed button is never left waiting for a click that meant something else.</li></ul><h3 class="rel">0.10.1 <span>2026-09-15</span></h3><h4>Fixed</h4><ul><li><b>Selecting a row is <code>⇧</code> + click, not <code>⇧</code> + right-click.</b> The gesture 0.10.0 shipped never fired: Chrome and Firefox both reserve shift + right-click for their own native menu and hand it to the browser before the page sees the event, <code>preventDefault</code> included. There is no way for a page to be given that chord, so it moves to the left button, where nothing else was using it. Plain right-click still focuses a branch and plain click still selects a single node; only the modifier is new.</li></ul><h3 class="rel">0.10.0 <span>2026-09-15</span></h3><h4>Added</h4><ul><li><b>Shift + right-click selects a sibling row.</b> Every child of that node&#x27;s parent, the node itself included, in one gesture. Plain right-click still focuses; the modifier is the difference. It is the row, not the depth: two branches can both have a third level and selecting one does not reach into the other. The centre node of the current view has no siblings on screen, so it flashes rather than marking something you cannot see.</li><li><b>Fold acts on a selection.</b> With a row in hand, <code>⌘E</code> folds every selected node at once. Each one folds its own children, so the row stays on screen and everything under it goes: that is the level you picked, hidden. A mixed selection resolves one way rather than flip-flopping, folding if any of them is open, and the selection survives so the same key opens it again.</li></ul><h4>Changed</h4><ul><li><b>Delete now takes exactly what was selected.</b> With a selection up, <code>⌫</code> removes those nodes and nothing else: anything underneath them that you did <em>not</em> select survives and reattaches to the nearest node that did, in place. A lasso can no longer take a branch it did not cover. Survivors that move inherit their new parent&#x27;s direction, as children do everywhere else, and one that lands on the centre node keeps the direction it was already drawn with, so the picture does not jump. With nothing selected, <code>⌫</code> is unchanged: the node and its whole branch.</li></ul><h4>Removed</h4><ul><li><b><code>All around</code></b>, from Spread. Five modes remain. A map saved in it is baked into the shape it was already showing rather than reshaped into a neighbour: the directions it was deriving are written in and the map drops to <code>As placed</code>, the same trade as branching against a mode. Nothing moves.</li></ul></div>
+    <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
+  </div>
+</div>
+
 <input type="file" id="filePicker" accept="application/json,.json" style="display:none">
 
 <script>
@@ -568,7 +596,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="0.12.0";
+var VERSION="0.13.0";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid",
   width:2, dash:"solid", slop:1, edges:"round",
@@ -2751,6 +2779,9 @@ addEventListener("keyup",function(e){
 });
 document.addEventListener("keydown",function(e){
   var mod=e.metaKey||e.ctrlKey;
+  if(document.getElementById("notes").classList.contains("open") && e.key!=="Escape"){
+    e.preventDefault(); return;
+  }
 
   if(elJump.classList.contains("on")){
     if(!mod||e.key!=="k") return;                 /* the input owns the keyboard */
@@ -2781,6 +2812,7 @@ document.addEventListener("keydown",function(e){
 
   if(e.key==="?"&&!editing){ toggleHelp(true); return; }
   if(e.key==="Escape"){
+    if(document.getElementById("notes").classList.contains("open")){ toggleNotes(false); return; }
     if(elJump.classList.contains("on")){ closeJump(); return; }
     if(elMaps.classList.contains("on")){ toggleMaps(false); return; }
     if(document.getElementById("help").classList.contains("open")){ toggleHelp(false); return; }
@@ -3148,6 +3180,22 @@ addEventListener("mousedown",function(e){
    CHROME
    ============================================================ */
 function toggleHelp(on){ document.getElementById("help").classList.toggle("open",on); }
+/* What's new shows itself once, the first time you run a version you have not
+   run before. Not on a first ever run: someone opening Mappr for the first time
+   wants the map, not a list of things they have never seen change. The version
+   is recorded whether or not the panel was shown, so this can only ever fire on
+   an actual upgrade. */
+var SEEN="mappr.seen";
+function toggleNotes(on){ document.getElementById("notes").classList.toggle("open",on); }
+function notesOnBoot(){
+  var was=null;
+  try{ was=localStorage.getItem(SEEN); }catch(e){ return; }
+  try{ localStorage.setItem(SEEN,VERSION); }catch(e){}
+  if(was && was!==VERSION) toggleNotes(true);
+}
+document.getElementById("brand").onclick=function(){ toggleNotes(true); };
+document.getElementById("btnCloseNotes").onclick=function(){ toggleNotes(false); };
+document.getElementById("notes").addEventListener("mousedown",function(e){ if(e.target.id==="notes") toggleNotes(false); });
 document.getElementById("btnHelp").onclick=function(){ toggleHelp(true); };
 document.getElementById("btnCloseHelp").onclick=function(){ toggleHelp(false); };
 document.getElementById("help").addEventListener("mousedown",function(e){ if(e.target.id==="help") toggleHelp(false); });
@@ -3168,7 +3216,7 @@ addEventListener("beforeunload",function(){ if(editing) commitEdit(); if(editFra
    ============================================================ */
 var restored=load();
 if(!restored){ state=freshState(); selected=state.rootId; uid=1; }
-localizeKeys(); applyCss(); drawPanel();
+localizeKeys(); applyCss(); drawPanel(); notesOnBoot();
 function boot(){ render(true); restored?applyView():center(); }
 if(document.fonts&&document.fonts.load) document.fonts.load('17px "Excalifont"').then(boot,boot);
 else boot();
@@ -3223,7 +3271,8 @@ window.__mf={
   get links(){ return (state.links||[]).map(function(l){ return {a:l.a,b:l.b}; }); },
   tie:function(a,b){ var r=toggleLink(a,b); if(r){ hardRender(); save(); } return r; },
   linksAt:linksAt, hop:hopLink,
-  get isMac(){ return IS_MAC; }, keyWords:keyWords,
+  get isMac(){ return IS_MAC; }, keyWords:keyWords, notes:toggleNotes,
+  get seen(){ try{ return localStorage.getItem("mappr.seen"); }catch(e){ return null; } },
   trash:function(){ return trashList().map(function(d){ return {id:d.id,name:docName(d.state)}; }); },
   restore:trashRestore,
   cam:function(){ return {x:view.x,y:view.y,z:view.z}; },

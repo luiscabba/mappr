@@ -355,6 +355,23 @@
   table.keys td{padding:5px 0;vertical-align:top}
   table.keys td:first-child{width:190px;white-space:nowrap}
   table.keys td:last-child{opacity:.82}
+  #notes{position:fixed;inset:0;z-index:21;background:rgba(10,10,14,.5);display:none;align-items:center;justify-content:center;padding:20px}
+  #notes.open{display:flex}
+  #notesCard{background:var(--panel);color:var(--ink);border-radius:16px;padding:22px 26px;max-width:640px;width:100%;max-height:86vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  #notesCard h2{margin:0 0 4px;font-size:22px;font-family:var(--font-sketch);font-weight:400}
+  #notesCard p.sub{margin:0 0 16px;font-size:12.5px;color:var(--muted)}
+  #notesBody h3.rel{
+    margin:20px 0 2px;font-size:15px;font-family:var(--font-sketch);font-weight:400;
+    border-top:1px solid var(--panel-line);padding-top:14px;
+  }
+  #notesBody h3.rel:first-child{border-top:0;padding-top:0;margin-top:4px}
+  #notesBody h3.rel span{font-family:var(--font-ui);font-size:11px;color:var(--muted);margin-left:7px}
+  #notesBody h4{margin:10px 0 4px;font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)}
+  #notesBody ul{margin:0;padding-left:17px}
+  #notesBody li{font-size:13px;line-height:1.55;margin-bottom:7px;opacity:.88}
+  #notesBody code{font-size:12px;background:var(--panel-hover);border-radius:4px;padding:1px 4px}
+  .brand{cursor:pointer}
+  .brand:hover{color:var(--sel)}
   @media (max-width:900px){ #hint{display:none} }
 </style>
 </head>
@@ -556,6 +573,17 @@
       <tr><td><kbd>⌘</kbd><kbd>,</kbd></td><td>Style panel. It never takes the keyboard, so shortcuts keep working while it is open.</td></tr>
     </table>
     <button class="tb" id="btnCloseHelp" style="border-color:var(--panel-line);margin-top:16px">Close</button>
+  </div>
+</div>
+
+<!-- What's new. The body is stamped in from CHANGELOG.md at build time, so the
+     panel cannot drift from the record of what actually shipped. -->
+<div id="notes">
+  <div id="notesCard">
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v__VERSION__</span></h2>
+    <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
+    <div id="notesBody">__NOTES__</div>
+    <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
 </div>
 
@@ -2751,6 +2779,9 @@ addEventListener("keyup",function(e){
 });
 document.addEventListener("keydown",function(e){
   var mod=e.metaKey||e.ctrlKey;
+  if(document.getElementById("notes").classList.contains("open") && e.key!=="Escape"){
+    e.preventDefault(); return;
+  }
 
   if(elJump.classList.contains("on")){
     if(!mod||e.key!=="k") return;                 /* the input owns the keyboard */
@@ -2781,6 +2812,7 @@ document.addEventListener("keydown",function(e){
 
   if(e.key==="?"&&!editing){ toggleHelp(true); return; }
   if(e.key==="Escape"){
+    if(document.getElementById("notes").classList.contains("open")){ toggleNotes(false); return; }
     if(elJump.classList.contains("on")){ closeJump(); return; }
     if(elMaps.classList.contains("on")){ toggleMaps(false); return; }
     if(document.getElementById("help").classList.contains("open")){ toggleHelp(false); return; }
@@ -3148,6 +3180,22 @@ addEventListener("mousedown",function(e){
    CHROME
    ============================================================ */
 function toggleHelp(on){ document.getElementById("help").classList.toggle("open",on); }
+/* What's new shows itself once, the first time you run a version you have not
+   run before. Not on a first ever run: someone opening Mappr for the first time
+   wants the map, not a list of things they have never seen change. The version
+   is recorded whether or not the panel was shown, so this can only ever fire on
+   an actual upgrade. */
+var SEEN="mappr.seen";
+function toggleNotes(on){ document.getElementById("notes").classList.toggle("open",on); }
+function notesOnBoot(){
+  var was=null;
+  try{ was=localStorage.getItem(SEEN); }catch(e){ return; }
+  try{ localStorage.setItem(SEEN,VERSION); }catch(e){}
+  if(was && was!==VERSION) toggleNotes(true);
+}
+document.getElementById("brand").onclick=function(){ toggleNotes(true); };
+document.getElementById("btnCloseNotes").onclick=function(){ toggleNotes(false); };
+document.getElementById("notes").addEventListener("mousedown",function(e){ if(e.target.id==="notes") toggleNotes(false); });
 document.getElementById("btnHelp").onclick=function(){ toggleHelp(true); };
 document.getElementById("btnCloseHelp").onclick=function(){ toggleHelp(false); };
 document.getElementById("help").addEventListener("mousedown",function(e){ if(e.target.id==="help") toggleHelp(false); });
@@ -3168,7 +3216,7 @@ addEventListener("beforeunload",function(){ if(editing) commitEdit(); if(editFra
    ============================================================ */
 var restored=load();
 if(!restored){ state=freshState(); selected=state.rootId; uid=1; }
-localizeKeys(); applyCss(); drawPanel();
+localizeKeys(); applyCss(); drawPanel(); notesOnBoot();
 function boot(){ render(true); restored?applyView():center(); }
 if(document.fonts&&document.fonts.load) document.fonts.load('17px "Excalifont"').then(boot,boot);
 else boot();
@@ -3223,7 +3271,8 @@ window.__mf={
   get links(){ return (state.links||[]).map(function(l){ return {a:l.a,b:l.b}; }); },
   tie:function(a,b){ var r=toggleLink(a,b); if(r){ hardRender(); save(); } return r; },
   linksAt:linksAt, hop:hopLink,
-  get isMac(){ return IS_MAC; }, keyWords:keyWords,
+  get isMac(){ return IS_MAC; }, keyWords:keyWords, notes:toggleNotes,
+  get seen(){ try{ return localStorage.getItem("mappr.seen"); }catch(e){ return null; } },
   trash:function(){ return trashList().map(function(d){ return {id:d.id,name:docName(d.state)}; }); },
   restore:trashRestore,
   cam:function(){ return {x:view.x,y:view.y,z:view.z}; },

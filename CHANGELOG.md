@@ -3,6 +3,22 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.13.0] - 2026-09-16
+
+### Added
+- **What's new.** The first time you run a version you have not run before, a
+  panel says what changed. Click the Mappr wordmark to read it again any time.
+  It is stamped in from `CHANGELOG.md` at build time rather than written a
+  second time by hand, so it cannot drift from the record of what actually
+  shipped: the changelog stays the single source and the panel is a view of it.
+  It carries the last six releases.
+
+  It does not greet a first ever run. Someone opening Mappr for the first time
+  wants the map, not a list of changes to things they have never seen. The
+  version is recorded on every run whether or not the panel appeared, so it can
+  only ever fire on a real upgrade, and while it is open the keyboard belongs
+  to it, so a stray key cannot retype the node behind it.
+
 ## [0.12.0] - 2026-09-16
 
 ### Added
