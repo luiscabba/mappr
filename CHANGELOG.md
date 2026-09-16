@@ -3,6 +3,35 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.26.0] - 2026-09-16
+
+### Added
+- **Select with the keyboard.** `⇧`+arrow grows a selection node by node, and
+  stepping back lets go of the last one, the way Shift works in text.
+  `⌘⇧`+arrow takes whole branches: outward this branch, sideways every
+  sibling that way, inward the parent's branch, and from the centre a whole
+  side. The key bar switches to selection keys while something is selected.
+- **Move a selection.** `⌥`+arrow moves every selected branch at once, by the
+  same rules as a single node, and keeps them selected so you can keep going.
+- **Copy, cut and paste that keep their shape.** `⌘C` copies exactly what is
+  selected, each node under its nearest selected parent, or with nothing
+  selected, the selected node's branch. `⌘X` cuts. `⌘V` pastes as children,
+  `⇧⌘V` as siblings right after the selection. Pasted nodes point the way
+  their new parent does and arrive selected. Copies made in Mappr also keep
+  done and flag marks, folds, and links between the copied nodes.
+
+### Changed
+- **Deleting a node keeps its children.** `⌫` takes just the node, and its
+  children move up into its place. `⌘⌫` deletes the whole branch. A frame
+  whose top node is deleted keeps wrapping what moved up.
+- **New nodes are selected, not opened.** No cursor blinks in an empty box;
+  your first letter starts typing, and a new node left blank is dropped when
+  you move on, press `Esc` or click away. *Cursor in new nodes* in the style
+  panel brings the old behaviour back.
+
+### Fixed
+- **The cursor sits in the middle of an empty node** instead of its corner.
+
 ## [0.25.0] - 2026-09-16
 
 ### Added

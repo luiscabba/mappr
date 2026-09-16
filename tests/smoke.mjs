@@ -525,7 +525,7 @@ group("selecting a level");
   await M(() => __mf.mark([]));
   await key("Backspace");
   await page.waitForTimeout(200);
-  ok("plain delete still takes one node and its branch", !(await node("C")));
+  ok("plain delete takes just the node", !(await node("C")));
 }
 
 group("copying an outline");
@@ -540,8 +540,9 @@ group("copying an outline");
   await M((t) => __mf.paste(t), SRC);
   await page.waitForTimeout(200);
 
-  // A real copy event must carry both flavours.
+  // A real copy event must carry both flavours. With the centre selected it is the whole map.
   const copied = await M(() => {
+    __mf.select(__mf.state.rootId);
     const dt = new DataTransfer();
     document.dispatchEvent(new ClipboardEvent("copy", { clipboardData: dt, bubbles: true, cancelable: true }));
     return { text: dt.getData("text/plain"), html: dt.getData("text/html") };
@@ -1870,6 +1871,173 @@ group("QoL: focus toggle, undoing a retype, copying views, tabbed keys");
   await press("Escape");
   ok("Esc closes the keys", await M(() => !document.getElementById("help").classList.contains("open")));
   ok("the paste button is gone", await M(() => !document.getElementById("btnPaste")));
+}
+
+group("selecting, copying, moving and deleting several nodes");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(200); };
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  await M((t) => __mf.paste(t), "Hub\n- Alpha\n  - A1\n    - A1x\n  - A2\n  - A3\n- Beta\n  - B1");
+  await page.waitForTimeout(250);
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  const has = (t) => M((t) => Object.values(__mf.state.nodes).some((n) => n.text === t), t);
+  const marks = () => M(() => __mf.rawMarked.map((i) => __mf.state.nodes[i].text).sort().join(","));
+  const doCopy = () => M(() => { const dt = new DataTransfer(); document.dispatchEvent(new ClipboardEvent("copy", { clipboardData: dt, bubbles: true, cancelable: true })); return dt.getData("text/plain"); });
+  const doCut = () => M(() => { const dt = new DataTransfer(); document.dispatchEvent(new ClipboardEvent("cut", { clipboardData: dt, bubbles: true, cancelable: true })); return dt.getData("text/plain"); });
+  const doPaste = (t) => M((t) => { const dt = new DataTransfer(); dt.setData("text/plain", t); document.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true })); }, t);
+
+  // Shift+arrow grows and shrinks a selection
+  await pick("A1");
+  const down = await M(() => __mf.dir(__mf.selected));
+  const along = (down === "L" || down === "R") ? "ArrowDown" : "ArrowRight";
+  const back = (down === "L" || down === "R") ? "ArrowUp" : "ArrowLeft";
+  await press("Shift+" + along);
+  await press("Shift+" + along);
+  ok("Shift+arrow selects node by node", (await marks()) === "A1,A2,A3", await marks());
+  ok("the selection highlight covers exactly what is selected", await M(() => document.querySelectorAll("#marks path, svg path").length > 0));
+  await press("Shift+" + back);
+  ok("stepping back lets go of the last one", (await marks()) === "A1,A2", await marks());
+  await press(along === "ArrowDown" ? "ArrowDown" : "ArrowRight");
+  ok("a plain arrow drops the selection", (await marks()) === "", await marks());
+
+  // Cmd+Shift+arrow takes branches
+  await pick("A1");
+  const out = await M(() => __mf.dir(__mf.selected));
+  const OUT = { L: "ArrowLeft", R: "ArrowRight", U: "ArrowUp", D: "ArrowDown" }[out];
+  await press("Meta+Shift+" + OUT);
+  ok("Cmd+Shift+outward selects the whole branch", (await marks()) === "A1,A1x", await marks());
+  await press("Meta+Shift+" + along);
+  ok("Cmd+Shift+sideways adds the siblings that way, with their branches", (await marks()) === "A1,A1x,A2,A3", await marks());
+  await M(() => __mf.mark([]));
+  await pick("A2");
+  const IN = { L: "ArrowRight", R: "ArrowLeft", U: "ArrowDown", D: "ArrowUp" }[out];
+  await press("Meta+Shift+" + IN);
+  ok("Cmd+Shift+inward selects the parent's whole branch", (await marks()) === "A1,A1x,A2,A3,Alpha", await marks());
+  ok("and lands on the parent", (await M(() => __mf.selected)) === (await id("Alpha")));
+  ok("nothing was created", !(await M(() => Object.values(__mf.state.nodes).some((n) => n.text === ""))));
+  await M(() => __mf.mark([]));
+
+  // copying a scattered pick keeps its shape
+  await M(async (ids) => __mf.mark(ids), [await id("Alpha"), await id("A1x"), await id("B1")]);
+  const c1 = await doCopy();
+  ok("a scattered copy hangs each node under its nearest selected ancestor", c1 === "- Alpha\n  - A1x\n- B1", c1);
+  await M(() => __mf.mark([]));
+  await pick("A1x");
+  await M(() => __mf.toggleMarkKind && 0);
+  await press("Meta+Shift+d"); // done
+  await M(async ([a, b]) => __mf.tie(a, b), [await id("A1"), await id("A1x")]);
+  await M(() => __mf.mark([]));
+  await pick("A1");
+  const c2 = await doCopy();
+  ok("with nothing selected, copy takes the selected branch", c2 === "- A1\n  - A1x", c2);
+  const links0 = (await M(() => __mf.links)).length;
+  await pick("B1");
+  await doPaste(c2);
+  await page.waitForTimeout(200);
+  const pasted = await M(() => { const b = Object.values(__mf.state.nodes).find((n) => n.text === "B1"); return b.children.map((c) => __mf.state.nodes[c].text + ">" + __mf.state.nodes[c].children.map((k) => __mf.state.nodes[k].text + ":" + (__mf.state.nodes[k].mark || "")).join()); });
+  ok("paste lands as children of the selection, shape intact", pasted.join() === "A1>A1x:done", pasted);
+  ok("our own copies keep marks and the links between copied nodes", (await M(() => __mf.links)).length === links0 + 1);
+  ok("what landed stays selected", (await M(() => __mf.rawMarked.length)) === 2);
+  ok("pasted nodes point the way their new parent does", await M(() => { const b = Object.values(__mf.state.nodes).find((n) => n.text === "B1"); const k = __mf.state.nodes[b.children[0]]; return __mf.dir(k.id) === __mf.dir(b.id); }));
+  await press("Meta+z");
+  ok("one undo takes the paste back", (await M(() => Object.values(__mf.state.nodes).filter((n) => n.text === "A1").length)) === 1);
+
+  // Shift+Cmd+V pastes as siblings
+  await M(() => __mf.mark([]));
+  await pick("B1");
+  await page.keyboard.down("Meta"); await page.keyboard.down("Shift"); await page.keyboard.press("v"); await page.keyboard.up("Shift"); await page.keyboard.up("Meta");
+  await doPaste("Gamma\nDelta");
+  await page.waitForTimeout(200);
+  ok("Shift+Cmd+V pastes after the selection, as siblings", await M(() => { const b = Object.values(__mf.state.nodes).find((n) => n.text === "B1"); const p = __mf.state.nodes[b.parent]; return p.children.map((c) => __mf.state.nodes[c].text).join() === "B1,Gamma,Delta"; }), await M(() => { const b = Object.values(__mf.state.nodes).find((n) => n.text === "B1"); return __mf.state.nodes[b.parent].children.map((c) => __mf.state.nodes[c].text); }));
+  await M(() => __mf.mark([]));
+  await pick("B1");
+  await doPaste("Plain");
+  await page.waitForTimeout(200);
+  ok("a plain Cmd+V still pastes children", (await node("Plain")).parent === "B1");
+
+  // Option+arrow moves a whole selection
+  await M(async (ids) => __mf.mark(ids), [await id("Gamma"), await id("Delta")]);
+  await pick("Gamma"); await M(async (ids) => __mf.mark(ids), [await id("Gamma"), await id("Delta")]);
+  const bd0 = await M(() => __mf.dir(Object.values(__mf.state.nodes).find((n) => n.text === "B1").id));
+  const sideUp = (bd0 === "L" || bd0 === "R") ? "Alt+ArrowUp" : "Alt+ArrowLeft";
+  await press(sideUp);
+  const order = await M(() => { const b = Object.values(__mf.state.nodes).find((n) => n.text === "B1"); return __mf.state.nodes[b.parent].children.map((c) => __mf.state.nodes[c].text).join(); });
+  ok("Option+arrow moves every selected node together", order === "Gamma,Delta,B1", order);
+  ok("and keeps them selected", (await marks()) === "Delta,Gamma", await marks());
+  await press(sideUp);
+  ok("at the edge nothing moves and nothing is recorded", (await M(() => { const b = Object.values(__mf.state.nodes).find((n) => n.text === "B1"); return __mf.state.nodes[b.parent].children.map((c) => __mf.state.nodes[c].text).join(); })) === "Gamma,Delta,B1");
+  const bdir = await M(() => __mf.dir(Object.values(__mf.state.nodes).find((n) => n.text === "B1").id));
+  const BOUT = { L: "Alt+ArrowLeft", R: "Alt+ArrowRight", U: "Alt+ArrowUp", D: "Alt+ArrowDown" }[bdir];
+  await pick("B1"); await M(async (ids) => __mf.mark(ids), [await id("B1")]);
+  await press("Alt+" + (sideUp.includes("Up") ? "ArrowDown" : "ArrowRight"));
+  await M(async (ids) => __mf.mark(ids), [await id("Delta"), await id("B1")]);
+  await press(BOUT);
+  ok("outward tucks the selection under the sibling before it", (await node("Delta")).parent === "Gamma" && (await node("B1")).parent === "Gamma", [await node("Delta"), await node("B1")]);
+  const BIN = { L: "Alt+ArrowRight", R: "Alt+ArrowLeft", U: "Alt+ArrowDown", D: "Alt+ArrowUp" }[bdir];
+  await press(BIN);
+  ok("inward brings them back up a level, in order", (await node("Gamma")).kids.length === 0 && (await node("Beta")).kids.join() === "Gamma,Delta,B1", await node("Beta"));
+
+  // cut
+  await M(() => __mf.mark([]));
+  await pick("Gamma");
+  const cutText = await doCut();
+  ok("Cmd+X copies and removes", cutText === "- Gamma" && !(await has("Gamma")), cutText);
+  await pick("Plain");
+  await doPaste(cutText);
+  await page.waitForTimeout(150);
+  ok("and it pastes back", (await node("Gamma")).parent === "Plain");
+
+  // Backspace keeps the children
+  await M(() => __mf.mark([]));
+  await pick("A1");
+  await press("Backspace");
+  ok("deleting a parent keeps its children", !(await has("A1")) && (await node("A1x")).parent === "Alpha", await node("A1x"));
+  ok("they take its place among the siblings", (await node("Alpha")).kids.join() === "A1x,A2,A3", await node("Alpha"));
+  ok("and the first of them is selected", (await M(() => __mf.selected)) === (await id("A1x")));
+  ok("the status says what moved", /moved up/.test(await M(() => document.getElementById("saveState").textContent)));
+  await press("Meta+z");
+  ok("undo puts the parent back over them", (await node("A1x")).parent === "A1");
+  await pick("Alpha");
+  await press("Meta+Backspace");
+  ok("Cmd+Backspace deletes the whole branch", !(await has("Alpha")) && !(await has("A1x")) && !(await has("A3")));
+  await press("Meta+z");
+  // a frame whose root is deleted keeps its children
+  await pick("A1");
+  await press("Meta+g"); await press("Enter");
+  await pick("A1");
+  await press("Backspace");
+  ok("a frame keeps wrapping what its deleted root handed up", await M(() => __mf.frames.length === 1 && __mf.frames[0].roots.length === 1 && __mf.state.nodes[__mf.frames[0].roots[0]].text === "A1x"));
+
+  // new nodes are selected, not opened for typing
+  await pick("A3");
+  await press("Enter");
+  ok("a new node is not in typing mode", (await M(() => __mf.editing)) == null);
+  ok("but it is selected", (await M(() => __mf.state.nodes[__mf.selected].text)) === "");
+  await page.keyboard.type("Fresh");
+  await press("Escape");
+  ok("letters type straight into it", await has("Fresh"));
+  await press("Enter");
+  await press(along);
+  ok("an arrow drops a new node left blank", !(await M(() => Object.values(__mf.state.nodes).some((n) => n.text === ""))));
+  ok("and stays put rather than moving on", (await M(() => __mf.state.nodes[__mf.selected].text)) === "Fresh");
+  const u0 = await M(() => __mf.undoSteps);
+  await press("Enter"); await press("Escape");
+  ok("so does Esc, leaving no undo step behind", !(await M(() => Object.values(__mf.state.nodes).some((n) => n.text === ""))) && (await M(() => __mf.undoSteps)) === u0, [await M(() => __mf.undoSteps), u0]);
+  await press("Enter");
+  await pick("B1");
+  ok("and so does clicking away", !(await M(() => Object.values(__mf.state.nodes).some((n) => n.text === ""))));
+  // the setting brings the cursor back, and the cursor sits in the middle
+  await M(() => __mf.set("typeOnCreate", true));
+  await press("Enter");
+  ok("with the setting on, new nodes open for typing", (await M(() => __mf.editing)) != null);
+  const caret = await M(() => { const el = document.querySelector(".node.editing"); const r = getSelection().getRangeAt(0).getBoundingClientRect(); const b = el.getBoundingClientRect(); return { dx: Math.abs((r.left + r.right) / 2 - (b.left + b.right) / 2), dy: Math.abs((r.top + r.bottom) / 2 - (b.top + b.bottom) / 2), w: b.width }; });
+  ok("the cursor in an empty node is centred", caret.dx < 6 && caret.dy < 6, caret);
+  await page.keyboard.type("Zed");
+  await press("Escape");
+  ok("and what you type has no hidden characters", await M(() => Object.values(__mf.state.nodes).some((n) => n.text === "Zed")));
+  await M(() => __mf.set("typeOnCreate", false));
 }
 
 group("console");

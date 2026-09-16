@@ -581,24 +581,29 @@
     </table></section>
     <section class="hpane" data-tab="edit"><h3>Edit</h3>
     <table class="keys">
-      <tr><td><kbd>Space</kbd> or any letter</td><td>Retype the selected node, replacing its text.</td></tr>
+      <tr><td><kbd>Space</kbd> or any letter</td><td>Retype the selected node, replacing its text. A new node is ready the same way: it is selected rather than opened, so there is no cursor to look at, and your first letter starts it. Leave it blank and it goes. <em>Cursor in new nodes</em>, in the style panel, opens new nodes for typing instead.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>⏎</kbd></td><td>Line break inside a node.</td></tr>
       <tr><td><kbd>Esc</kbd></td><td>Stop typing. A node left blank is dropped.</td></tr>
-      <tr><td><kbd>⌫</kbd></td><td>Delete the node and everything under it. With a selection up it deletes <em>exactly</em> what is selected: anything underneath that you did not select survives and moves up to the nearest node that did.</td></tr>
+      <tr><td><kbd>⌫</kbd></td><td>Delete just the node. Its children move up and take its place. With a selection up it deletes <em>exactly</em> what is selected, and anything underneath that you did not select moves up the same way.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>⌫</kbd></td><td>Delete the whole branch, or every selected branch. <kbd>⌘</kbd><kbd>Z</kbd> brings any delete back.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>Z</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>Z</kbd></td><td>Undo / redo. Retyping a node is a step of its own, so overwriting one by accident comes back with <kbd>⌘</kbd><kbd>Z</kbd>, even while you are still typing.</td></tr>
-      <tr><td><kbd>⌥</kbd><kbd>←↑→↓</kbd></td><td>Move the node itself. Sideways reorders it among its siblings, outward tucks it under the sibling before it, back toward the centre promotes it a level. The whole branch travels with it.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>←↑→↓</kbd></td><td>Move the node itself. Sideways reorders it among its siblings, outward tucks it under the sibling before it, back toward the centre promotes it a level. The whole branch travels with it. With a selection up, every selected branch moves together and stays selected, so you can keep pressing.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>E</kbd></td><td>Fold or unfold a branch. A folded node wears a badge with the number hidden underneath; click the badge to open it. With a selection up it folds every selected node at once, so a whole level goes away in one press.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag (a small pennant).</td></tr>
     </table></section>
     <section class="hpane" data-tab="frames"><h3>Select and frames</h3>
     <table class="keys">
+      <tr><td><kbd>⇧</kbd><kbd>←↑→↓</kbd></td><td>Grow the selection node by node, the way Shift grows a text selection. Stepping back lets go of the last one. While typing, it selects text as usual.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>←↑→↓</kbd></td><td>Select whole branches that way. Outward: this node's branch. Sideways: this node and every sibling that way, with their branches. Back toward the centre: the parent's whole branch. From the centre: every branch on that side.</td></tr>
       <tr><td><kbd>⇧</kbd> + drag</td><td>Lasso part of the map. Select a node and its whole branch comes with it. The <b>Select</b> button makes plain dragging do this too.</td></tr>
       <tr><td><kbd>⇧</kbd> + click</td><td>Select a node's whole sibling row: every child of its parent, in one gesture. This is how you get a level in hand to fold or delete it.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>A</kbd></td><td>Select everything on screen.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>G</kbd></td><td>Wrap the selection in a frame and name it. Frames resize themselves as the map underneath grows.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>G</kbd></td><td>Ungroup the selected frame.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>C</kbd></td><td>Copy as an indented bullet list: the selected frame, or the whole map if none is selected.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>C</kbd></td><td>Copy as an indented bullet list: exactly what is selected, each node under its nearest selected parent. With nothing selected, the selected node's branch (on the centre, the whole map), or the selected frame. Copies made here also keep done and flag marks, folds, and links between the copied nodes.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>X</kbd></td><td>Cut: copy, then delete what was copied.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>V</kbd> / <kbd>⇧</kbd><kbd>⌘</kbd><kbd>V</kbd></td><td>Paste as children of the selected node, or as siblings right after it. The pasted nodes come in selected, and point the way their new parent does.</td></tr>
       <tr><td><kbd>⇧</kbd><kbd>⌘</kbd><kbd>C</kbd></td><td>Copy as an image, ready to paste into a deck or a doc.</td></tr>
       <tr><td>Double-click a frame name</td><td>Rename it.</td></tr>
       <tr><td>Frames in views</td><td>A frame follows what is on screen: in a focus it wraps the part you can see, while presenting it grows as its nodes are revealed, and in a network, where the tree is set aside, frames step out of the way.</td></tr>
@@ -670,7 +675,7 @@ var DEFAULTS = {
   width:2, dash:"solid", slop:1, edges:"round",
   arrow:"curve", head:"arrow", font:"sketch", size:"m",
   align:"center", valign:"center", nodew:"m", minSize:false,
-  gap:"m", paper:"graph", theme:"light", autoEdit:true, follow:true,
+  gap:"m", paper:"graph", theme:"light", typeOnCreate:false, follow:true,
   spread:"manual"
 };
 var CFG = Object.assign({}, DEFAULTS);
@@ -2463,7 +2468,7 @@ function paint(){
      whatever is marked. Each marked node gets a tinted halo AND an accent
      outline, and the whole selection gets one dashed box around it, so it reads
      as a set rather than as a few slightly shaded boxes. */
-  var mset=markedSet(), mids=Object.keys(mset).filter(function(id){ return !!pos[id]; });
+  var mids=Object.keys(marked).filter(function(id){ return !!pos[id] && !!N(id); });
   var mx0=Infinity,my0=Infinity,mx1=-Infinity,my1=-Infinity;
   mids.forEach(function(id){
     var b=box[id], p=pos[id], m=5;
@@ -2641,17 +2646,18 @@ var HINTS={
   focus:[["Next branch","Tab"],["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Fold","⌘","E"],["Out","Esc"]],
   dim:[["Tie","⌘","+click"],["Next network","Tab"],["Open it","⌘","/"],["Clear links","⇧","+double-click"],["Fit","⌘","0"],["Map","⌘","1"]],
   net:[["Move","←↑→↓"],["Walk","Tab"],["Fold beyond","⌘","E"],["New linked node","⏎"],["Back","Esc"]],
+  sel:[["Grow","⇧","←↑→↓"],["Branches","⌘","⇧","←↑→↓"],["Move","⌥","←↑→↓"],["Copy","⌘","C"],["Cut","⌘","X"],["Delete","⌫"],["Frame","⌘","G"],["Clear","Esc"]],
   arrange:[["Pick next","⌘","+click"],["Pick up / drop","Space"],["Unpick","⌫"],["Story","[","]"],["Present","R"]]
 };
 var hintMin=false, hintSig="";
 try{ hintMin=localStorage.getItem("mappr.hint")==="min"; }catch(e){}
 function drawHint(){
   var el=document.getElementById("hint"); if(!el) return;
-  var mode = pres ? (pres.arrange?"arrange":null) : (lensOne?"net":(lens?"dim":(focusId?"focus":"map")));
+  var mode = pres ? (pres.arrange?"arrange":null) : (Object.keys(marked).length?"sel":(lensOne?"net":(lens?"dim":(focusId?"focus":"map"))));
   var sig=(mode||"")+"|"+hintMin;
   if(sig===hintSig) return; hintSig=sig;
   if(!mode){ el.innerHTML=""; return; }
-  var names={map:"Map",focus:"Focus",dim:"Connections",net:"Network",arrange:"Story"};
+  var names={map:"Map",focus:"Focus",dim:"Connections",net:"Network",arrange:"Story",sel:"Selection"};
   var h;
   if(hintMin){
     h='<span class="hm">'+names[mode]+'</span><span><b>Keys</b> <kbd>?</kbd></span><button class="hx" data-hint="1" title="Show key hints">\u25b4</button>';
@@ -2866,10 +2872,11 @@ var editOld=null;
 function beginEdit(id,selectAll){
   if(editing&&editing!==id) commitEdit();
   if(editing!==id) editOld={id:id,text:N(id).text||""};
+  if(fresh===id) fresh=null;
   editing=id;
   var el=els[id];
   el.className="node"+(isVR(N(id))?" root":"")+" editing";
-  el.contentEditable="true"; el.textContent=N(id).text;
+  el.contentEditable="true"; el.textContent=N(id).text||"\u200b";
   /* preventScroll: the camera does all the moving here, with a transform, so a
      browser scroll-into-view would only fight it. */
   try{ el.focus({preventScroll:true}); }catch(e){ el.focus(); }
@@ -2881,13 +2888,29 @@ function commitEdit(){
   if(!editing) return;
   var el=els[editing];
   if(el){
-    var now=el.innerText.replace(/ /g," ").replace(/\n{3,}/g,"\n\n").trim();
+    var now=el.innerText.replace(/ /g," ").replace(/\u200b/g,"").replace(/\n{3,}/g,"\n\n").trim();
     var old=(editOld&&editOld.id===editing)?editOld.text:null;
     if(old && old!==now){ N(editing).text=old; snap(); }
     N(editing).text=now;
     el.contentEditable="false";
   }
   editOld=null; editing=null; saveSoon();
+}
+/* A new node is simply selected, not opened for typing: any letter starts
+   typing into it anyway, so there is no cursor blinking in an empty box. The
+   node stays "fresh" until it gets text, and a fresh node left blank is
+   dropped, exactly as a blank node you stopped typing in always was. The
+   style panel can put the cursor back. */
+var fresh=null;
+function startNew(id){
+  if(CFG.typeOnCreate){ beginEdit(id,true); return; }
+  if(editing) commitEdit();
+  fresh=id;
+}
+function dropFresh(){
+  var f=fresh; fresh=null;
+  if(!f || editing || !N(f) || selected!==f) return false;
+  return pruneIfBlank(f);
 }
 function pruneIfBlank(id){
   var n=N(id);
@@ -2935,9 +2958,50 @@ function markSiblings(id){
   render(true);
   flashSave(row.length+" selected");
 }
+/* Shift+arrow grows the selection one node at a time, the way it does in text:
+   stepping back onto the node you just came from lets go of the one you left.
+   Cmd+Shift+arrow takes whole branches that way. */
+var shiftTrail=null;
+function extendSel(pressed){
+  if(editing) commitEdit();
+  if(!shiftTrail || shiftTrail[shiftTrail.length-1]!==selected || !marked[selected]){ shiftTrail=[selected]; marked[selected]=1; }
+  var to=lensOne ? netArrow(pressed) : navigate(N(selected),pressed);
+  if(!to){ flash(selected); return; }
+  if(shiftTrail.length>1 && shiftTrail[shiftTrail.length-2]===to){ delete marked[selected]; shiftTrail.pop(); }
+  else { marked[to]=1; shiftTrail.push(to); }
+  selFrame=null; selected=to; render();
+  flashSave(Object.keys(marked).length+" selected");
+}
+function selectAlong(pressed){
+  if(editing) commitEdit();
+  var n=N(selected), take=[], land=selected;
+  var side=function(d){ return kids(N(VR())).filter(function(c){ return dirOf(c)===d; }); };
+  if(lensOne){ lensReach(lensOne).order.forEach(function(i){ take.push(i); }); }
+  else if(isVR(n)){ take=side(pressed); if(take.length) land=take[0]; }
+  else {
+    var d=dirOf(n.id);
+    if(pressed===d) take=[n.id];
+    else if(pressed===OPP[d]){
+      var p=N(n.parent);
+      if(isVR(p)) take=side(d); else { take=[p.id]; land=p.id; }
+    } else {
+      var g=sibGroup(n), i=g.indexOf(n.id);
+      take=(pressed==="U"||pressed==="L") ? g.slice(0,i+1) : g.slice(i);
+      land=take[(pressed==="U"||pressed==="L")?0:take.length-1];
+    }
+  }
+  if(!take.length){ flash(selected); return; }
+  var before=Object.keys(marked).length;
+  if(lensOne) take.forEach(function(i){ marked[i]=1; });
+  else take.forEach(function(r){ subtree(r).forEach(function(x){ marked[x]=1; }); });
+  if(Object.keys(marked).length===before){ flash(selected); return; }
+  shiftTrail=null; selFrame=null; selected=land; render();
+  flashSave(Object.keys(marked).length+" selected");
+}
 function select(id){
   if(!id||!N(id)) return;
   if(editing&&editing!==id) commitEdit();
+  if(fresh && fresh!==id) dropFresh();
   clearMarks(); selected=id; render();
 }
 function doBranch(pressed){
@@ -2950,7 +3014,7 @@ function doBranch(pressed){
   if(!made){ undoPop(); flash(selected); return; }
   netTie(node.id,made);
   clearMarks(); selected=made.id; render(false,pressed);
-  if(CFG.autoEdit) beginEdit(made.id,true);
+  startNew(made.id);
   saveSoon();
 }
 function doSibling(){
@@ -2960,7 +3024,7 @@ function doSibling(){
   else { var p=N(node.parent); made=addNode(p.id,dirOf(node.id),p.children.indexOf(node.id)+1); }
   netTie(node.id,made);
   clearMarks(); selected=made.id; render(false,made.dir);
-  beginEdit(made.id,true); saveSoon();
+  startNew(made.id); saveSoon();
 }
 /* Shift+Enter: same level, but over in the next branch along */
 function doNextBranch(){
@@ -2982,7 +3046,7 @@ function doNextBranch(){
   }
   netTie(n.id,made);
   clearMarks(); selected=made.id; render(false,made.dir);
-  beginEdit(made.id,true); saveSoon();
+  startNew(made.id); saveSoon();
 }
 function doChild(){ var n=N(selected); doBranch(isRoot(n)?"R":dirOf(n.id)); }
 /* hold Tab + arrow: slide a node in between */
@@ -2998,7 +3062,7 @@ function insertBetween(dir){
     n.parent=mid.id; mid.children.push(n.id);
     state.frames.forEach(function(f){ f.roots=f.roots.map(function(r){ return r===n.id?mid.id:r; }); });
     clearMarks(); selected=mid.id; render(false,dir);
-    beginEdit(mid.id,true); saveSoon();
+    startNew(mid.id); saveSoon();
     return;
   }
   if(forward){
@@ -3010,7 +3074,7 @@ function insertBetween(dir){
       N(c).parent=mid2.id; N(c).dir=dir; mid2.children.push(c);
     });
     clearMarks(); selected=mid2.id; render(false,dir);
-    beginEdit(mid2.id,true); saveSoon();
+    startNew(mid2.id); saveSoon();
     return;
   }
   flash(selected);
@@ -3030,10 +3094,11 @@ function deleteMarked(ids){
   var rid=VR(), was=pathTo(selected);
   var dsnap={}; Object.keys(state.nodes).forEach(function(i){ dsnap[i]=dirOf(i); });
   /* A dying node hands its surviving descendants up to whoever outlives it. */
+  var heirs={};
   function keep(id){
     var out=[];
     N(id).children.forEach(function(c){
-      if(D[c]) out=out.concat(keep(c));
+      if(D[c]){ var h=keep(c); heirs[c]=h; out=out.concat(h); }
       else { N(c).children=keep(c); out.push(c); }
     });
     return out;
@@ -3049,27 +3114,78 @@ function deleteMarked(ids){
   })(rid,null);
   dead.forEach(function(i){ delete state.nodes[i]; });
   state.links=(state.links||[]).filter(function(l){ return !D[l.a] && !D[l.b]; });
+  /* a frame whose root went keeps wrapping what that root handed up */
   state.frames=(state.frames||[]).filter(function(f){
-    f.roots=f.roots.filter(function(r){ return !D[r]; });
+    var r2=[];
+    (function add(list){ list.forEach(function(r){ if(D[r]) add(heirs[r]||[]); else if(r2.indexOf(r)<0) r2.push(r); }); })(f.roots);
+    f.roots=r2;
     return f.roots.length;
   });
   if(D[selected]){
-    selected=was.slice().reverse().filter(function(i){ return !D[i] && N(i); })[0]||rid;
+    var h0=heirs[selected]||[];
+    selected=h0.length?h0[0]:(was.slice().reverse().filter(function(i){ return !D[i] && N(i); })[0]||rid);
   }
   clearMarks(); render(); saveSoon();
-  flashSave("deleted "+dead.length);
+  var kept=Object.keys(heirs).reduce(function(a,k){ return a+heirs[k].filter(function(x){ return !D[x]; }).length; },0);
+  flashSave(dead.length===1?("deleted"+(kept?", "+kept+" moved up":"")):("deleted "+dead.length+(kept?", "+kept+" moved up":"")));
 }
-function doDelete(){
+/* Backspace takes exactly the node, or exactly what is selected: children
+   move up and take its place. Cmd+Backspace takes whole branches. */
+function doDelete(whole){
   var mr=Object.keys(marked).filter(function(i){ return N(i); });
+  if(whole){
+    var roots=mr.length?markedRoots():[selected];
+    roots=roots.filter(function(i){ return !isRoot(N(i)) && !isVR(N(i)); });
+    if(!roots.length){ flash(selected); return; }
+    var all=[]; roots.forEach(function(r){ subtree(r,all); });
+    deleteMarked(all); return;
+  }
   if(mr.length){ deleteMarked(mr); return; }
   var n=N(selected);
   if(isRoot(n)||isVR(n)){ flash(selected); return; }
-  snap();
-  clearMarks(); selected=removeNode(n.id)||VR();
-  render(); saveSoon();
+  deleteMarked([n.id]);
 }
 function setDirDeep(id,d){ N(id).dir=d; N(id).children.forEach(function(c){ setDirDeep(c,d); }); }
 
+/* Option+arrow with a selection moves every selected branch at once, each by
+   the same rule a single node follows, and the selection stays in hand so the
+   next press keeps going. If none of them can move, nothing does. */
+function moveMarked(dir){
+  var roots=markedRoots().filter(function(i){ var n=N(i); return !isRoot(n) && !isVR(n) && visible(i); });
+  if(!roots.length){ flash(selected); return; }
+  var moving={}; roots.forEach(function(r){ moving[r]=1; });
+  var tree=[]; (function w(id){ tree.push(id); N(id).children.forEach(w); })(state.rootId);
+  roots.sort(function(a,b){ return tree.indexOf(a)-tree.indexOf(b); });
+  snap();
+  var moved=0;
+  var up=(dir==="U"||dir==="L");
+  (up?roots:roots.slice().reverse()).forEach(function(id){
+    var n=N(id), p=N(n.parent), d=dirOf(id);
+    if(dir===d){
+      var g=sibGroup(n), i=g.indexOf(id), h=i-1;
+      while(h>=0 && moving[g[h]]) h--;
+      if(h<0) return;
+      var host=N(g[h]);
+      p.children.splice(p.children.indexOf(id),1);
+      n.parent=host.id; host.children.push(id); host.collapsed=false;
+      setDirDeep(id, dirOf(host.id)); moved++;
+    } else if(dir===OPP[d]){
+      if(p.id===VR()||isRoot(p)) return;
+      var gp=N(p.parent);
+      p.children.splice(p.children.indexOf(id),1);
+      n.parent=gp.id;
+      gp.children.splice(gp.children.indexOf(p.id)+1,0,id);
+      setDirDeep(id, dirOf(p.id)); moved++;
+    } else {
+      var g2=sibGroup(n), i2=g2.indexOf(id), j=i2+(up?-1:1);
+      if(j<0||j>=g2.length||moving[g2[j]]) return;   /* the edge, or a selected neighbour that could not move */
+      var a=p.children.indexOf(g2[i2]), b=p.children.indexOf(g2[j]);
+      p.children[a]=g2[j]; p.children[b]=g2[i2]; moved++;
+    }
+  });
+  if(!moved){ undoPop(); flash(selected); return; }
+  render(); saveSoon();
+}
 /* Option+arrow: reorder among siblings, or promote / demote a level */
 function moveNode(dir){
   var n=N(selected);
@@ -3308,16 +3424,23 @@ function pristine(){
   return !!r && !r.children.length && !(state.frames||[]).length &&
          (!r.text || r.text==="Central idea");
 }
-function insertOutline(items){
+function insertOutline(items,opt){
   if(!items.length) return 0;
+  opt=opt||{};
   var base=N(selected); snap();
+  /* Shift+Cmd+V: in as siblings, right after the selection */
+  var sib=null;
+  if(opt.sibling && !isVR(base) && base.parent){
+    sib={at:N(base.parent).children.indexOf(base.id)+1, dir:dirOf(base.id)};
+    base=N(base.parent);
+  }
   var baseIndent=-1, made=0;
 
   /* Pasting a whole map into an untouched one should make the pasted centre the
      centre, rather than hanging it off "Central idea". Only when the outline has
      a single top-level line: several top-level lines have no one centre to
      promote, so the placeholder stays and they branch off it. */
-  if(pristine() && base.id===state.rootId){
+  if(!sib && !opt.clip && pristine() && base.id===state.rootId){
     var min=Infinity;
     items.forEach(function(it){ if(it.indent<min) min=it.indent; });
     var tops=items.filter(function(it){ return it.indent===min; });
@@ -3332,20 +3455,32 @@ function insertOutline(items){
     return made;
   }
 
-  var balance=isRoot(base), flip=0, last=null;
+  var balance=isRoot(base)&&!opt.clip, flip=0, last=null, madeIds=[];
   var stack=[{indent:baseIndent,id:base.id,dir:base.dir}];
   items.forEach(function(it){
     while(stack.length>1&&stack[stack.length-1].indent>=it.indent) stack.pop();
-    var parent=stack[stack.length-1],dir;
-    if(parent.id===base.id&&balance) dir=(flip++%2)?"L":"R";
-    else if(parent.id===base.id) dir=base.dir||"R";
+    var parent=stack[stack.length-1],dir,at=null;
+    if(parent.id===base.id&&sib){ dir=sib.dir; at=sib.at++; }
+    else if(parent.id===base.id&&balance) dir=(flip++%2)?"L":"R";
+    else if(parent.id===base.id) dir=dirOf(base.id)||base.dir||"R";
     else dir=parent.dir;
-    var n=addNode(parent.id,dir,null);
-    n.text=it.text; made++; last=n.id;
+    var n=addNode(parent.id,dir,at);
+    n.text=it.text; made++; last=n.id; madeIds.push(n.id);
+    if(it.mark) n.mark=it.mark;
+    if(it.collapsed) n.collapsed=true;
     stack.push({indent:it.indent,id:n.id,dir:dir});
   });
-  if(last) selected=last;
-  editing=null; clearMarks(); hardRender(); fit(); saveSoon();
+  (opt.links||[]).forEach(function(l){
+    var a=madeIds[l[0]], b=madeIds[l[1]];
+    if(a&&b){ state.links=state.links||[]; state.links.push({a:a,b:b}); }
+  });
+  editing=null; clearMarks();
+  /* what landed stays selected, so it can be moved or deleted straight away */
+  if(madeIds.length>1 && baseIndent<0){ madeIds.forEach(function(i){ marked[i]=1; }); selected=madeIds[0]; }
+  else if(last) selected=last;
+  hardRender();
+  if(opt.clip||sib) render(); else fit();
+  saveSoon();
   return made;
 }
 var flashTimer=null;
@@ -3410,15 +3545,68 @@ function currentOutline(){
   if(selFrame){ var f=frameById(selFrame); if(f) return toOutline(f.roots); }
   return toOutline([VR()]);
 }
+/* Copying a selection. Exactly the selected nodes, each hung under its
+   nearest selected ancestor, so a pick of scattered nodes pastes as a tidy
+   outline. With nothing selected it is the selected node's branch, or the
+   whole view from its centre. Our own copies also remember done and flag
+   marks, folds and the links between copied nodes; that part lives only in
+   this tab, and only while the clipboard still holds the same text. */
+var clip=null;
+function selectionCopy(){
+  var ids=Object.keys(marked).filter(function(i){ return N(i); });
+  if(!ids.length){
+    if(isVR(N(selected))) return null;
+    ids=subtree(selected);
+  }
+  var has={}; ids.forEach(function(i){ has[i]=1; });
+  var order=[]; (function w(id){ if(has[id]) order.push(id); N(id).children.forEach(w); })(state.rootId);
+  var depth={}, idx={}, items=[], lines=[], html="", open=0;
+  order.forEach(function(id,k){
+    var p=N(id).parent; while(p && !has[p]) p=N(p).parent;
+    var d=p?depth[p]+1:0; depth[id]=d; idx[id]=k;
+    var n=N(id), t=(n.text||"").replace(/\n/g," ");
+    items.push({indent:d, text:t, mark:n.mark||null,
+      collapsed:!!n.collapsed && n.children.length>0 && n.children.every(function(c){ return has[c]; })});
+    lines.push("  ".repeat(d)+"- "+t);
+  });
+  var kidsOf={}, tops=[];
+  order.forEach(function(id){ var p=N(id).parent; while(p && !has[p]) p=N(p).parent; if(p) (kidsOf[p]=kidsOf[p]||[]).push(id); else tops.push(id); });
+  (function walk(list){
+    html+="<ul>";
+    list.forEach(function(id){ html+="<li>"+esc((N(id).text||"").replace(/\n/g," ")); if(kidsOf[id]) walk(kidsOf[id]); html+="</li>"; });
+    html+="</ul>";
+  })(tops);
+  void open;
+  var links=[];
+  (state.links||[]).forEach(function(l){ if(has[l.a]&&has[l.b]) links.push([idx[l.a],idx[l.b]]); });
+  return { ids:order, txt:lines.join("\n"), html:html, items:items, links:links };
+}
+var pasteSibling=false;
+document.addEventListener("cut",function(e){
+  if(editing||editFrame||pres) return;
+  if(e.target && e.target.tagName==="INPUT") return;
+  var c=selectionCopy(); if(!c){ e.preventDefault(); flash(selected); return; }
+  e.preventDefault();
+  e.clipboardData.setData("text/plain",c.txt);
+  e.clipboardData.setData("text/html",c.html);
+  clip=c;
+  var n=c.ids.length;
+  if(Object.keys(marked).length) doDelete(false); else doDelete(true);
+  flashSave("cut "+n);
+});
 document.addEventListener("paste",function(e){
   var cd=e.clipboardData||window.clipboardData;
   var txt=cd.getData("text/plain")||"", html="";
   try{ html=cd.getData("text/html")||""; }catch(err){ html=""; }
   if(!txt.trim()&&!html.trim()) return;
   var multi=/\n/.test(txt.trim())||/<li|<ul|<ol/i.test(html);
-  if(editing&&!multi) return;
+  var mine=clip && txt===clip.txt;
+  if(editing&&!multi&&!mine) return;
   e.preventDefault();
   if(editing) commitEdit();
+  var sibling=pasteSibling; pasteSibling=false;
+  if(mine){ flashSave(insertOutline(clip.items.map(function(x){ return Object.assign({},x); }),{clip:true,sibling:sibling,links:clip.links})+" pasted"); return; }
+  if(sibling){ flashSave(insertOutline(bestOutline(html,txt),{sibling:true})+" added"); return; }
   flashSave(insertOutline(bestOutline(html,txt))+" added");
 });
 document.addEventListener("copy",function(e){
@@ -3428,6 +3616,10 @@ document.addEventListener("copy",function(e){
   var o=null, label="";
   if(pres){ var sc=presScope(); o=storyOutlineOf(sc); label=sc==="sofar"?"the story so far copied":"story copied as an outline"; }
   else if(lensOne){ o=netOutlineOf(); label="network copied as an outline"; }
+  if(!o && !selFrame){
+    var c=selectionCopy();
+    if(c){ clip=c; o=c; label=c.ids.length+(c.ids.length===1?" node copied":" nodes copied"); }
+  }
   if(o){
     e.clipboardData.setData("text/plain",o.txt);
     e.clipboardData.setData("text/html",o.html);
@@ -3919,7 +4111,7 @@ var PANEL=[
   {h:"Spacing",key:"gap",opts:[["s",I.gs,"Compact"],["m",I.gm,"Normal"],["l",I.gl,"Airy"]]},
   {h:"Paper",key:"paper",opts:[["graph",I.pgraph,"Graph"],["lines",I.plines,"Ruled"],["dots",I.pdots,"Dots"],["blank",I.pblank,"Blank"]]},
   {h:"Theme",key:"theme",opts:[["light",I.tlight,"Light"],["dark",I.tdark,"Dark"]]},
-  {h:"Behaviour",toggles:[["minSize","Uniform node size"],["autoEdit","Type on create"],["follow","Camera follows"]]}
+  {h:"Behaviour",toggles:[["minSize","Uniform node size"],["typeOnCreate","Cursor in new nodes"],["follow","Camera follows"]]}
 ];
 var elStyle=document.getElementById("style"), elScroll=document.getElementById("styleScroll");
 function drawPanel(){
@@ -4056,6 +4248,7 @@ document.addEventListener("keydown",function(e){
     if(document.getElementById("notes").classList.contains("open")){ toggleNotes(false); return; }
     /* finishing a node comes before leaving the lens it was typed in */
     if(editing){ var wi=editing; e.preventDefault(); commitEdit(); pruneIfBlank(wi); render(); return; }
+    if(fresh===selected && dropFresh()){ e.preventDefault(); render(); return; }
     if(lensOne){ e.preventDefault(); lensSet(true,null); return; }
     if(lens){ e.preventDefault(); lensOff(); return; }
     if(elJump.classList.contains("on")){ closeJump(); return; }
@@ -4138,15 +4331,17 @@ document.addEventListener("keydown",function(e){
   if(mod&&e.shiftKey&&(e.key==="g"||e.key==="G")){ e.preventDefault(); ungroup(); return; }
   if(mod&&(e.key==="g"||e.key==="G")){ e.preventDefault(); if(editing) commitEdit(); makeFrame(); return; }
   if(mod&&e.shiftKey&&(e.key==="c"||e.key==="C")){ e.preventDefault(); doExport("png-copy"); return; }
-  if(mod&&(e.key==="c"||e.key==="v"||e.key==="x")) return;
+  if(mod&&(e.key==="v"||e.key==="V")){ pasteSibling=!!e.shiftKey; setTimeout(function(){ pasteSibling=false; },400); return; }
+  if(mod&&(e.key==="c"||e.key==="x")) return;
 
+  if(mod&&e.shiftKey&&KEYDIR[e.key]){ if(editing) return; e.preventDefault(); selectAlong(KEYDIR[e.key]); return; }
   if(mod&&KEYDIR[e.key]){ e.preventDefault(); if(editing) commitEdit(); doBranch(KEYDIR[e.key]); return; }
   if(mod&&e.key==="Enter"){ e.preventDefault(); if(editing) commitEdit(); doChild(); return; }
   if(e.altKey&&e.key==="Enter"&&editing){ e.preventDefault(); document.execCommand("insertLineBreak"); return; }
   if(e.key==="Enter"&&e.shiftKey){ e.preventDefault(); if(editing) commitEdit(); doNextBranch(); return; }
   if(e.key==="Enter"){ e.preventDefault(); if(editing) commitEdit(); doSibling(); return; }
 
-  if(KEYDIR[e.key]&&editing&&!e.altKey){
+  if(KEYDIR[e.key]&&editing&&!e.altKey&&!e.shiftKey){
     e.preventDefault();
     var from=editing; commitEdit();
     if(pruneIfBlank(from)){ render(); return; }
@@ -4160,16 +4355,19 @@ document.addEventListener("keydown",function(e){
   if(e.altKey&&KEYDIR[e.key]){
     e.preventDefault();
     if(lensOne){ flash(selected); flashSave("tree edits are off in a network"); return; }
-    moveNode(KEYDIR[e.key]); return;
+    if(Object.keys(marked).length) moveMarked(KEYDIR[e.key]); else moveNode(KEYDIR[e.key]);
+    return;
   }
 
   if(e.key===" "){ e.preventDefault(); beginEdit(selected,true); return; }
+  if(KEYDIR[e.key]&&e.shiftKey){ e.preventDefault(); extendSel(KEYDIR[e.key]); return; }
   if(KEYDIR[e.key]){
     e.preventDefault();
+    if(dropFresh()){ render(); return; }
     if(!arrowGo(KEYDIR[e.key])) flash(selected);
     return;
   }
-  if(e.key==="Backspace"||e.key==="Delete"){ e.preventDefault(); doDelete(); return; }
+  if(e.key==="Backspace"||e.key==="Delete"){ e.preventDefault(); doDelete(mod); return; }
   if(!mod&&!e.altKey&&e.key.length===1){
     e.preventDefault(); beginEdit(selected,true);
     document.execCommand("insertText",false,e.key);
@@ -4178,7 +4376,13 @@ document.addEventListener("keydown",function(e){
 
 elNodes.addEventListener("input",function(){
   if(!editing) return;
-  N(editing).text=els[editing].innerText.replace(/ /g," ");
+  var ie=els[editing];
+  if(!ie.textContent){
+    ie.textContent="\u200b";
+    var rg=document.createRange(); rg.selectNodeContents(ie); rg.collapse(false);
+    var sl=getSelection(); sl.removeAllRanges(); sl.addRange(rg);
+  }
+  N(editing).text=ie.innerText.replace(/\u00a0/g," ").replace(/\u200b/g,"");
   box[editing]={w:els[editing].offsetWidth,h:els[editing].offsetHeight};
   layout(); lensLayout(); reposition(); paint(); drawBadges(); drawFrameTitles();
   if(CFG.follow) cameraTo(editing);
