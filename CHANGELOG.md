@@ -3,6 +3,21 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.18.0] - 2026-09-16
+
+### Changed
+- **The number row is views.** `⌘1` is the normal map, `⌘2` is connections,
+  and `⌘3` is kept for a presentation view that is on its way. From any other
+  view, `⌘1` puts you back where you were, focus and all; pressing a view's own
+  number again does the same.
+- **`⌥1`, `⌥2` and `⌥3` mirror them**, because a browser tab may keep `⌘` plus
+  a number for switching tabs and never hand it to the page. They go by the
+  physical key, so they work even though `⌥` changes what a digit types on a
+  Mac, and they are off while you are typing, so a node can still hold a `£`.
+  `⌥L` still works for connections.
+- **`⌘.` now takes you to the selection at 100%**, the job `⌘1` used to do.
+  `⌘0` is unchanged: it fits the whole map, and `⌘⇧0` fits the focused branch.
+
 ## [0.17.0] - 2026-09-16
 
 ### Changed

@@ -484,6 +484,7 @@
   <span><b>Fold</b> <kbd>⌘</kbd><kbd>E</kbd></span>
   <span><b>Select a level</b> <kbd>⇧</kbd>+click</span>
   <span><b>Tie two nodes</b> <kbd>⌘</kbd>+click</span>
+  <span><b>Normal</b> <kbd>⌘</kbd><kbd>1</kbd></span>
   <span><b>Connections</b> <kbd>⌘</kbd><kbd>2</kbd></span>
   <span><b>Whole map</b> <kbd>⌘</kbd><kbd>0</kbd></span>
   <span><b>All keys</b> <kbd>?</kbd></span>
@@ -518,7 +519,7 @@
       <tr><td><kbd>⌘</kbd><kbd>K</kbd></td><td>Jump to any node by typing a few letters of it. Works across the whole map, opens folded branches and steps out of focus to get there.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>0</kbd></td><td><b>Zoom out to the whole map.</b> Steps out of focus first, so this always shows you everything.</td></tr>
       <tr><td><kbd>⇧</kbd><kbd>⌘</kbd><kbd>0</kbd></td><td>Fit just the selected branch, or the selected frame.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>.</kbd> / <kbd>⌘</kbd><kbd>1</kbd></td><td>Recentre on the selection / back to 100%.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>.</kbd></td><td>Take me to the selection: centre on it at 100%.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>/</kbd></td><td>Focus: the selected branch fills the screen. <kbd>Esc</kbd> steps back out.</td></tr>
       <tr><td>Arrows while focused</td><td>On the focused node itself, a sideways arrow carries the focus to the branch beside it and the arrow pointing back toward the centre lifts it a level, so you can walk a large map branch by branch without stepping out and back in. Outward still goes to the first child.</td></tr>
     </table>
@@ -536,7 +537,8 @@
       <tr><td><kbd>⌘</kbd> + click</td><td>Tie the selected node to the one you click, anywhere on the map. A faint arc joins them. The same pair again unties. A link says these two relate; it does not change who owns whom, so nothing moves.</td></tr>
       <tr><td>The <b>∿</b> badge</td><td>How many links land on this node. Click it to walk to the other end, which is usually off screen; clicking again cycles through the rest. A folded branch carries the badge for everything tied up inside it, and walking there opens it.</td></tr>
       <tr><td>A hollow end</td><td>The node you actually tied is folded away inside the one the arc reaches. Better than a line running into nothing.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Dim to the links.</b> The whole map stays put and everything no link touches drops to a ghost, so you keep your bearings while the arcs come forward. Pressed while focused on a tied branch, it goes straight to that node's network. Press it again, or <kbd>Esc</kbd>, to turn it off: you land back where you were, focus and all.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>1</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>1</kbd></td><td><b>Normal view.</b> The number keys are views, and 1 is the plain map. From any other view it puts you back where you were, focus and all. The <kbd>⌥</kbd> versions are there because a browser tab may keep <kbd>⌘</kbd> plus a number for itself.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>2</kbd> / <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Dim to the links.</b> The whole map stays put and everything no link touches drops to a ghost, so you keep your bearings while the arcs come forward. Pressed while focused on a tied branch, it goes straight to that node's network. Press it again, or <kbd>Esc</kbd>, to turn it off: you land back where you were, focus and all.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>/</kbd> with a lens up</td><td>On a tied node, Focus shows <em>its whole network</em>: the node, everything tied to it, and everything tied to those, and nothing else. It is laid out <em>by the links</em> rather than by the tree, so a chain reads as a chain; nothing is moved for good. <kbd>Esc</kbd> steps back to dimmed. While dimmed, Focus on an untied node does what it always did.</td></tr>
       <tr><td>Moving in a network</td><td>The tree is hidden, so the keys follow what is on screen: arrows go to the nearest node that way, <kbd>Tab</kbd> walks the network nearest first, and anything you make with <kbd>Enter</kbd> or <kbd>⌘</kbd>+arrow is tied to the node you made it from, so it stays in view. Moving nodes and inserting between them are off until you leave.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>E</kbd> in a network</td><td>Folds the network instead of the tree: everything reached only <em>through</em> the selected node goes, and it wears a badge counting them. Click the badge or press it again to bring them back.</td></tr>
@@ -3132,13 +3134,24 @@ document.addEventListener("keydown",function(e){
   if(mod&&e.key==="-"){ e.preventDefault(); zoomBy(1/1.15); return; }
   if(mod&&e.shiftKey&&e.key===")"){ e.preventDefault(); fitHere(); return; }
   if(mod&&e.key==="0"){ e.preventDefault(); e.shiftKey?fitHere():fitAll(); return; }
-  if(mod&&e.key==="1"){ e.preventDefault(); if(editing) commitEdit(); view.z=1; centerOn(selected); return; }
+  /* The number row is views: 1 normal, 2 connections, 3 presentation (to
+     come). Each has an Alt twin matched by physical key, because Cmd plus a
+     digit is how every browser switches tabs and a tab may never hand it to
+     the page, and on a Mac Alt changes the character a digit types. The Alt
+     twins are off while typing, so a node can still hold a pound sign. */
+  var altDigit = e.altKey && !mod && !editing && /^Digit[1-3]$/.test(e.code||"") ? e.code.slice(5) : null;
+  if((mod&&!e.shiftKey&&e.key==="1") || altDigit==="1"){
+    e.preventDefault(); if(editing) commitEdit();
+    if(lensActive()){ lensOff(); flashSave("normal view"); }
+    else flashSave("already the normal view");
+    return;
+  }
   /* The connections lens. Cmd+2 dims everything a link does not touch, or,
      from a focused branch whose node is tied, opens that node's network.
      Pressed again it turns the lens off and puts you back where you were.
      Alt+L does the same, because Cmd plus a digit is how every browser
      switches tabs and a tab may never hand it to the page. */
-  if((mod&&!e.shiftKey&&e.key==="2") || (e.altKey&&(e.key==="l"||e.key==="L"||e.key==="¬"))){
+  if((mod&&!e.shiftKey&&e.key==="2") || altDigit==="2" || (e.altKey&&(e.key==="l"||e.key==="L"||e.key==="¬"))){
     e.preventDefault(); if(editing) commitEdit();
     if(lensActive()){ lensOff(); flashSave("lens off"); }
     else if(!(state.links||[]).length){ flash(selected); flashSave("nothing is tied yet"); }
@@ -3149,7 +3162,8 @@ document.addEventListener("keydown",function(e){
     }
     return;
   }
-  if(mod&&e.key==="."){ e.preventDefault(); centerOn(selected); return; }
+  /* Cmd+. is "take me to the selection, at actual size". */
+  if(mod&&e.key==="."){ e.preventDefault(); if(editing) commitEdit(); view.z=1; centerOn(selected); return; }
   if(mod&&(e.key==="e"||e.key==="E")){
     e.preventDefault(); if(editing) commitEdit();
     if(lensOne) toggleLensFold(selected); else toggleCollapse();

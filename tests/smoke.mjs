@@ -904,7 +904,8 @@ group("what's new");
     return await open();
   })());
   ok("it carries the current version's entry",
-    (await M(() => document.getElementById("notesBody").textContent)).includes("Cross-links"));
+    (await M(() => document.querySelector("#notesBody h3.rel")?.nextElementSibling?.nextElementSibling?.textContent || "")).length > 40 &&
+    (await M(() => document.getElementById("notesBody").textContent)).includes(await M(() => __mf.version)));
   ok("and several releases of history",
     (await M(() => document.querySelectorAll("#notesBody h3.rel").length)) >= 3,
     await M(() => document.querySelectorAll("#notesBody h3.rel").length));
@@ -1094,6 +1095,59 @@ group("networks: indirect links, folding them, focus into a lens");
   await press("Meta+2");
   ok("and still returns to that focus", (await M(() => __mf.focus)) === P1);
   await M(() => __mf.focusOut());
+}
+
+group("the number row is views");
+{
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(260); };
+  const lensIs = () => M(() => __mf.lens);
+  await M(() => __mf.paste("Hub\n- P1\n  - A\n    - a1\n- P2\n  - B"));
+  await page.waitForTimeout(280);
+  const A = await idOf("A"), B = await idOf("B");
+  await M(([a, b]) => __mf.tie(a, b), [A, B]);
+
+  await press("Meta+2");
+  ok("Cmd+2 opens connections", (await lensIs()) === "dim");
+  await press("Meta+1");
+  ok("Cmd+1 returns to normal", (await lensIs()) === "off");
+  await press("Meta+1");
+  ok("Cmd+1 in normal stays normal", (await lensIs()) === "off");
+
+  await M((x) => __mf.select(x), A);
+  await press("Meta+/");
+  await press("Meta+2");
+  ok("from focus, Cmd+2 opens the network", (await lensIs()) === "one");
+  await press("Meta+1");
+  ok("Cmd+1 lands back in the focus", (await lensIs()) === "off" && (await M(() => __mf.focus)) === A);
+  while (await M(() => __mf.focus)) await M(() => __mf.focusOut());
+  await page.waitForTimeout(200);
+
+  await press("Alt+Digit2");
+  ok("Alt+2 mirrors Cmd+2", (await lensIs()) === "dim", await lensIs());
+  await press("Alt+Digit1");
+  ok("Alt+1 mirrors Cmd+1", (await lensIs()) === "off", await lensIs());
+  await press("Alt+Digit3");
+  ok("Alt+3 is reserved and changes nothing", (await lensIs()) === "off");
+
+  // typing keeps the Alt digits
+  await M((x) => __mf.select(x), B);
+  await press("Space");
+  await press("Alt+Digit2");
+  ok("Alt+2 while typing does not switch views", (await lensIs()) === "off");
+  await press("Escape");
+
+  // Cmd+. is the old Cmd+1: centre on the selection at 100%
+  await press("Meta+-"); await press("Meta+-");
+  await M((x) => __mf.select(x), A);
+  await press("Meta+.");
+  const cam = await M(() => __mf.cam());
+  const off = await M((x) => { const r = document.querySelector('.node[data-id="' + x + '"]').getBoundingClientRect(); return Math.abs(r.left + r.width / 2 - innerWidth / 2) + Math.abs(r.top + r.height / 2 - innerHeight / 2); }, A);
+  ok("Cmd+. resets zoom to 100%", Math.abs(cam.z - 1) < 1e-6, cam.z);
+  ok("and centres the selection", off < 260, off);
 }
 
 group("working inside a network");
