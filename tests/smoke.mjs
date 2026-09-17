@@ -2400,6 +2400,78 @@ group("grouping a selection under a new parent");
   await M(() => { __mf.mark([]); __mf.spread("sides"); });
 }
 
+group("merging and splitting nodes");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(200); };
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, "Hub\n- A\n  - a1\n    - x\n  - a2\n    - y\n  - a3\n- B\n  - b1\n    - z");
+  await page.waitForTimeout(250);
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  const txt = (i) => M((i) => __mf.state.nodes[i].text, i);
+  // merge siblings plus one from another branch
+  const a1 = await id("a1");
+  await M(async (ids) => __mf.mark(ids), [await id("a2"), a1, await id("b1")]);
+  await M((x) => __mf.tie(x, __mf.state.rootId === x ? x : Object.values(__mf.state.nodes).find((n) => n.text === "a3").id), await id("b1"));
+  await M(async (ids) => __mf.mark(ids), [await id("a2"), a1, await id("b1")]);
+  await press("Alt+KeyJ");
+  ok("Option+J merges into the first in map order", (await txt(a1)) === "a1\na2\nb1", await txt(a1));
+  ok("the others are gone", !(await id("a2")) && !(await id("b1")));
+  ok("the survivor takes every child, in order", (await M((x) => __mf.state.nodes[x].children.map((c) => __mf.state.nodes[c].text).join(), a1)) === "x,y,z");
+  ok("it stays where it was", (await node("A")).kids.join() === "a1\na2\nb1,a3", await node("A"));
+  ok("links move to the survivor", (await M((x) => __mf.links.some((l) => l.a === x || l.b === x), a1)));
+  ok("it is selected, the selection cleared", (await M(() => __mf.selected)) === a1 && (await M(() => __mf.rawMarked.length)) === 0);
+  await press("Meta+z");
+  ok("one undo unmerges", (await txt(a1)) === "a1" && !!(await id("a2")) && !!(await id("b1")));
+  // merging a parent with its own child
+  await M(async (ids) => __mf.mark(ids), [await id("a2"), await id("y")]);
+  await press("Alt+KeyJ");
+  ok("a parent merged with its child keeps the child's children and loses nothing else", (await txt(await id("a2\ny"))) === "a2\ny" && (await M(() => Object.keys(__mf.state.nodes).length)) > 5);
+  await press("Meta+z");
+  // needs two
+  await M(async (ids) => __mf.mark(ids), [await id("a3")]);
+  const n0 = await M(() => Object.keys(__mf.state.nodes).length);
+  await press("Alt+KeyJ");
+  ok("merging one node does nothing", (await M(() => Object.keys(__mf.state.nodes).length)) === n0);
+  await M(() => __mf.mark([]));
+  // the selection bar button
+  await M(async (ids) => __mf.mark(ids), [await id("x"), await id("z")]);
+  await M(() => document.querySelector('#selChip [data-sel="merge"]').click());
+  ok("the selection bar can merge", !!(await id("x\nz")));
+  await press("Meta+z");
+
+  // split into siblings
+  await pick("a3");
+  await M((x) => { __mf.state.nodes[x].text = "one\n- two\n3. three"; __mf.set("gap", __mf.cfg.gap); }, await id("a3"));
+  const s3 = await M(() => __mf.selected);
+  await press("Alt+KeyS");
+  ok("Option+S splits lines into siblings", (await node("A")).kids.join() === "a1,a2,one,two,three", await node("A"));
+  ok("bullets and numbers are dropped", !!(await id("two")) && !!(await id("three")));
+  await press("Meta+z");
+  ok("undo joins them back", (await txt(s3)) === "one\n- two\n3. three");
+  await M((x) => __mf.select(x), s3);
+  await M((x) => { const k = { id: "kk1", parent: x, children: [], text: "kid", dir: __mf.state.nodes[x].dir }; __mf.state.nodes.kk1 = k; __mf.state.nodes[x].children.push("kk1"); __mf.set("gap", __mf.cfg.gap); }, s3);
+  await press("Alt+Shift+KeyS");
+  ok("Option+Shift+S makes the extra lines children, ahead of its own", (await node("one")).kids.join() === "two,three,kid", await node("one"));
+  await press("Meta+z");
+  // one-line node
+  await pick("a1");
+  const n1 = await M(() => Object.keys(__mf.state.nodes).length);
+  await press("Alt+KeyS");
+  ok("a one-line node does not split", (await M(() => Object.keys(__mf.state.nodes).length)) === n1);
+  // several at once
+  await M(() => { const s = __mf.state; Object.values(s.nodes).forEach((n) => { if (n.text === "x") n.text = "x1\nx2"; if (n.text === "z") n.text = "z1\nz2"; }); __mf.set("gap", __mf.cfg.gap); });
+  await M(async (ids) => __mf.mark(ids), [await id("x1\nx2"), await id("z1\nz2")]);
+  await press("Alt+KeyS");
+  ok("a selection splits every node in it", !!(await id("x2")) && !!(await id("z2")) && !!(await id("x1")) && !!(await id("z1")));
+  // not while typing
+  await pick("a1"); await press("Space"); await page.keyboard.press("Alt+KeyS"); await page.waitForTimeout(150);
+  ok("Option+S types while typing", (await M(() => __mf.editing)) != null);
+  await press("Escape");
+  await M(() => __mf.spread("sides"));
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 

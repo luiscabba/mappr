@@ -541,7 +541,7 @@
   <button class="tb" id="btnHelp">Keys ?</button>
   <button class="tb accent" id="btnInstall" title="Install Mappr on this device" hidden>Install</button>
   <button class="tb accent" id="btnUpdate" title="A newer version is ready" hidden>Update ready</button>
-  <span id="selChip" hidden><b id="selCount">0</b> selected<button class="tb" data-sel="copy" title="Copy (⌘C)">Copy</button><button class="tb" data-sel="dup" title="Duplicate (⌘D)">Duplicate</button><button class="tb" data-sel="del" title="Delete (⌫)">Delete</button><button class="tb" data-sel="clear" title="Clear (Esc)">×</button></span>
+  <span id="selChip" hidden><b id="selCount">0</b> selected<button class="tb" data-sel="copy" title="Copy (⌘C)">Copy</button><button class="tb" data-sel="dup" title="Duplicate (⌘D)">Duplicate</button><button class="tb" data-sel="merge" title="Merge into one (⌥J)">Merge</button><button class="tb" data-sel="del" title="Delete (⌫)">Delete</button><button class="tb" data-sel="clear" title="Clear (Esc)">×</button></span>
   <span id="saveState">saved</span>
 </div>
 
@@ -644,6 +644,8 @@
       <tr><td><kbd>⌘</kbd><kbd>Z</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>Z</kbd></td><td>Undo / redo. Retyping a node is a step of its own, so overwriting one by accident comes back with <kbd>⌘</kbd><kbd>Z</kbd>, even while you are still typing.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>←↑→↓</kbd></td><td>Move the node itself. Sideways reorders it among its siblings, and past the last one carries it on into the next branch along on that side, outward tucks it under the sibling before it, back toward the centre promotes it a level. The whole branch travels with it. With a selection up, every selected branch moves together and stays selected, so you can keep pressing.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>E</kbd></td><td>Fold or unfold a branch. A folded node wears a badge with the number hidden underneath; click the badge to open it. With a selection up it folds every selected node at once, so a whole level goes away in one press.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>J</kbd></td><td><b>Merge</b> the selected nodes into one. The first in map order keeps its place; its text becomes all of theirs, one per line, and it takes every child they had. Links and frames follow it. Also on the selection bar.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>S</kbd> / <kbd>⌥</kbd><kbd>⇧</kbd><kbd>S</kbd></td><td><b>Split</b> a node with several lines into one node per line: as siblings right after it, or with <kbd>⇧</kbd> as its children. It keeps the first line and its own children, and leading bullets or numbers are dropped. Works on every selected node at once.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself. With a selection up, every selected branch is duplicated and the copies come out selected.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag (a small pennant).</td></tr>
     </table></section>
@@ -2755,7 +2757,7 @@ var HINTS={
   focus:[["Next branch","Tab"],["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Fold","⌘","E"],["Out","Esc"]],
   dim:[["Tie","⌘","+click"],["Next network","Tab"],["Open it","⌘","/"],["Clear links","⇧","+double-click"],["Fit","⌘","0"],["Map","⌘","1"]],
   net:[["Move","←↑→↓"],["Walk","Tab"],["Fold beyond","⌘","E"],["New linked node","⏎"],["Back","Esc"]],
-  sel:[["Grow","⇧","←↑→↓"],["Branches","⌘","⇧","←↑→↓"],["Move","⌥","←↑→↓"],["Copy","⌘","C"],["Cut","⌘","X"],["Delete","⌫"],["Frame","⌘","G"],["Clear","Esc"]],
+  sel:[["Grow","⇧","←↑→↓"],["Branches","⌘","⇧","←↑→↓"],["Move","⌥","←↑→↓"],["Merge","⌥","J"],["Copy","⌘","C"],["Cut","⌘","X"],["Delete","⌫"],["Frame","⌘","G"],["Clear","Esc"]],
   arrange:[["Pick next","⌘","+click"],["Pick up / drop","Space"],["Unpick","⌫"],["Story","[","]"],["Present","R"]]
 };
 var hintMin=false, hintSig="";
@@ -3199,6 +3201,79 @@ function groupUnder(dir){
   clearMarks(); selected=mid.id; render(false,dir);
   flashSave("grouped "+roots.length+" \u00b7 type a name");
   startNew(mid.id); saveSoon();
+}
+/* Option+J: merge the selected nodes into one. The first in map order
+   survives; its text becomes every selected node's text, one per line, in
+   map order, and it takes every child the others had. Links, frames and story
+   order that pointed at a merged node point at the survivor instead. */
+function mergeMarked(){
+  var tree=[]; (function w(id){ tree.push(id); N(id).children.forEach(w); })(state.rootId);
+  var ids=Object.keys(marked).filter(function(i){ var n=N(i); return n && !isRoot(n) && !isVR(n); });
+  ids.sort(function(a,b){ return tree.indexOf(a)-tree.indexOf(b); });
+  if(ids.length<2){ flash(selected); flashSave("select two or more nodes to merge"); return; }
+  if(editing) commitEdit();
+  snap();
+  var keep=N(ids[0]), gone={}, d=dirOf(keep.id);
+  ids.slice(1).forEach(function(i){ gone[i]=1; });
+  keep.text=ids.map(function(i){ return (N(i).text||"").trim(); }).filter(Boolean).join("\n");
+  /* every child of a merged node that is not itself merged ends up under the
+     survivor, in map order; merged nodes are unhooked from wherever they were */
+  var take=[];
+  ids.forEach(function(i){
+    N(i).children.forEach(function(c){ if(!gone[c] && c!==keep.id && i!==keep.id) take.push(c); });
+  });
+  ids.slice(1).forEach(function(i){
+    var n=N(i), p=N(n.parent);
+    if(p) p.children=p.children.filter(function(c){ return c!==i; });
+  });
+  keep.children=keep.children.filter(function(c){ return !gone[c]; });
+  take.forEach(function(c){
+    var cn=N(c); if(!cn) return;
+    var op=N(cn.parent); if(op && !gone[op.id]) op.children=op.children.filter(function(x){ return x!==c; });
+    cn.parent=keep.id; keep.children.push(c); setDirDeep(c,d);
+  });
+  if(take.length) keep.collapsed=false;
+  ids.slice(1).forEach(function(i){ delete state.nodes[i]; });
+  var seen={};
+  state.links=(state.links||[]).map(function(l){ return {a:gone[l.a]?keep.id:l.a, b:gone[l.b]?keep.id:l.b}; })
+    .filter(function(l){ var k=[l.a,l.b].sort().join("|"); if(l.a===l.b||seen[k]) return false; seen[k]=1; return true; });
+  state.frames=(state.frames||[]).filter(function(f){
+    var r2=[]; f.roots.forEach(function(r){ var x=gone[r]?keep.id:r; if(r2.indexOf(x)<0) r2.push(x); });
+    f.roots=r2; return f.roots.length;
+  });
+  clearMarks(); selected=keep.id; render(); saveSoon();
+  flashSave("merged "+ids.length+" into one");
+}
+/* Option+S: split a node with several lines into one node per line, as
+   siblings right after it. Option+Shift+S makes the extra lines its children
+   instead. The node keeps the first line and its own children. Bullets and
+   numbering a pasted line may carry are dropped. */
+function splitNode(asKids){
+  var ids=Object.keys(marked).filter(function(i){ return N(i); });
+  if(!ids.length) ids=[selected];
+  if(editing) commitEdit();
+  var todo=ids.filter(function(i){ return splitLines(N(i).text).length>1 && (asKids || !isVR(N(i))); });
+  if(!todo.length){ flash(selected); flashSave(asKids?"nothing to split: one line only":"nothing to split here"); return; }
+  snap();
+  var made=0, first=null;
+  todo.forEach(function(i){
+    var n=N(i), lines=splitLines(n.text), d=dirOf(i);
+    n.text=lines[0];
+    if(asKids){
+      lines.slice(1).reverse().forEach(function(t){ var k=addNode(i,isRoot(n)?"R":d,0); k.text=t; made++; });
+      n.collapsed=false;
+    } else {
+      var p=N(n.parent), at=p.children.indexOf(i)+1;
+      lines.slice(1).forEach(function(t){ var k=addNode(p.id,d,at++); k.text=t; made++; if(!first) first=k.id; });
+    }
+  });
+  clearMarks(); render(); saveSoon();
+  flashSave("split into "+(made+todo.length)+(asKids?" (lines became children)":""));
+}
+function splitLines(t){
+  return (t||"").split(/\n+/).map(function(x){
+    return x.replace(/^\s*(?:[-*\u2022\u25e6\u25aa\u2023\u2043]|\d+[.)])\s+/,"").trim();
+  }).filter(Boolean);
 }
 /* hold Tab + arrow: slide a node in between */
 function insertBetween(dir){
@@ -4663,6 +4738,8 @@ document.addEventListener("keydown",function(e){
     if(e.code==="Backquote"){ e.preventDefault(); openPrevious(); return; }
     if(e.shiftKey && /^Digit[1-9]$/.test(e.code)){ e.preventDefault(); openPinned(+e.code.slice(5)); return; }
   }
+  if(e.altKey && !mod && !editing && e.code==="KeyJ"){ e.preventDefault(); mergeMarked(); return; }
+  if(e.altKey && !mod && !editing && e.code==="KeyS"){ e.preventDefault(); splitNode(e.shiftKey); return; }
   if(e.altKey && !mod && !editing && e.code==="KeyN"){
     e.preventDefault();
     if(editing) commitEdit();
@@ -5118,6 +5195,7 @@ document.getElementById("filePicker").onchange=function(e){
     var a=b.dataset.sel;
     if(a==="copy"){ var c=selectionCopy(); if(c){ clip=c; copyText(c.txt, c.ids.length+" nodes copied", c.html); } }
     else if(a==="dup") duplicateBranch();
+    else if(a==="merge") mergeMarked();
     else if(a==="del") doDelete(false);
     else { clearMarks(); render(true); }
   });

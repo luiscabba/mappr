@@ -3,6 +3,18 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.32.0] - 2026-09-17
+
+### Added
+- **Merge nodes, `⌥J`.** The selected nodes become one: the first in map
+  order keeps its place, its text becomes all of theirs, one per line, and it
+  takes every child they had. Links and frames follow it. The selection bar
+  has a Merge button too.
+- **Split a node, `⌥S`.** A node with several lines becomes one node per line,
+  as siblings right after it; `⌥⇧S` makes the extra lines its children
+  instead. It keeps the first line and its own children, and bullets or
+  numbers a pasted line carried are dropped. Works on a whole selection.
+
 ## [0.31.0] - 2026-09-17
 
 ### Added
