@@ -3103,14 +3103,14 @@ group("0.39: flags you can find, and the maps rail");
     await page.waitForTimeout(300);
   };
   await newMap("Launch\n- Marketing\n  - Paid ads\n  - Press kit\n- Legal\n  - Terms review\n- Product");
-  const flagsTab = () => M(() => document.querySelector('#modebar [data-mode="4"]').hidden);
-  ok("the Flags view is not offered on a map with no flag", await flagsTab());
+  const flagsTab = () => M(() => document.querySelector('#modebar [data-mode="4"]').classList.contains("empty"));
+  ok("the Flags tab is muted on a map with no flag, but there", await flagsTab() && await M(() => !document.querySelector('#modebar [data-mode="4"]').hidden));
   await press("Meta+4");
   ok("Cmd+4 with no flag says so", /nothing is flagged/.test(await status()) && (await M(() => __mf.lens)) === "off", await status());
   for (const t of ["Marketing", "Press kit", "Terms review"]) { await M((x) => __mf.select(x), await id(t)); await press("Meta+Shift+f"); }
   ok("Cmd+Shift+F flags", (await M((x) => __mf.state.nodes[x].mark, await id("Press kit"))) === "flag");
   ok("the flag is drawn by hand in the paint layer", (await M(() => document.querySelectorAll('#paintLayer path[stroke="#c0392b"], #paintLayer path[stroke="#ff7b6b"]').length)) >= 3);
-  ok("and the Flags view appears", !(await flagsTab()));
+  ok("and the Flags tab lights up", !(await flagsTab()));
   const g0 = await M(() => document.getElementById("paintLayer").innerHTML.length);
   await M(() => __mf.set("flagStyle", "ribbon"));
   ok("the Style panel changes the mark", (await M(() => document.getElementById("paintLayer").innerHTML.length)) !== g0 && (await M(() => __mf.cfg.flagStyle)) === "ribbon");
@@ -3269,6 +3269,48 @@ group("1.0: maps under their root, and a reload keeps your place");
   await M((o) => { const r = [...document.querySelectorAll("#mapsList .mrow")].find((x) => x.dataset.m === o); r.click(); }, ops);
   await page.waitForTimeout(300);
   ok("switching to a map after a reload opens it at its saved view", (await M(() => JSON.stringify(__mf.cam()))) === camOps, [camOps, await M(() => JSON.stringify(__mf.cam()))]);
+  ok("no runtime errors", errors.length === 0, errors);
+  await M(() => __mf.spread("sides"));
+}
+
+group("1.0.1: keys the browser keeps, and a long press");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(250); };
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, "Root\n- One\n- Two");
+  await page.waitForTimeout(300);
+  await M((x) => __mf.select(x), await id("One"));
+  await press("Alt+KeyF");
+  ok("Option+F flags", (await M((x) => __mf.state.nodes[x].mark, await id("One"))) === "flag");
+  await press("Alt+KeyD");
+  ok("Option+D marks done", (await M((x) => __mf.state.nodes[x].mark, await id("One"))) === "done");
+  await press("Alt+KeyD");
+  ok("and again clears it", !(await M((x) => __mf.state.nodes[x].mark, await id("One"))));
+  await press("Control+Enter"); await page.keyboard.type("Kid"); await press("Escape");
+  ok("Control stands in for Cmd", !!(await id("Kid")));
+  // a long press opens the menu
+  const two = await id("Two");
+  const r = await M((x) => { const e = document.querySelector('.node[data-id="' + x + '"]').getBoundingClientRect(); return { x: e.left + e.width / 2, y: e.top + e.height / 2 }; }, two);
+  await M(([x, y, id]) => {
+    const el = document.querySelector('.node[data-id="' + id + '"]');
+    const t = new Touch({ identifier: 1, target: el, clientX: x, clientY: y });
+    el.dispatchEvent(new TouchEvent("touchstart", { touches: [t], targetTouches: [t], changedTouches: [t], bubbles: true, cancelable: true }));
+  }, [r.x, r.y, two]);
+  await page.waitForTimeout(700);
+  ok("a long press on a node opens the menu for that node", await M(() => { const m = document.getElementById("storyMenu"); return !!m && m.dataset.kind === "ctx"; }) && (await M(() => __mf.selected)) === two);
+  await M((id) => { const el = document.querySelector('.node[data-id="' + id + '"]'); el.dispatchEvent(new TouchEvent("touchend", { touches: [], changedTouches: [], bubbles: true })); }, two);
+  await press("Escape");
+  await M(([x, y, id]) => {
+    const el = document.querySelector('.node[data-id="' + id + '"]');
+    const t = new Touch({ identifier: 2, target: el, clientX: x, clientY: y });
+    el.dispatchEvent(new TouchEvent("touchstart", { touches: [t], targetTouches: [t], changedTouches: [t], bubbles: true, cancelable: true }));
+    setTimeout(() => el.dispatchEvent(new TouchEvent("touchend", { touches: [], changedTouches: [t], bubbles: true })), 150);
+  }, [r.x, r.y, two]);
+  await page.waitForTimeout(700);
+  ok("a short tap does not", await M(() => !document.getElementById("storyMenu")));
   ok("no runtime errors", errors.length === 0, errors);
   await M(() => __mf.spread("sides"));
 }

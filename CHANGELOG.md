@@ -3,6 +3,22 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.0.1] - 2026-09-17
+
+### Fixed
+- **Keys the browser keeps.** Firefox and Zen hold `⌘⇧D`, `⌘⇧F`,
+  `⌘⇧G` and `⌘⇧C` for themselves, so done, flag, ungroup and copy as
+  an image never reached Mappr there. Each now has an Option twin by physical
+  key: `⌥D`, `⌥F`, `⌥G`, `⌥C`. The menu shows the twin on those
+  browsers. `⌃` has always stood in for `⌘`, which is the key to use on an
+  iPad, where Safari keeps `⌘` with the arrows and the number row.
+- **The Flags view is always on the mode bar**, muted until the map has a
+  flag, with a hint saying how to make one. It used to be hidden, which read
+  as missing.
+- **Long press opens the menu.** On a node or the canvas, a touch held for
+  half a second opens the same menu as a right-click, so every action is
+  reachable on a tablet with no chord at all.
+
 ## [1.0.0] - 2026-09-17
 
 Version one. Everything since 0.36 was the road here: the interaction sweep,

@@ -435,7 +435,7 @@
   #crumbs .meta{font-size:11px;color:var(--muted);padding:0 6px}
   #modebar{top:14px;right:14px;display:flex;gap:2px;padding:4px;z-index:6}
   #modebar button{border:0;background:none;color:var(--muted);font:600 12px var(--font-ui);padding:5px 10px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:6px}
-  #modebar button[hidden]{display:none}
+  #modebar button.empty{opacity:.45}
   #modebar button:hover{background:var(--panel-hover);color:var(--ink)}
   #modebar button.on{background:var(--sel-soft);color:var(--sel)}
   #modebar kbd{font:10px var(--font-ui);opacity:.6}
@@ -642,7 +642,7 @@
   <button data-mode="1" role="tab" title="Map (⌘1)"><span class="ml">Map</span><kbd>1</kbd></button>
   <button data-mode="2" role="tab" title="Connections (⌘2)"><span class="ml">Connections</span><kbd>2</kbd></button>
   <button data-mode="3" role="tab" title="Story (⌘3)"><span class="ml">Story</span><kbd>3</kbd></button>
-  <button data-mode="4" role="tab" title="Flags (⌘4)" hidden><span class="ml">Flags</span><kbd>4</kbd></button>
+  <button data-mode="4" role="tab" title="Flags (⌘4)"><span class="ml">Flags</span><kbd>4</kbd></button>
 </div>
 <div id="presProgress"></div>
 
@@ -698,7 +698,7 @@
       <tr><td><kbd>⌥</kbd><kbd>O</kbd></td><td><b>Sort.</b> A small menu, a number picks: A to Z, Z to A, reverse, biggest branch first, done last, or back to how it was. It sorts the selected siblings among the places they already hold, or with one node selected, that node's children. On the centre each side is sorted on its own.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>X</kbd></td><td><b>Carry.</b> Picks up the selection (or the selected node): it goes faint where it is, and the arrows, or a click, choose where it goes. <kbd>⏎</kbd> drops it inside the ringed node, <kbd>⇧</kbd><kbd>⏎</kbd> right after it, <kbd>Esc</kbd> puts it back. Nothing changes until the drop, and one <kbd>⌘</kbd><kbd>Z</kbd> undoes it.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself. With a selection up, every selected branch is duplicated and the copies come out selected.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag. A flag is a hand-drawn pennant on the box; the Style panel has a ribbon, a ring and an asterisk instead. <kbd>⌘</kbd><kbd>4</kbd> dims the map to its flags and <kbd>Tab</kbd> steps through them; in <kbd>⌘</kbd><kbd>K</kbd>, type <kbd>!</kbd> first to list only flagged nodes. Sort has <em>Flagged first</em>, and a copied outline writes <kbd>!</kbd> before a flagged line, which flags it again when pasted back.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd><br><kbd>⌥</kbd><kbd>D</kbd> / <kbd>⌥</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag. Firefox and Zen keep <kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> and <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd> for themselves, so <kbd>⌥</kbd><kbd>D</kbd> and <kbd>⌥</kbd><kbd>F</kbd> do the same; likewise <kbd>⌥</kbd><kbd>G</kbd> ungroups and <kbd>⌥</kbd><kbd>C</kbd> copies as an image. <kbd>⌃</kbd> works as <kbd>⌘</kbd> everywhere, which is the key to use on an iPad. A flag is a hand-drawn pennant on the box; the Style panel has a ribbon, a ring and an asterisk instead. <kbd>⌘</kbd><kbd>4</kbd> dims the map to its flags and <kbd>Tab</kbd> steps through them; in <kbd>⌘</kbd><kbd>K</kbd>, type <kbd>!</kbd> first to list only flagged nodes. Sort has <em>Flagged first</em>, and a copied outline writes <kbd>!</kbd> before a flagged line, which flags it again when pasted back.</td></tr>
     </table></section>
     <section class="hpane" data-tab="frames"><h3>Select and frames</h3>
     <table class="keys">
@@ -753,6 +753,7 @@
       <tr><td><kbd>⌥</kbd><kbd>T</kbd></td><td>Give the map a colour tag; press again for the next colour, and past the last one it clears. The dot beside each map in the lists does the same on a click.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>`</kbd></td><td>Back to the map you were on before.</td></tr>
       <tr><td><b>Maps</b></td><td>Every map is stored on its own. A map that a link opens is kept under the map that links to it, up to a root map that nothing links to, and the Maps menu and the switcher list each root with the maps under it. Copy on a root copies the whole tree, links pointed at the copies; Delete on a root takes the tree to <em>Recently deleted</em>, each map restorable on its own; Export as JSON bundles the tree and Import rebuilds it. <em>Detach</em> makes a map its own again: every link to it becomes a plain node with its name. A map opens at the zoom and place you left it, reload included, and the last few undo steps come back with it.</td></tr>
+      <tr><td><b>Long press</b></td><td>On a node or the canvas, opens the same menu as a right-click, so every action is reachable by touch.</td></tr>
       <tr><td><b>Touch</b></td><td>One finger pans, two fingers pinch to zoom, and a tap opens a folded branch. Making a map needs a keyboard, so touch is for reading one you already have.</td></tr>
     </table></section>
     <section class="hpane" data-tab="canvas"><h3>Canvas</h3>
@@ -2319,6 +2320,7 @@ var els={}, ftEls={}, bdEls={}, wraps={};
    was reading instructions for keys they do not have. Off a Mac the glyphs are
    swapped for words, once, at boot. Only the app's own chrome is touched, never
    the map: a node whose text is literally "⌘" belongs to whoever typed it. */
+var IS_FF=/Firefox|Zen/i.test(navigator.userAgent||"");
 var IS_MAC=/Mac|iPod|iPhone|iPad/i.test(
   (navigator.userAgentData&&navigator.userAgentData.platform)||navigator.platform||navigator.userAgent||"");
 var KEYWORD={"⌘":"Ctrl","⌥":"Alt","⇧":"Shift","⏎":"Enter","⌫":"Backspace","⎋":"Esc"};
@@ -3219,7 +3221,7 @@ function drawModebar(){
   var mb=document.getElementById("modebar"); if(!mb) return;
   var m=pres?"3":(lensFlags()?"4":(lensActive()?"2":"1"));
   var fb=mb.querySelector('[data-mode="4"]'), hasF=anyFlag();
-  if(fb && fb.hidden===hasF) fb.hidden=!hasF;
+  if(fb && fb.classList.contains("empty")===hasF){ fb.classList.toggle("empty",!hasF); fb.title=hasF?"Flags (\u23184)":"Flags (\u23184) \u00b7 flag a node first: \u2318\u21e7F or \u2325F"; }
   [].forEach.call(mb.querySelectorAll("button"),function(b){
     var on=b.dataset.mode===m;
     if(b.classList.contains("on")!==on) b.classList.toggle("on",on);
@@ -3780,8 +3782,8 @@ function ctxItems(id,from){
   else if(!centre) add("Link to a map","\u2325K",function(){ openLinkPicker(); });
   sep();
   if(!t.link) add("Retype","Space",function(){ beginEdit(id,true); });
-  add(t.mark==="done"?"Not done":"Done","\u2318\u21e7D",function(){ toggleMark("done"); });
-  add(t.mark==="flag"?"Unflag":"Flag","\u2318\u21e7F",function(){ toggleMark("flag"); });
+  add(t.mark==="done"?"Not done":"Done",IS_FF?"\u2325D":"\u2318\u21e7D",function(){ toggleMark("done"); });
+  add(t.mark==="flag"?"Unflag":"Flag",IS_FF?"\u2325F":"\u2318\u21e7F",function(){ toggleMark("flag"); });
   if(!centre) add(many?"Duplicate the selection":"Duplicate","\u2318D",function(){ duplicateBranch(); });
   if(splitLines(t.text).length>1 && !centre) add("Split into one node per line","\u2325S",function(){ splitNode(false); });
   if(many) add("Merge the selection into one","\u2325J",function(){ mergeMarked(); });
@@ -3790,7 +3792,7 @@ function ctxItems(id,from){
   add(many?"Frame the selection":"Frame","\u2318G",function(){ makeFrame(); });
   sep();
   add(many?"Copy the selection as an outline":"Copy as an outline","\u2318C",function(){ document.execCommand("copy"); });
-  add("Copy as an image","\u21e7\u2318C",function(){ doExport("png-copy"); });
+  add("Copy as an image",IS_FF?"\u2325C":"\u21e7\u2318C",function(){ doExport("png-copy"); });
   sep();
   if(!centre){
     add(many?"Delete the selection":"Delete, keep its children","\u232b",function(){ doDelete(false); },"danger");
@@ -6005,6 +6007,12 @@ document.addEventListener("keydown",function(e){
        anything else it goes back up to the link you came through, at the view
        you left. */
     if(e.key==="Enter"){ e.preventDefault(); if(N(selected)&&N(selected).link) openLink(); else if(linkTrail.length) linkUp(); else { flash(selected); flashSave("not a link, and nothing to go back up to \u00b7 \u2325K makes one"); } return; }
+    /* Firefox and Zen keep ⌘⇧D, ⌘⇧F, ⌘⇧G and ⌘⇧C for themselves, so the
+       marks and the frame have Option twins by physical key */
+    if(e.code==="KeyF" && !e.shiftKey){ e.preventDefault(); toggleMark("flag"); return; }
+    if(e.code==="KeyD" && !e.shiftKey){ e.preventDefault(); toggleMark("done"); return; }
+    if(e.code==="KeyG" && !e.shiftKey){ e.preventDefault(); ungroup(); return; }
+    if(e.code==="KeyC" && !e.shiftKey){ e.preventDefault(); doExport("png-copy"); return; }
     if(e.code==="KeyB" && !e.shiftKey){ e.preventDefault(); breakOut(); return; }
     if(e.code==="KeyK" && !e.shiftKey){ e.preventDefault(); openLinkPicker(); return; }
     if(e.code==="KeyM" && e.shiftKey){ e.preventDefault(); railToggle(); return; }
@@ -6263,6 +6271,7 @@ elNodes.addEventListener("dblclick",function(e){
    where the browser's own cut/copy/paste menu is the useful thing. While
    presenting, right-click still steps back. */
 elStage.addEventListener("contextmenu",function(e){
+  if(e.pointerType==="touch" || (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents)){ e.preventDefault(); return; }   /* the long press already opened ours */
   if(pres){ e.preventDefault(); if(!pres.arrange) presBack(); return; }
   var el=e.target.closest(".node");
   if(el && editing===el.dataset.id) return;
@@ -6359,7 +6368,20 @@ elStage.addEventListener("wheel",function(e){
    we deliberately leave that alone: reading a map means opening folded
    branches. #stage already carries touch-action:none, so the page itself never
    scrolls or zooms underneath. */
-var tpan=null, tpinch=null;
+var tpan=null, tpinch=null, tpress=null;
+/* A long press is the touch right-click: the menu, on a node or the canvas. */
+function pressStart(e){
+  pressEnd();
+  var t=e.touches[0], el=e.target.closest(".node"), x=t.clientX, y=t.clientY;
+  tpress={ x:x, y:y, timer:setTimeout(function(){
+    tpress=null; tpan=null;
+    if(pres||carry) return;
+    if(editing) commitEdit();
+    if(el){ var id=el.dataset.id, from=selected; if(!N(id)) return; if(!marked[id]){ clearMarks(); selected=id; render(true); } ctxMenu(x,y,id,from); }
+    else ctxMenu(x,y,null);
+  },520) };
+}
+function pressEnd(){ if(tpress){ clearTimeout(tpress.timer); tpress=null; } }
 function tdist(a,b){ return Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY); }
 function tmid(a,b){ return { x:(a.clientX+b.clientX)/2, y:(a.clientY+b.clientY)/2 }; }
 elStage.addEventListener("touchstart",function(e){
@@ -6373,6 +6395,7 @@ elStage.addEventListener("touchstart",function(e){
     stopCam();
     tpan={ x:e.touches[0].clientX, y:e.touches[0].clientY, vx:view.x, vy:view.y };
   }
+  if(e.touches.length===1 && !e.target.closest(".ftitle") && !e.target.closest(".badge")) pressStart(e);
 },{passive:false});
 elStage.addEventListener("touchmove",function(e){
   if(tpinch && e.touches.length===2){
@@ -6386,6 +6409,7 @@ elStage.addEventListener("touchmove",function(e){
     applyView();
     return;
   }
+  if(tpress && e.touches.length===1 && Math.hypot(e.touches[0].clientX-tpress.x,e.touches[0].clientY-tpress.y)>8) pressEnd();
   if(tpan && e.touches.length===1){
     e.preventDefault();
     view.x=tpan.vx+(e.touches[0].clientX-tpan.x);
@@ -6393,7 +6417,7 @@ elStage.addEventListener("touchmove",function(e){
     applyView();
   }
 },{passive:false});
-function endTouch(){ tpan=null; tpinch=null; }
+function endTouch(){ tpan=null; tpinch=null; pressEnd(); }
 elStage.addEventListener("touchend",endTouch);
 elStage.addEventListener("touchcancel",endTouch);
 function zoomBy(f,ox,oy){
