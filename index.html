@@ -99,6 +99,7 @@
   @keyframes ants{ to{ stroke-dashoffset:-42; } }
   .ants{ animation:ants 1.5s linear infinite; }
 
+  #nodes .branch{position:absolute;left:0;top:0;width:0;height:0;overflow:visible}
   .node{
     position:absolute;left:0;top:0;
     width:max-content;
@@ -550,7 +551,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v0.37.0">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
+  <span class="brand" id="brand" title="Mappr v0.38.0">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -633,7 +634,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.37.0</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.38.0</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <div id="helpBody">
@@ -748,9 +749,9 @@
      panel cannot drift from the record of what actually shipped. -->
 <div id="notes">
   <div id="notesCard">
-    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.37.0</span></h2>
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.38.0</span></h2>
     <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
-    <div id="notesBody"><h3 class="rel">0.37.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Right-click is Mappr&#x27;s own menu.</b> On a node it lists everything that can be done to it, each row with its key beside it, so the menu teaches the keys: focus, fold, tie to the node you had selected, tie the branches, open or break out or link a map, retype, done, flag, duplicate, split, merge, sort, carry, frame, copy as an outline or an image, delete. What does not apply is not shown, and inside a selection the menu acts on the selection. On empty canvas it offers the views, the camera and the maps. In a network it works on the network. <code>Esc</code> closes it, and any other key closes it and still does what it does. Nothing was unbound: every key is still a key. Right-click used to focus into a branch; that is the first row now, and <code>⌘/</code> is unchanged.</li></ul><h4>Changed</h4><ul><li><b><code>⌥⏎</code> crosses a link either way.</b> On a link it opens the map, as before. On any other node it goes back up to the link you came through, at the view you left. <code>⌥U</code> is gone. Double-click on empty canvas goes back up too, the mouse twin of double-clicking a link to go down. The trail in the top bar still jumps straight to any map on the way.</li></ul><h3 class="rel">0.36.0 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Ties inside a focused branch are drawn again.</b> Focus on a branch and a tie between two of its nodes was not drawn at all, and the nodes wore no badge. A tie that leaves the branch still cannot be drawn, but the node now wears a badge that counts it as <em>outside</em>, and a click on the badge steps out of the focus to the other end.</li><li><b>Break out keeps the ties across the cut.</b> They used to be removed. Now the link node stands in for the end that left, drawn hollow the way a folded branch is, and bringing the map back in puts each tie back on its node.</li><li><b>Deleting a node hands its ties to the child that moved up</b>, the way a frame already followed. A branch tie whose ends end up on one line after a move, a carry or a merge becomes a plain tie instead of tying a branch to itself.</li><li><b>Duplicate keeps the ties between the copied nodes</b>, as copy and paste did, and both keep a map link: the copy is a second link to the same map.</li><li><b>A link stands in for a whole map, so nothing can be put under it.</b> <code>⌘</code>+arrow, paste, <code>⌥</code>+arrow, carry and merge all said nothing and did something odd; merging into a link threw the merged text away. Each now says so and leaves the map alone.</li><li><b>A story survives what happens to its nodes.</b> Deleting or moving a node out of an arranged level used to drop everything told after it; the chain is spliced instead. Merging told nodes tells the survivor in their place. Sorting a told level puts that level back to map order and says so, rather than showing one order and telling another.</li><li><b>Presenting.</b> <code>Esc</code> from the overview or the whole story goes back to the talk instead of ending it. Paste does nothing mid-talk. Starting a talk puts a carried node down, closes the maps panel and stashes the selection, which is back when the talk ends. The story menu closes when <code>R</code> is pressed, and a different story picked mid-talk starts from the top. Undo while arranging stays on the story and the focus you are arranging. A link node no longer advertises <code>⌥⏎</code> while presenting, where the key advances the talk.</li><li><b>Switching map leaves the lens, the carry and the talk behind.</b> A dim or a network used to follow you into the next map, and a carry could be dropped in a map that did not contain it.</li><li><b>Maps.</b> An unrelated undo no longer brings back a map you deleted from the panel; only a map set aside by an undo or a bring in comes back with its redo. A map set aside by bringing it in is not evicted from Recently deleted while undo could still want it. Breaking out a branch that holds links records them, so <em>Linked from</em> and delete know about them. A frame trimmed by a break out is counted in the message.</li><li>Smaller: the fold badge inside a network folds again rather than hopping a link; a node whose only ties are hidden says how many rather than <code>∿0</code>; a story cannot take another story&#x27;s name; <code>⌘⇧G</code> with no frame says what it needs; a chord pressed with the sort or copy menu open closes the menu and still does what it does; carrying a branch out of a frame leaves the frame round what stayed.</li></ul><h3 class="rel">0.35.1 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Coming back to a map keeps your view.</b> Going back up from a linked map (<code>⌥U</code> or the trail), <code>⌥</code> plus backtick, or the map switcher used to fit the whole map again. A map you already visited this session now opens at the zoom and place you left it, with the same node selected.</li></ul><h3 class="rel">0.35.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Branch ties.</b> <code>⌘⇧</code>+click ties the selected node to another as a whole branch: one heavier arc with a double tick where it leaves each box, and in connections everything under either node counts as the same network. Dimmed, both branches stay lit; opened as a network, both come up with their tree drawn. The same gesture again removes it, and it turns a plain tie between the same two nodes into a branch tie. From the keyboard, select the two nodes and press <code>⌥⇧T</code>. Copy, paste, merge and break out keep it.</li></ul><h3 class="rel">0.34.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Map links.</b> A link is a node that stands in for a whole map: it shows the map&#x27;s name and size, and its name follows the map. The style panel has three looks under <em>Map links</em>: a stacked card (the default), dashed, or an arrow badge.</li><li><b>Break out, <code>⌥B</code>.</b> A branch becomes a map of its own and a link takes its place. Marks, folds, frames and the links inside the branch go with it; links that crossed the cut are removed and counted. On a link, <code>⌥B</code> brings the map back in as a branch, and the map goes to Recently deleted unless something else still links to it. <code>⌘Z</code> undoes either, map and all.</li><li><b>Link a node, <code>⌥K</code>.</b> Pick a map to link to, or make a new one named after the node.</li><li><b>Follow links.</b> <code>⌥⏎</code> or a double-click opens a linked map. A bar under the top bar keeps the trail of maps you came through; <code>⌥U</code> or a name in it goes back up to the link you left from. <em>Linked from</em> says which other maps link to the one you are on. A link whose map was deleted says so, and <code>⌥⏎</code> restores the map.</li></ul><h4>Changed</h4><ul><li><b>Undo survives switching maps.</b> Each map keeps its own undo history for the session, so going into a linked map and back, or switching away and back, keeps the steps you took.</li></ul><h3 class="rel">0.33.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Sort, <code>⌥O</code>.</b> A small menu next to the selection, where a number picks: A to Z, Z to A, reverse, biggest branch first, done last, or back to how it was. Selected siblings trade places only among the spots they already hold; with one node selected, its children are sorted. Names sort the way people read them, so &quot;item 9&quot; comes before &quot;item 10&quot;, and on the centre each side is sorted on its own so nothing changes sides.</li><li><b>Carry, <code>⌥X</code>.</b> Picks up the selection, or the selected node. It fades where it is while the arrows, or a click, move a ring to where it should go; <code>⏎</code> drops it inside, <code>⇧⏎</code> right after, <code>Esc</code> puts it back. Nothing moves until the drop, the dropped nodes stay selected, and one undo reverses it.</li></ul></div>
+    <div id="notesBody"><h3 class="rel">0.38.0 <span>2026-09-17</span></h3><h4>Changed</h4><ul><li><b>Big maps are quick again.</b> The bench picked the targets: in a 1500-node map, adding a node cost 76ms and a keystroke while typing 22ms, most of it spent redrawing shapes that had only shifted and restyling nodes that had not changed. Now adding a node costs 11ms and a keystroke 6ms; an arrow move is unchanged at 8ms and a full render is 7ms. What changed underneath: a shape is drawn once and moved by a transform when its node shifts; nodes and shapes sit in one group per branch, so a branch that moves as a block moves with one transform; a node&#x27;s class and place are written only when they changed, since writing the same value still makes the browser restyle it; and the selection halos are their own layer, so typing beside a big selection no longer rebuilds them on every keystroke. Exports draw afresh as before. The bench now records the two keys pressed most, a letter and an arrow, in a 600 and a 1500-node map.</li></ul><h3 class="rel">0.37.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Right-click is Mappr&#x27;s own menu.</b> On a node it lists everything that can be done to it, each row with its key beside it, so the menu teaches the keys: focus, fold, tie to the node you had selected, tie the branches, open or break out or link a map, retype, done, flag, duplicate, split, merge, sort, carry, frame, copy as an outline or an image, delete. What does not apply is not shown, and inside a selection the menu acts on the selection. On empty canvas it offers the views, the camera and the maps. In a network it works on the network. <code>Esc</code> closes it, and any other key closes it and still does what it does. Nothing was unbound: every key is still a key. Right-click used to focus into a branch; that is the first row now, and <code>⌘/</code> is unchanged.</li></ul><h4>Changed</h4><ul><li><b><code>⌥⏎</code> crosses a link either way.</b> On a link it opens the map, as before. On any other node it goes back up to the link you came through, at the view you left. <code>⌥U</code> is gone. Double-click on empty canvas goes back up too, the mouse twin of double-clicking a link to go down. The trail in the top bar still jumps straight to any map on the way.</li></ul><h3 class="rel">0.36.0 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Ties inside a focused branch are drawn again.</b> Focus on a branch and a tie between two of its nodes was not drawn at all, and the nodes wore no badge. A tie that leaves the branch still cannot be drawn, but the node now wears a badge that counts it as <em>outside</em>, and a click on the badge steps out of the focus to the other end.</li><li><b>Break out keeps the ties across the cut.</b> They used to be removed. Now the link node stands in for the end that left, drawn hollow the way a folded branch is, and bringing the map back in puts each tie back on its node.</li><li><b>Deleting a node hands its ties to the child that moved up</b>, the way a frame already followed. A branch tie whose ends end up on one line after a move, a carry or a merge becomes a plain tie instead of tying a branch to itself.</li><li><b>Duplicate keeps the ties between the copied nodes</b>, as copy and paste did, and both keep a map link: the copy is a second link to the same map.</li><li><b>A link stands in for a whole map, so nothing can be put under it.</b> <code>⌘</code>+arrow, paste, <code>⌥</code>+arrow, carry and merge all said nothing and did something odd; merging into a link threw the merged text away. Each now says so and leaves the map alone.</li><li><b>A story survives what happens to its nodes.</b> Deleting or moving a node out of an arranged level used to drop everything told after it; the chain is spliced instead. Merging told nodes tells the survivor in their place. Sorting a told level puts that level back to map order and says so, rather than showing one order and telling another.</li><li><b>Presenting.</b> <code>Esc</code> from the overview or the whole story goes back to the talk instead of ending it. Paste does nothing mid-talk. Starting a talk puts a carried node down, closes the maps panel and stashes the selection, which is back when the talk ends. The story menu closes when <code>R</code> is pressed, and a different story picked mid-talk starts from the top. Undo while arranging stays on the story and the focus you are arranging. A link node no longer advertises <code>⌥⏎</code> while presenting, where the key advances the talk.</li><li><b>Switching map leaves the lens, the carry and the talk behind.</b> A dim or a network used to follow you into the next map, and a carry could be dropped in a map that did not contain it.</li><li><b>Maps.</b> An unrelated undo no longer brings back a map you deleted from the panel; only a map set aside by an undo or a bring in comes back with its redo. A map set aside by bringing it in is not evicted from Recently deleted while undo could still want it. Breaking out a branch that holds links records them, so <em>Linked from</em> and delete know about them. A frame trimmed by a break out is counted in the message.</li><li>Smaller: the fold badge inside a network folds again rather than hopping a link; a node whose only ties are hidden says how many rather than <code>∿0</code>; a story cannot take another story&#x27;s name; <code>⌘⇧G</code> with no frame says what it needs; a chord pressed with the sort or copy menu open closes the menu and still does what it does; carrying a branch out of a frame leaves the frame round what stayed.</li></ul><h3 class="rel">0.35.1 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Coming back to a map keeps your view.</b> Going back up from a linked map (<code>⌥U</code> or the trail), <code>⌥</code> plus backtick, or the map switcher used to fit the whole map again. A map you already visited this session now opens at the zoom and place you left it, with the same node selected.</li></ul><h3 class="rel">0.35.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Branch ties.</b> <code>⌘⇧</code>+click ties the selected node to another as a whole branch: one heavier arc with a double tick where it leaves each box, and in connections everything under either node counts as the same network. Dimmed, both branches stay lit; opened as a network, both come up with their tree drawn. The same gesture again removes it, and it turns a plain tie between the same two nodes into a branch tie. From the keyboard, select the two nodes and press <code>⌥⇧T</code>. Copy, paste, merge and break out keep it.</li></ul><h3 class="rel">0.34.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Map links.</b> A link is a node that stands in for a whole map: it shows the map&#x27;s name and size, and its name follows the map. The style panel has three looks under <em>Map links</em>: a stacked card (the default), dashed, or an arrow badge.</li><li><b>Break out, <code>⌥B</code>.</b> A branch becomes a map of its own and a link takes its place. Marks, folds, frames and the links inside the branch go with it; links that crossed the cut are removed and counted. On a link, <code>⌥B</code> brings the map back in as a branch, and the map goes to Recently deleted unless something else still links to it. <code>⌘Z</code> undoes either, map and all.</li><li><b>Link a node, <code>⌥K</code>.</b> Pick a map to link to, or make a new one named after the node.</li><li><b>Follow links.</b> <code>⌥⏎</code> or a double-click opens a linked map. A bar under the top bar keeps the trail of maps you came through; <code>⌥U</code> or a name in it goes back up to the link you left from. <em>Linked from</em> says which other maps link to the one you are on. A link whose map was deleted says so, and <code>⌥⏎</code> restores the map.</li></ul><h4>Changed</h4><ul><li><b>Undo survives switching maps.</b> Each map keeps its own undo history for the session, so going into a linked map and back, or switching away and back, keeps the steps you took.</li></ul></div>
     <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
 </div>
@@ -764,7 +765,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="0.37.0";
+var VERSION="0.38.0";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid",
   width:2, dash:"solid", slop:1, edges:"round",
@@ -2226,7 +2227,7 @@ var elNodes=document.getElementById("nodes"), elPaint=document.getElementById("p
 var elOverlay=document.getElementById("overlayLayer"), elFrames=document.getElementById("frames");
 var elHint=document.getElementById("startHint");
 var elBadges=document.getElementById("badges");
-var els={}, ftEls={}, bdEls={};
+var els={}, ftEls={}, bdEls={}, wraps={};
 
 /* Key HANDLING has been cross-platform since the beginning (metaKey||ctrlKey,
    altKey); only the labels were Mac-only, so every Windows and Linux visitor
@@ -2263,8 +2264,10 @@ function applyCss(){
   if(typeof PIN_SVG!=="undefined") drawPinMark();
 }
 function hardRender(){
+  SC.body={}; SC.edge={};            /* shapes are drawn afresh where they now stand */
   paintReset();
   Object.keys(els).forEach(function(id){ els[id].remove(); delete els[id]; });
+  Object.keys(wraps).forEach(function(k){ wraps[k].remove(); delete wraps[k]; });
   Object.keys(ftEls).forEach(function(id){ ftEls[id].remove(); delete ftEls[id]; });
   Object.keys(bdEls).forEach(function(id){ bdEls[id].remove(); delete bdEls[id]; });
   render(true);
@@ -2313,9 +2316,22 @@ function render(keepView,lead){
   var solo=null;
   if(lensSolo()){ solo=lensParts(); solo[VR()]=1; }
 
+  /* Node elements live in one wrapper per top-level branch, so a branch that
+     the layout shifts as a block moves with one transform on the wrapper
+     rather than one on each node. A changed transform costs the browser a
+     style and layout pass on that element, which at 1500 nodes was 60ms every
+     time the whole map moved. The wrapper's origin is its branch root. */
+  var topOf={}, vr=VR();
+  (function tw(id,top){ topOf[id]=top; kids(N(id)).forEach(function(c){ tw(c, top||c); }); })(vr,null);
+  function wrapFor(top){
+    var w=wraps[top||""];
+    if(!w){ w=document.createElement("div"); w.className="branch"; elNodes.appendChild(w); wraps[top||""]=w; }
+    return w;
+  }
   Object.keys(showing).forEach(function(id){
-    var el=els[id];
-    if(!el){ el=document.createElement("div"); el.dataset.id=id; elNodes.appendChild(el); els[id]=el; }
+    var el=els[id], wrap=wrapFor(topOf[id]);
+    if(!el){ el=document.createElement("div"); el.dataset.id=id; wrap.appendChild(el); els[id]=el; }
+    else if(el.parentNode!==wrap) wrap.appendChild(el);
     var n=N(id);
     if(id!==editing){
       if(n.link){
@@ -2329,7 +2345,10 @@ function render(keepView,lead){
         if(el.textContent!==t || el.children.length) el.textContent=t;
       }
     }
-    el.className="node"+(isVR(n)?" root":"")+(id===editing?" editing":"")+
+    /* set only when it changed: assigning the same class still invalidates
+       the element's style, and doing that to every node made each render
+       restyle and lay out the whole map (~30ms at 1500 nodes) */
+    var cls="node"+(isVR(n)?" root":"")+(id===editing?" editing":"")+
       (n.mark==="done"?" done":"")+(n.mark==="flag"?" flag":"")+
       (ghosts && !ghosts[id] && !isVR(n) ? " ghost" : "")+
       (solo && !solo[id] ? " lenshide" : "")+
@@ -2338,8 +2357,11 @@ function render(keepView,lead){
       (presSkip(id) ? " skipped" : "")+
       (carry && carry.set[id] ? " carried" : "")+
       (n.link ? " link"+(CFG.linkStyle==="arrow"?" la":"")+(linkInfo(n.link).missing?" missing":"") : "");
+    if(el.className!==cls) el.className=cls;
   });
   Object.keys(els).forEach(function(id){ if(!showing[id]){ els[id].remove(); delete els[id]; } });
+  Object.keys(wraps).forEach(function(k){ if(!wraps[k].firstChild){ wraps[k].remove(); delete wraps[k]; } });
+  wrapTop=topOf;
 
   box={};
   var stale=[];
@@ -2360,10 +2382,25 @@ function render(keepView,lead){
   if(!keepView && CFG.follow) cameraTo(selected,lead);
   applyView();
 }
+var wrapTop={}, nodeMoves=0;
 function reposition(){
+  /* each wrapper sits at its branch root; a branch root with no position (hidden
+     in this view) leaves its wrapper where it was, and its nodes keep their own */
+  var org={};
+  Object.keys(wraps).forEach(function(k){
+    var w=wraps[k], p=k&&pos[k], ox=p?p.cx:0, oy=p?p.cy:0;
+    if(!p && w._ox!=null){ ox=w._ox; oy=w._oy; }
+    org[k]=[ox,oy];
+    var t="translate("+ox+"px,"+oy+"px)";
+    if(w._t!==t){ w.style.transform=t; w._t=t; w._ox=ox; w._oy=oy; }
+  });
   Object.keys(els).forEach(function(id){
     var p=pos[id]; if(!p) return;
-    els[id].style.transform="translate("+(p.cx-box[id].w/2)+"px,"+(p.cy-box[id].h/2)+"px)";
+    var el=els[id], o=org[wrapTop[id]||""]||[0,0];
+    /* rounded, so a branch that moved as a block does not touch its nodes
+       over floating-point dust in the difference */
+    var t="translate("+Math.round((p.cx-box[id].w/2-o[0])*100)/100+"px,"+Math.round((p.cy-box[id].h/2-o[1])*100)/100+"px)";
+    if(el._t!==t){ el.style.transform=t; el._t=t; nodeMoves++; }
   });
 }
 function edgePoint(id,d,outward){
@@ -2531,8 +2568,22 @@ function shapes(ids, opt){
      painter can reuse the DOM elements it already has instead of reparsing the
      whole drawing. */
   var items=cache?[]:null;
-  function emit(k,h){ body.push(h); if(cache) items.push({k:k,h:h}); }
+  /* A shape's key holds nothing about where it is. It is drawn where it first
+     appears, and when the node later shifts the element is kept and moved by
+     a transform of the difference, one attribute set instead of a redraw.
+     Before 0.38 every node that moved was redrawn, which made adding a node in
+     a big map cost most of a full repaint. Most shapes never move, so most
+     carry no transform, which keeps the browser's own paint cheap, and a hard
+     render (a fold, a focus, a switch) draws everything afresh where it now
+     stands. Export never caches, so it never sees a transform. */
+  function emit(k,h,tx,ty,grp){
+    var t=(Math.abs(tx)>.01||Math.abs(ty)>.01) ? "translate("+rd(tx)+","+rd(ty)+")" : "";
+    body.push(t ? '<g transform="'+t+'">'+h+'</g>' : h);
+    if(cache) items.push({k:k,h:h,tx:tx,ty:ty,g:grp||""});
+  }
+  function rd(v){ return Math.round(v*100)/100; }
   function geo(i){ var q=pos[i], z=box[i]; return q.cx+","+q.cy+","+z.w+","+z.h; }
+  function size(i){ var z=box[i]; return z.w+","+z.h; }
 
   if(opt.frames !== false && !lensSolo()){
     state.frames.forEach(function(f){
@@ -2545,7 +2596,7 @@ function shapes(ids, opt){
         '<path d="'+(amp?roughRect(b.x,b.y,b.w,b.h,16,r,amp*.8):smoothRect(b.x,b.y,b.w,b.h,16))+
         '" fill="'+(dark()?"rgba(255,255,255,.028)":"rgba(30,30,30,.022)")+
         '" stroke="'+(on?(dark()?"#a5a1ff":"#6965db"):(dark()?"#5a5a5a":"#c9ccd1"))+
-        '" stroke-width="'+(on?2:1.5)+'" stroke-linecap="round"/>');
+        '" stroke-width="'+(on?2:1.5)+'" stroke-linecap="round"/>',0,0);
     });
   }
 
@@ -2571,7 +2622,7 @@ function shapes(ids, opt){
                (pa?1:0)+(pb?1:0)+"|"+(on?1:0)+"|"+lensSig()+"|"+(l.branch?"B":"");
       if(cache){
         var lhit=SC.edge[lkey];
-        if(lhit!==undefined){ nEdge[lkey]=lhit; emit(lkey,lhit); return; }
+        if(lhit!==undefined){ nEdge[lkey]=lhit; emit(lkey,lhit.s,0,0); return; }
       }
       var dx=B.cx-A.cx, dy=B.cy-A.cy, dist=Math.hypot(dx,dy)||1;
       var bow=Math.min(190,dist*.34);
@@ -2608,8 +2659,8 @@ function shapes(ids, opt){
             '" stroke="'+lcol+'" stroke-width="1.7" opacity="'+(on?.9:.4)+'"/>'
           : '<circle cx="'+pr[0].cx+'" cy="'+pr[0].cy+'" r="3.2" fill="'+lcol+'" opacity="'+(on?.9:.4)+'"/>';
       });
-      if(cache) nEdge[lkey]=lout;
-      emit(lkey,lout);
+      if(cache) nEdge[lkey]={s:lout,x:0,y:0};
+      emit(lkey,lout,0,0);
       void li;
     });
   }
@@ -2629,10 +2680,11 @@ function shapes(ids, opt){
       if(!pos[cid] || !inSet[cid]) return;
       if(lensHideTree && !btSet[cid]) return;
       var d=dirOf(cid), col=N(cid).link?(dark()?"#66d9e8":"#0c8599"):paletteFor(N(cid)).line, key=null;
+      var PP=pos[id], PC=pos[cid], ox=PP.cx, oy=PP.cy;
       if(cache){
-        key=cid+"|"+SC.gen+"|"+geo(id)+"|"+geo(cid)+"|"+d+"|"+col+"|"+(lensQuiet?1:0)+"|"+(presFade(cid)?1:0);
+        key=cid+"|"+SC.gen+"|"+size(id)+"|"+rd(PC.cx-ox)+","+rd(PC.cy-oy)+"|"+size(cid)+"|"+d+"|"+col+"|"+(lensQuiet?1:0)+"|"+(presFade(cid)?1:0);
         var hit=SC.edge[key];
-        if(hit!==undefined){ nEdge[key]=hit; emit(key,hit); return; }
+        if(hit!==undefined){ nEdge[key]=hit; emit(key,hit.s,ox-hit.x,oy-hit.y,wrapTop[cid]); return; }
       }
       var out=[], pts=connectorPts(id,cid,d);
       for(var k=0;k<passes;k++){
@@ -2655,21 +2707,21 @@ function shapes(ids, opt){
       var str=out.join("");
       if(lensQuiet) str='<g opacity=".22">'+str+'</g>';
       else if(presFade(cid)) str='<g opacity=".35">'+str+'</g>';
-      if(cache) nEdge[key]=str;
-      emit(key,str);
+      if(cache) nEdge[key]={s:str,x:ox,y:oy};
+      emit(key,str,0,0,wrapTop[cid]);
     });
   });
 
   ids.forEach(function(id){
     var n=N(id), P=paletteFor(n), key=null;
+    var b=box[id], p=pos[id], out=[], def="";
     if(cache){
-      key=id+"|"+SC.gen+"|"+geo(id)+"|"+P.line+"|"+(P.fill||"")+"|"+(n.mark||"")+"|"+(isVR(n)?1:0)+
+      key=id+"|"+SC.gen+"|"+size(id)+"|"+P.line+"|"+(P.fill||"")+"|"+(n.mark||"")+"|"+(isVR(n)?1:0)+
           "|"+((lensQuiet && !lensGhosts[id] && !isVR(n))?1:0)+"|"+(presFade(id)?1:0)+
           "|"+(n.link?CFG.linkStyle+(linkInfo(n.link).missing?"m":""):"");
       var hit=SC.body[key];
-      if(hit!==undefined){ nBody[key]=hit; emit(key,hit.b); if(hit.d) defs.push(hit.d); return; }
+      if(hit!==undefined){ nBody[key]=hit; emit(key,hit.b,p.cx-hit.x,p.cy-hit.y,wrapTop[id]); if(hit.d) defs.push(hit.d); return; }
     }
-    var b=box[id], p=pos[id], out=[], def="";
     var x=p.cx-b.w/2, y=p.cy-b.h/2;
     var rad=CFG.edges==="round"?(isVR(n)?14:11):1;
     var lk=n.link ? (dark()?"#66d9e8":"#0c8599") : null;
@@ -2715,9 +2767,9 @@ function shapes(ids, opt){
     var body=out.join("");
     if(lensQuiet && !lensGhosts[id] && !isVR(n)) body='<g opacity=".17">'+body+'</g>';
     else if(presFade(id)) body='<g opacity=".38">'+body+'</g>';
-    var rec={b:body, d:def};
+    var rec={b:body, d:def, x:p.cx, y:p.cy};
     if(cache) nBody[key]=rec;
-    emit(key,rec.b); if(rec.d) defs.push(rec.d);
+    emit(key,rec.b,0,0,wrapTop[id]); if(rec.d) defs.push(rec.d);
   });
   if(cache){ SC.body=nBody; SC.edge=nEdge; }
   return {defs:defs, body:body, items:items};
@@ -2730,27 +2782,39 @@ function shapes(ids, opt){
    map. Now each shape's <g> is keyed and reused, so a repaint touches only the
    shapes that actually moved. */
 var SVGNS="http://www.w3.org/2000/svg";
-var pDefs=null, pMain=null, pTop=null, pKeys=[], pEls=[], pCache={}, pDefsHtml=null, pTopHtml=null;
+var pDefs=null, pMain=null, pMarks=null, pTop=null, pGroups={}, pDefsHtml=null, pTopHtml=null, pMarksHtml=null;
 function svgNode(tag){ return document.createElementNS(SVGNS,tag); }
 function paintLayers(){
   if(pMain) return;
-  pDefs=svgNode("defs"); pMain=svgNode("g"); pTop=svgNode("g");
-  elPaint.appendChild(pDefs); elPaint.appendChild(pMain); elPaint.appendChild(pTop);
+  pDefs=svgNode("defs"); pMain=svgNode("g"); pMarks=svgNode("g"); pTop=svgNode("g");
+  elPaint.appendChild(pDefs); elPaint.appendChild(pMain); elPaint.appendChild(pMarks); elPaint.appendChild(pTop);
 }
 function paintReset(){
-  pKeys=[]; pEls=[]; pCache={}; pDefsHtml=null; pTopHtml=null;
+  pGroups={}; pDefsHtml=null; pTopHtml=null; pMarksHtml=null;
   if(pMain) pMain.textContent="";
   if(pDefs) pDefs.textContent="";
+  if(pMarks) pMarks.textContent="";
   if(pTop) pTop.textContent="";
 }
 function shapeNode(html){ var g=svgNode("g"); g.innerHTML=html; return g; }
-function reindex(){ pCache={}; for(var i=0;i<pKeys.length;i++) pCache[pKeys[i]]=pEls[i]; }
-function reconcile(items){
+/* The shapes sit in one <g> per top-level branch, as the node elements do, so
+   a branch the layout shifted as a block moves with one transform on its
+   group. A shape's own transform is what is left of its drift after the
+   group's, set only when it changed; for most shapes that is nothing. */
+function placeAll(G,items,gx,gy){
+  for(var i=0;i<items.length;i++){
+    var el=G.els[i], it=items[i], dx=it.tx-gx, dy=it.ty-gy;
+    var t=(Math.abs(dx)>.01||Math.abs(dy)>.01) ? "translate("+Math.round(dx*100)/100+","+Math.round(dy*100)/100+")" : "";
+    if(el._t!==t){ if(t) el.setAttribute("transform",t); else el.removeAttribute("transform"); el._t=t; }
+  }
+}
+function reindex(G){ G.cache={}; for(var i=0;i<G.keys.length;i++) G.cache[G.keys[i]]=G.els[i]; }
+function reconcileGroup(G,items,gx,gy){
   var i, n=items.length;
-  if(n===pKeys.length){
+  if(n===G.keys.length){
     var diff=[];
-    for(i=0;i<n;i++) if(items[i].k!==pKeys[i]) diff.push(i);
-    if(!diff.length) return;
+    for(i=0;i<n;i++) if(items[i].k!==G.keys[i]) diff.push(i);
+    if(!diff.length){ placeAll(G,items,gx,gy); return; }
     /* A few shapes changed: swap just those elements in place. Only safe when
        every element going in is new or not currently on screen; a cached
        element still showing elsewhere would be pulled out of its old slot by
@@ -2758,41 +2822,62 @@ function reconcile(items){
        lost shapes when a node moved between branches in a big map. */
     var live=false;
     if(diff.length*8 < n){
-      var inUse=new Set(pEls);
-      for(i=0;i<diff.length && !live;i++){ var ce=pCache[items[diff[i]].k]; if(ce && inUse.has(ce)) live=true; }
+      var inUse=new Set(G.els);
+      for(i=0;i<diff.length && !live;i++){ var ce=G.cache[items[diff[i]].k]; if(ce && inUse.has(ce)) live=true; }
     }
     if(diff.length*8 < n && !live){
       for(i=0;i<diff.length;i++){
-        var at=diff[i], it=items[at], el=pCache[it.k]||shapeNode(it.h);
-        pMain.replaceChild(el,pEls[at]);
-        pEls[at]=el; pKeys[at]=it.k;
+        var at=diff[i], it=items[at], el=G.cache[it.k]||shapeNode(it.h);
+        G.el.replaceChild(el,G.els[at]);
+        G.els[at]=el; G.keys[at]=it.k;
       }
-      reindex(); return;
+      reindex(G); placeAll(G,items,gx,gy); return;
     }
   }
   /* Shapes were added or removed, or most of them moved: rebuild the order,
      reusing every element whose key survived. */
   var frag=document.createDocumentFragment(), nEls=[], nKeys=[];
   for(i=0;i<n;i++){
-    var t=items[i], e=pCache[t.k];
+    var t=items[i], e=G.cache[t.k];
     if(!e) e=shapeNode(t.h);
     frag.appendChild(e); nEls.push(e); nKeys.push(t.k);
   }
-  pMain.replaceChildren(frag);
-  pEls=nEls; pKeys=nKeys; reindex();
+  G.el.replaceChildren(frag);
+  G.els=nEls; G.keys=nKeys; reindex(G); placeAll(G,items,gx,gy);
+}
+function reconcile(items){
+  var lists={}, order=[];
+  for(var i=0;i<items.length;i++){ var g=items[i].g||""; if(!lists[g]){ lists[g]=[]; order.push(g); } lists[g].push(items[i]); }
+  Object.keys(pGroups).forEach(function(g){ if(!lists[g]){ pGroups[g].el.remove(); delete pGroups[g]; } });
+  order.forEach(function(g){
+    var G=pGroups[g], p=g&&pos[g];
+    if(!G){
+      G={el:svgNode("g"), keys:[], els:[], cache:{}, ox:p?p.cx:0, oy:p?p.cy:0, t:""};
+      pMain.appendChild(G.el); pGroups[g]=G;
+    }
+    /* the group has moved by however far its branch root has since the group was made */
+    var gx=p?p.cx-G.ox:0, gy=p?p.cy-G.oy:0;
+    var t=(Math.abs(gx)>.01||Math.abs(gy)>.01) ? "translate("+Math.round(gx*100)/100+","+Math.round(gy*100)/100+")" : "";
+    if(G.t!==t){ if(t) G.el.setAttribute("transform",t); else G.el.removeAttribute("transform"); G.t=t; }
+    reconcileGroup(G,lists[g],gx,gy);
+  });
 }
 function paint(){
   paintLayers();
   var ids=Object.keys(pos);
   var s=shapes(ids,{cache:true});
+
   var amp=SLOP[CFG.slop];
   var accent=dark()?"#a5a1ff":"#6965db";
 
-  var top=[];
+  var top=[], halos=[];
   /* Drag-select needs to be unmissable, because the next keystroke acts on
      whatever is marked. Each marked node gets a tinted halo AND an accent
      outline, and the whole selection gets one dashed box around it, so it reads
-     as a set rather than as a few slightly shaded boxes. */
+     as a set rather than as a few slightly shaded boxes. The halos are their
+     own layer, rewritten only when the selection or its places change: a big
+     selection is thousands of paths, and typing beside it used to rebuild them
+     on every keystroke for the sake of the one ring that had moved. */
   var mids=Object.keys(marked).filter(function(id){ return !!pos[id] && !!N(id); });
   var mx0=Infinity,my0=Infinity,mx1=-Infinity,my1=-Infinity;
   mids.forEach(function(id){
@@ -2801,13 +2886,13 @@ function paint(){
     mx0=Math.min(mx0,x); my0=Math.min(my0,y); mx1=Math.max(mx1,x+w); my1=Math.max(my1,y+h);
     var r=rngFrom(seedOf(id+"mk"));
     var d=amp?roughRect(x,y,w,h,13,r,1):smoothRect(x,y,w,h,13);
-    top.push('<path d="'+d+'" fill="'+accent+'" opacity=".2" stroke="none"/>');
-    top.push('<path d="'+d+'" fill="none" stroke="'+accent+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity=".95"/>');
+    halos.push('<path d="'+d+'" fill="'+accent+'" opacity=".2" stroke="none"/>');
+    halos.push('<path d="'+d+'" fill="none" stroke="'+accent+'" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" opacity=".95"/>');
   });
   if(mids.length>1){
     var gp=14, gx=mx0-gp, gy=my0-gp, gw=(mx1-mx0)+gp*2, gh=(my1-my0)+gp*2;
     var gr=rngFrom(seedOf("markbox"));
-    top.push('<path class="ants" d="'+(amp?roughRect(gx,gy,gw,gh,16,gr,1.2):smoothRect(gx,gy,gw,gh,16))+
+    halos.push('<path class="ants" d="'+(amp?roughRect(gx,gy,gw,gh,16,gr,1.2):smoothRect(gx,gy,gw,gh,16))+
       '" fill="none" stroke="'+accent+'" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="9 6" opacity=".75"/>');
   }
 
@@ -2859,6 +2944,8 @@ function paint(){
   var dh=s.defs.join("");
   if(dh!==pDefsHtml){ pDefs.innerHTML=dh; pDefsHtml=dh; }
   reconcile(s.items);
+  var mh=halos.join("");
+  if(mh!==pMarksHtml){ pMarks.innerHTML=mh; pMarksHtml=mh; }
   var th=top.join("");
   if(th!==pTopHtml){ pTop.innerHTML=th; pTopHtml=th; }
 }
@@ -6271,7 +6358,7 @@ window.__mf={
   png:function(cb){ var t=exportTargets(); svgToPng(buildSvg(t.ids,t.frame),2,cb); },
   panel:function(on){ toggleStyle(on); },
   boxes:function(){ return box; }, pos:function(){ return pos; }, fit:fit,
-  get undoBytes(){ return undoBytes; }, get lastSvg(){ return lastSvg; }, get focusTrail(){ return focusTrail.length; }, copyMenu:function(){ var b=document.querySelector('#crumbs [data-cmenu]'); if(b) copyMenu(b); return !!elSMenu; }, get undoSteps(){ return undoStack.length; },
+  get nodeMoves(){ return nodeMoves; }, get undoBytes(){ return undoBytes; }, get lastSvg(){ return lastSvg; }, get focusTrail(){ return focusTrail.length; }, copyMenu:function(){ var b=document.querySelector('#crumbs [data-cmenu]'); if(b) copyMenu(b); return !!elSMenu; }, get undoSteps(){ return undoStack.length; },
   bounds:function(f){ return frameBounds(f); },
   onScreen:function(id){
     var p=pos[id],b=box[id]; if(!p||!b) return false;

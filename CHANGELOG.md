@@ -3,6 +3,23 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.38.0] - 2026-09-17
+
+### Changed
+- **Big maps are quick again.** The bench picked the targets: in a 1500-node
+  map, adding a node cost 76ms and a keystroke while typing 22ms, most of it
+  spent redrawing shapes that had only shifted and restyling nodes that had
+  not changed. Now adding a node costs 11ms and a keystroke 6ms; an arrow move
+  is unchanged at 8ms and a full render is 7ms. What changed underneath: a
+  shape is drawn once and moved by a transform when its node shifts; nodes and
+  shapes sit in one group per branch, so a branch that moves as a block moves
+  with one transform; a node's class and place are written only when they
+  changed, since writing the same value still makes the browser restyle it;
+  and the selection halos are their own layer, so typing beside a big
+  selection no longer rebuilds them on every keystroke. Exports draw afresh
+  as before. The bench now records the two keys pressed most, a letter and an
+  arrow, in a 600 and a 1500-node map.
+
 ## [0.37.0] - 2026-09-17
 
 ### Added

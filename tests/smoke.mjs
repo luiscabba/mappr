@@ -274,10 +274,11 @@ group("painter");
 // place as a render that rebuilds everything from scratch.
 {
   await M(() => __mf.paste("- Painter check\n  - one\n  - two\n    - three"));
-  const incremental = await M(() => document.getElementById("paintLayer").innerHTML);
+  const geom = () => M(() => [...document.querySelectorAll("#paintLayer path, #paintLayer circle")].map((e) => { const b = e.getBBox(), m = e.getCTM(); return [m.e + b.x * m.a, m.f + b.y * m.d, b.width * m.a, b.height * m.d].map((v) => Math.round(v * 4) / 4).join(","); }).sort().join("|"));
+  const incremental = await geom();
   await M(() => __mf.set("slop", __mf.cfg.slop)); // forces a full rebuild
-  const rebuilt = await M(() => document.getElementById("paintLayer").innerHTML);
-  ok("incremental paint matches a full rebuild", incremental === rebuilt);
+  const rebuilt = await geom();
+  ok("incremental paint matches a full rebuild", incremental === rebuilt && incremental.length > 20);
 }
 
 group("outlines from rendered documents");
@@ -2345,10 +2346,14 @@ group("repainting after a move in a big map");
   big += "- Business Impact\n  - Revenue\n  - Efficiency\n    - QA Audit\n  - Risk\n    - AI Insights\n  - Decision Support\n";
   await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, big);
   await page.waitForTimeout(300);
+  /* what is on screen, not how it got there: since 0.38 an incremental paint
+     moves shapes with transforms where a full rebuild draws them afresh, so
+     the markup differs while the picture must not */
+  const geom = () => M(() => [...document.querySelectorAll("#paintLayer path, #paintLayer circle")].map((e) => { const b = e.getBBox(), m = e.getCTM(); return [m.e + b.x * m.a, m.f + b.y * m.d, b.width * m.a, b.height * m.d].map((v) => Math.round(v * 4) / 4).join(","); }).sort().join("|"));
   const same = async () => {
-    const inc = await M(() => document.getElementById("paintLayer").innerHTML);
+    const inc = await geom();
     await M(() => __mf.set("slop", __mf.cfg.slop));
-    const full = await M(() => document.getElementById("paintLayer").innerHTML);
+    const full = await geom();
     return inc === full;
   };
   await pick("AI Insights");

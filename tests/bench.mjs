@@ -175,6 +175,30 @@ for (const size of [50, 600, 1500]) {
   row("in a " + r.nodes + "-node map", r.ms);
 }
 
+/* ---------- 3b. the two keys pressed most: a letter while typing, an arrow ---------- */
+console.log("\ntyping and moving (median of 20, nothing selected)");
+results.keys = {};
+for (const size of [600, 1500]) {
+  const page = await build(size);
+  const r = await page.evaluate(() => {
+    __mf.mark([]);
+    const ids = Object.keys(__mf.state.nodes);
+    __mf.select(ids[Math.floor(ids.length / 2)]);
+    const move = [];
+    for (let i = 0; i < 20; i++) { const a = performance.now(); __mf.arrow(i % 2 ? "D" : "U"); move.push(performance.now() - a); }
+    move.sort((x, y) => x - y);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+    const type = [];
+    for (let i = 0; i < 20; i++) { const a = performance.now(); document.execCommand("insertText", false, "x"); type.push(performance.now() - a); }
+    type.sort((x, y) => x - y);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    return { nodes: ids.length, move: Math.round(move[10] * 100) / 100, type: Math.round(type[10] * 100) / 100 };
+  });
+  results.keys[r.nodes] = { move: r.move, type: r.type };
+  row("a letter, in a " + r.nodes + "-node map", r.type);
+  row("an arrow, in a " + r.nodes + "-node map", r.move);
+}
+
 /* ---------- 4. undo stack memory ---------- */
 console.log("\nundo stack");
 {
