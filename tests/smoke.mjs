@@ -2601,8 +2601,10 @@ group("map links: break out, link, open, back up, bring back in");
   ok("Option+B turns the branch into a link", !!link && (await M((x) => __mf.state.nodes[x].children.length, cid)) === 0);
   ok("and makes a new map", (await docs()) === n0 + 1 && (await lib()).docs[link].name === "Collections ops");
   ok("the branch's nodes left this map", !(await id("Autopay")) && !(await id("Agent behaviour")));
-  ok("the link across the cut is gone from this map", (await M(() => __mf.links.length)) === 0);
-  ok("the status counts it", /1 link across the cut/.test(await M(() => document.getElementById("saveState").textContent)), await M(() => document.getElementById("saveState").textContent));
+  ok("the tie across the cut now lands on the link", (await M(() => __mf.links.length)) === 1 && (await M((x) => __mf.state.links[0].a === x || __mf.state.links[0].b === x, cid)));
+  ok("and remembers the node it stood for", await M(() => !!(__mf.state.links[0].va || __mf.state.links[0].vb)));
+  ok("drawn with a hollow end on the link", (await M(() => document.querySelectorAll("path.lk").length)) === 1 && (await M(() => document.querySelectorAll("circle[r='5']").length)) === 1);
+  ok("the status counts it", /1 tie across the cut/.test(await M(() => document.getElementById("saveState").textContent)), await M(() => document.getElementById("saveState").textContent));
   ok("the link shows the map's size", await M((x) => /5 nodes/.test(document.querySelector('.node[data-id="' + x + '"]').textContent), cid));
   ok("and looks like a link (stacked card)", await M((x) => document.querySelector('.node[data-id="' + x + '"]').classList.contains("link"), cid));
   ok("the index knows this map links there", ((await lib()).linksFrom[(await lib()).current] || []).includes(link));
@@ -2670,7 +2672,8 @@ group("map links: break out, link, open, back up, bring back in");
   const before = await docs();
   await press("Alt+KeyB");
   ok("Option+B on a link brings the map back in", !!(await id("Autopay")) && !(await M((x) => __mf.state.nodes[x].link, cid)));
-  ok("with the link inside it", (await M(() => __mf.links.length)) === 1);
+  ok("with the link inside it, and the tie across the cut back on its node", (await M(() => __mf.links.length)) === 2 && await M(([a, b]) => __mf.state.links.some((l) => (l.a === a && l.b === b) || (l.a === b && l.b === a)), [await id("Autopay"), await id("Paid ads")]));
+  ok("nothing still stands in for a node", await M(() => !__mf.state.links.some((l) => l.va || l.vb)));
   ok("and under the same node", (await node("Collections")).kids.join() === "Recurring payments,Agent behaviour,AI insights", await node("Collections"));
   ok("the separate map is set aside", (await docs()) === before - 1 && await M(() => /Collections/.test(document.getElementById("mapsTrash").textContent) || true));
   await press("Meta+z");
@@ -2765,6 +2768,190 @@ group("branch ties");
   await page.waitForTimeout(250);
   ok("copy and paste keep a branch tie inside the copy", (await M(() => __mf.links)).filter((l) => l.branch).length === 2, await M(() => __mf.links));
   await M(() => { __mf.mark([]); __mf.spread("sides"); });
+}
+
+group("0.36 sweep: how the features treat each other");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(250); };
+  const status = () => M(() => document.getElementById("saveState").textContent);
+  const newMap = async (t) => {
+    await M(() => document.getElementById("btnMaps").click());
+    await M(() => document.getElementById("btnNewMap").click());
+    await page.waitForTimeout(220);
+    await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, t);
+    await page.waitForTimeout(300);
+  };
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  const walk = () => M(() => __mf.walk.map((i) => __mf.state.nodes[i].text).join(","));
+  const badge = (x) => M((x) => { const b = [...document.querySelectorAll(".badge.link")].find((b) => b.dataset.tie === x); return b ? b.textContent : null; }, x);
+  const pasteText = async (t) => { await M((t) => { const dt = new DataTransfer(); dt.setData("text/plain", t); document.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true })); }, t); await page.waitForTimeout(250); };
+  const copyNow = () => M(() => { const dt = new DataTransfer(); document.dispatchEvent(new ClipboardEvent("copy", { clipboardData: dt, bubbles: true, cancelable: true })); return dt.getData("text/plain"); });
+
+  // ---- links and focus
+  await newMap("Launch\n- Marketing\n  - Paid ads\n    - Google\n  - Email\n- Product\n  - Onboarding\n    - Tour\n  - Pricing");
+  const G = await id("Google"), T = await id("Tour"), MK = await id("Marketing"), PA = await id("Paid ads");
+  await M(([a, b]) => __mf.tie(a, b), [G, T]);
+  await M((x) => __mf.select(x), MK); await M(() => __mf.focusIn()); await page.waitForTimeout(250);
+  ok("focused on a branch, a tie leaving it is not drawn", (await M(() => document.querySelectorAll("path.lk").length)) === 0);
+  ok("but the node still says it is tied, and to where", (await badge(G)) === "∿1 outside", await badge(G));
+  await M((x) => { const b = [...document.querySelectorAll(".badge.link")].find((b) => b.dataset.tie === x); b.click(); }, G);
+  await page.waitForTimeout(300);
+  ok("clicking it steps out of the focus to the other end", (await M(() => __mf.focus)) == null && (await M(() => __mf.selected)) === T);
+
+  // ---- Backspace hands a tie to the heir, a branch tie demotes after a move
+  await M((x) => __mf.select(x), PA);
+  await press("Backspace");
+  ok("Backspace on the tied node's parent keeps the tie, on the child that moved up", (await M(() => __mf.links)).length === 1 && (await M(([a, b]) => __mf.links.some((l) => (l.a === a && l.b === b) || (l.a === b && l.b === a)), [G, T])));
+  await press("Meta+z");
+  await M((x) => __mf.select(x), G);
+  await press("Backspace");
+  ok("Backspace on the tied node itself hands the tie to its heir, and only once", (await M(() => __mf.links)).length === 0 || (await M(() => __mf.links.length === 1)));
+  await press("Meta+z");
+  const EM = await id("Email"), PR = await id("Product");
+  await M(() => { __mf.state.links = []; });
+  await M(([a, b]) => __mf.branchTie(a, b), [EM, PR]);
+  ok("a branch tie between two branches", (await M(() => __mf.links))[0].branch === true);
+  // carry Email into Product: now one end is inside the other
+  await M((x) => __mf.select(x), EM);
+  await press("Alt+KeyX");
+  await M((x) => { __mf.select(x); }, PR);
+  await press("Enter");
+  ok("moving one end inside the other demotes the branch tie to a plain tie", (await M(() => __mf.links)).length === 1 && (await M(() => __mf.links))[0].branch !== true, await M(() => __mf.links));
+  ok("no runtime errors so far", errors.length === 0, errors);
+
+  // ---- carry takes a root out of its frame
+  await newMap("Root\n- A\n  - a1\n- B\n- C\n  - c1");
+  const A = await id("A"), B = await id("B"), C = await id("C");
+  await M((ids) => __mf.mark(ids), [A, B]);
+  await M(() => __mf.frame());
+  await page.keyboard.press("Escape"); await page.waitForTimeout(150);
+  ok("a frame round A and B", (await M(() => __mf.frames.length)) === 1 && (await M(() => __mf.frames[0].roots.length)) === 2);
+  await M((x) => { __mf.mark([]); __mf.select(x); }, A);
+  await press("Alt+KeyX");
+  await M((x) => __mf.select(x), C);
+  await press("Enter");
+  ok("carrying A away leaves the frame round B alone", (await M(() => __mf.frames[0].roots)).join() === B, await M(() => __mf.frames));
+
+  // ---- link nodes are leaves
+  await newMap("Plan\n- Ops\n  - Hiring\n  - Budget\n- Sales");
+  await M((x) => __mf.select(x), await id("Ops"));
+  await press("Alt+KeyB");
+  const ops = await id("Ops");
+  ok("Ops is a link now", !!(await M((x) => __mf.state.nodes[x].link, ops)));
+  await press("Meta+ArrowRight");
+  ok("Cmd+arrow cannot give a link a child", (await M((x) => __mf.state.nodes[x].children.length, ops)) === 0 && /stands in for a whole map/.test(await status()), await status());
+  await pasteText("one\ntwo");
+  ok("nor can a paste", (await M((x) => __mf.state.nodes[x].children.length, ops)) === 0);
+  await M((x) => __mf.select(x), await id("Sales"));
+  await press("Alt+ArrowUp");
+  ok("nor can Option+arrow move a sibling into it", (await M((x) => __mf.state.nodes[x].children.length, ops)) === 0 && (await M((x) => __mf.state.nodes[x].parent === __mf.state.rootId, await id("Sales"))));
+  await M((ids) => __mf.mark(ids), [ops, await id("Sales")]);
+  await press("Alt+KeyJ");
+  ok("merge refuses a link", (await M((x) => !!__mf.state.nodes[x].link, ops)) && !!(await id("Sales")) && /cannot be merged/.test(await status()));
+  await M((x) => { __mf.mark([]); __mf.select(x); }, ops);
+  await press("Meta+d");
+  const twins = await M((t) => Object.values(__mf.state.nodes).filter((n) => n.text === t), "Ops");
+  ok("duplicating a link makes a second link to the same map", twins.length === 2 && twins[0].link === twins[1].link, twins);
+  await press("Meta+z");
+  const txt = await copyNow();
+  await M((x) => __mf.select(x), await id("Sales"));
+  await pasteText(txt);
+  const twins2 = await M((t) => Object.values(__mf.state.nodes).filter((n) => n.text === t), "Ops");
+  ok("copy and paste keep the map link too", twins2.length === 2 && twins2[0].link === twins2[1].link, twins2);
+  await press("Meta+z");
+
+  // ---- duplicate keeps ties inside the copy
+  await newMap("Root\n- A\n  - a1\n  - a2\n- B");
+  await M(([a, b]) => __mf.tie(a, b), [await id("a1"), await id("a2")]);
+  await M((x) => __mf.select(x), await id("A"));
+  await press("Meta+d");
+  ok("Cmd+D copies the tie between the copied nodes, as paste does", (await M(() => __mf.links)).length === 2, await M(() => __mf.links));
+
+  // ---- stories: a deleted node is spliced out, merge remaps, sort resets the level
+  await newMap("Talk\n- One\n- Two\n- Three\n- Four");
+  const root = await M(() => __mf.state.rootId);
+  const [One, Two, Three, Four] = [await id("One"), await id("Two"), await id("Three"), await id("Four")];
+  await M(([a, b]) => __mf.storyLink(a, b), [root, Four]);
+  await M(([a, b]) => __mf.storyLink(a, b), [Four, Three]);
+  await M(([a, b]) => __mf.storyLink(a, b), [Three, Two]);
+  ok("a story Four, Three, Two", (await walk()) === "Talk,Four,Three,Two");
+  await M((x) => __mf.select(x), Three);
+  await press("Meta+Backspace");
+  ok("deleting the middle of the chain keeps the rest of it", (await walk()) === "Talk,Four,Two", await walk());
+  await press("Meta+z");
+  await M((x) => __mf.select(x), Four);
+  await press("Meta+Backspace");
+  ok("deleting the start moves the start along", (await walk()) === "Talk,Three,Two", await walk());
+  await press("Meta+z");
+  await M((ids) => __mf.mark(ids), [Two, One]);
+  await press("Alt+KeyJ");
+  ok("merging a told node tells the survivor in its place", (await M(() => __mf.walk.join())) === [root, Four, Three, One].join(), await walk());
+  await press("Meta+z");
+  await M((x) => { __mf.mark([]); __mf.select(x); }, root);
+  await press("Alt+KeyO"); await press("Digit1");
+  ok("sorting a told level puts it back to map order", (await walk()) === "Talk,Four,One,Three,Two" && /back to map order/.test(await status()), [await walk(), await status()]);
+  await press("Meta+z");
+  ok("and undo brings the story back", (await walk()) === "Talk,Four,Three,Two", await walk());
+  await M(() => __mf.storyNew());
+  await M(() => __mf.storyRename(1, "Story 1"));
+  ok("a story cannot take another's name", (await M(() => __mf.stories)).join() === "Story 1,Story 2", await M(() => __mf.stories));
+
+  // ---- presenting: Esc backs out of the overview, paste is ignored, a selection survives, carry ends
+  await M((ids) => __mf.mark(ids), [One, Two]);
+  await press("Meta+3");
+  ok("presenting", !!(await M(() => __mf.pres)));
+  await press("KeyO");
+  await press("Escape");
+  ok("Esc from the overview goes back to the talk, not out of it", !!(await M(() => __mf.pres)));
+  const n0 = await M(() => Object.keys(__mf.state.nodes).length);
+  await pasteText("x\ny");
+  ok("paste does nothing mid-talk", (await M(() => Object.keys(__mf.state.nodes).length)) === n0);
+  await press("Escape");
+  ok("the selection is back once the talk ends", (await M(() => __mf.rawMarked)).sort().join() === [One, Two].sort().join(), await M(() => __mf.rawMarked));
+  await M((x) => { __mf.mark([]); __mf.select(x); }, One);
+  await press("Alt+KeyX");
+  await press("Meta+3");
+  await press("Escape");
+  await press("ArrowDown");
+  ok("Cmd+3 puts a carried node down; the arrows walk the map afterwards", (await M(() => __mf.selected)) !== One && (await M(() => Object.keys(__mf.state.nodes).length)) === n0);
+
+  // ---- switching map leaves the lens and the carry behind
+  await newMap("Alpha\n- a\n- b");
+  await M(([a, b]) => __mf.tie(a, b), [await id("a"), await id("b")]);
+  await M(() => __mf.setLens("dim"));
+  ok("dimmed", (await M(() => __mf.lens)) === "dim");
+  await press("Alt+Backquote");
+  ok("the map before opens with no lens on it", (await M(() => __mf.lens)) === "off" && (await M(() => __mf.state.nodes[__mf.state.rootId].text)) === "Talk");
+  await M((x) => __mf.select(x), One);
+  await press("Alt+KeyX");
+  ok("carrying", /carrying/.test(await status()));
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.querySelector(".mrow:not(.on)").click());
+  await page.waitForTimeout(250);
+  await press("ArrowRight"); await press("Enter");
+  ok("a carry does not follow you to the next map", (await M(() => __mf.state.nodes[__mf.state.rootId].text)) !== "Talk" && errors.length === 0, errors);
+  ok("and nothing was dropped there", !/moved/.test(await status()), await status());
+
+  // ---- a map you deleted stays deleted through an unrelated undo
+  await newMap("Hub\n- Part\n  - x");
+  await M((x) => __mf.select(x), await id("Part"));
+  await press("Alt+KeyB");
+  const part = await M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).link, "Part");
+  await M(() => document.getElementById("btnMaps").click());
+  await M((x) => document.querySelector('[data-del="' + x + '"]').click(), part);
+  await M((x) => document.querySelector('[data-del="' + x + '"]').click(), part);
+  await page.waitForTimeout(200);
+  await M(() => document.getElementById("btnMaps").click());
+  ok("the map is in the bin", !(await M(() => JSON.parse(localStorage.getItem("mappr.index")).docs))[part] && (await M(() => __mf.trash())).some((d) => d.id === part));
+  await M((x) => __mf.select(x), await id("Hub"));
+  await press("Meta+ArrowRight"); await page.keyboard.type("new"); await press("Escape");
+  await press("Meta+z");
+  ok("an unrelated undo does not bring it back", !(await M(() => JSON.parse(localStorage.getItem("mappr.index")).docs))[part]);
+
+  // ---- ungroup says what it needs
+  await press("Meta+Shift+g");
+  ok("Cmd+Shift+G with no frame says so", /frame/.test(await status()), await status());
+  await M(() => __mf.spread("sides"));
 }
 
 group("console");

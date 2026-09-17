@@ -3,6 +3,61 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.36.0] - 2026-09-17
+
+The interaction sweep. Every feature was checked against every other one:
+ties against folds, focus, break out and delete; stories against merge, sort
+and delete; presenting against carry, paste and the maps panel; map links
+against everything that can put a node somewhere. What follows is what that
+turned up.
+
+### Fixed
+- **Ties inside a focused branch are drawn again.** Focus on a branch and a
+  tie between two of its nodes was not drawn at all, and the nodes wore no
+  badge. A tie that leaves the branch still cannot be drawn, but the node now
+  wears a badge that counts it as *outside*, and a click on the badge steps out
+  of the focus to the other end.
+- **Break out keeps the ties across the cut.** They used to be removed. Now
+  the link node stands in for the end that left, drawn hollow the way a folded
+  branch is, and bringing the map back in puts each tie back on its node.
+- **Deleting a node hands its ties to the child that moved up**, the way a
+  frame already followed. A branch tie whose ends end up on one line after a
+  move, a carry or a merge becomes a plain tie instead of tying a branch to
+  itself.
+- **Duplicate keeps the ties between the copied nodes**, as copy and paste
+  did, and both keep a map link: the copy is a second link to the same map.
+- **A link stands in for a whole map, so nothing can be put under it.**
+  `⌘`+arrow, paste, `⌥`+arrow, carry and merge all said nothing and did
+  something odd; merging into a link threw the merged text away. Each now says
+  so and leaves the map alone.
+- **A story survives what happens to its nodes.** Deleting or moving a node
+  out of an arranged level used to drop everything told after it; the chain
+  is spliced instead. Merging told nodes tells the survivor in their place.
+  Sorting a told level puts that level back to map order and says so, rather
+  than showing one order and telling another.
+- **Presenting.** `Esc` from the overview or the whole story goes back to the
+  talk instead of ending it. Paste does nothing mid-talk. Starting a talk puts
+  a carried node down, closes the maps panel and stashes the selection, which
+  is back when the talk ends. The story menu closes when `R` is pressed, and
+  a different story picked mid-talk starts from the top. Undo while arranging
+  stays on the story and the focus you are arranging. A link node no longer
+  advertises `⌥⏎` while presenting, where the key advances the talk.
+- **Switching map leaves the lens, the carry and the talk behind.** A dim or
+  a network used to follow you into the next map, and a carry could be dropped
+  in a map that did not contain it.
+- **Maps.** An unrelated undo no longer brings back a map you deleted from the
+  panel; only a map set aside by an undo or a bring in comes back with its
+  redo. A map set aside by bringing it in is not evicted from Recently deleted
+  while undo could still want it. Breaking out a branch that holds links
+  records them, so *Linked from* and delete know about them. A frame trimmed
+  by a break out is counted in the message.
+- Smaller: the fold badge inside a network folds again rather than hopping a
+  link; a node whose only ties are hidden says how many rather than `∿0`;
+  a story cannot take another story's name; `⌘⇧G` with no frame says what it
+  needs; a chord pressed with the sort or copy menu open closes the menu and
+  still does what it does; carrying a branch out of a frame leaves the frame
+  round what stayed.
+
 ## [0.35.1] - 2026-09-17
 
 ### Fixed

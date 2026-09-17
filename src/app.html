@@ -694,7 +694,7 @@
       <tr><td><kbd>⌘</kbd> + click</td><td>Tie the selected node to the one you click, anywhere on the map. A faint arc joins them. The same pair again unties. A link says these two relate; it does not change who owns whom, so nothing moves.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd> + click</td><td><b>Tie two branches.</b> Ties the selected node to the one you click as a <em>branch tie</em>: one heavier arc with a bracket at each end, and in connections everything under either node counts as the same network, so a whole branch relates to a whole branch without a tie per node. The same again removes it. From the keyboard, select the two nodes and press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>T</kbd>.</td></tr>
       <tr><td>The <b>∿</b> badge</td><td>How many links land on this node. Click it to walk to the other end, which is usually off screen; clicking again cycles through the rest. A folded branch carries the badge for everything tied up inside it, and walking there opens it.</td></tr>
-      <tr><td>A hollow end</td><td>The node you actually tied is folded away inside the one the arc reaches. Better than a line running into nothing.</td></tr>
+      <tr><td>A hollow end</td><td>The node you actually tied is folded away inside the one the arc reaches, or lives in the map a link stands for. Better than a line running into nothing. In a focused branch, a tie that leaves the branch is not drawn, but the ∿ badge counts it as <em>outside</em> and a click on it goes there.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>1</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>1</kbd></td><td><b>Normal view.</b> The number keys are views, and 1 is the plain map. From any other view it puts you back where you were, focus and all. The <kbd>⌥</kbd> versions are there because a browser tab may keep <kbd>⌘</kbd> plus a number for itself.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>2</kbd> / <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Dim to the links.</b> The whole map stays put and everything no link touches drops to a ghost, so you keep your bearings while the arcs come forward. Pressed while focused on a tied branch, it goes straight to that node's network. Press it again, or <kbd>Esc</kbd>, to turn it off: you land back where you were, focus and all.</td></tr>
       <tr><td><kbd>⇧</kbd> + double-click in connections</td><td>Clear every link on that node. <kbd>⌘</kbd><kbd>Z</kbd> brings them back.</td></tr>
@@ -716,7 +716,7 @@
       <tr><td>Export ▾</td><td>PNG and SVG of the frame or the whole map, and the full JSON with every setting.</td></tr>
       <tr><td>Maps ▾</td><td>Every map you have made, newest first. A map is named after its centre node, so renaming the centre renames the map. Copy and delete live in the same row.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>N</kbd></td><td>A new map.</td></tr>
-      <tr><td><kbd>⌥</kbd><kbd>B</kbd></td><td><b>Break out</b> a branch into a map of its own. The branch moves, with its marks, folds, frames and the links inside it, and a <b>link</b> takes its place. Links that crossed the cut are removed and counted. On a link, <kbd>⌥</kbd><kbd>B</kbd> brings the map back in as a branch; the map goes to Recently deleted unless something else links to it. <kbd>⌘</kbd><kbd>Z</kbd> undoes either, map and all.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>B</kbd></td><td><b>Break out</b> a branch into a map of its own. The branch moves, with its marks, folds, frames and the links inside it, and a <b>link</b> takes its place. A tie that crossed the cut now lands on the link, drawn hollow, and goes back to its node when the map is brought back in. On a link, <kbd>⌥</kbd><kbd>B</kbd> brings the map back in as a branch; the map goes to Recently deleted unless something else links to it. <kbd>⌘</kbd><kbd>Z</kbd> undoes either, map and all.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>K</kbd></td><td><b>Link</b> the selected node to a map: pick one, or make a new one named after the node. A link shows the map's name and size, and its look is in the style panel under <em>Map links</em>. Its name follows the map, so open the map to rename it.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>⏎</kbd> / double-click</td><td>Open a linked map. The top bar keeps a trail of the maps you came through; <kbd>⌥</kbd><kbd>U</kbd> or a name in the trail goes back up, to the link you left from. <em>Linked from</em> in the top bar says which other maps link here. A link whose map was deleted says so, and <kbd>⌥</kbd><kbd>⏎</kbd> restores the map.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>M</kbd></td><td>Switch map: pinned maps first, then recent ones. Type to filter, arrows and <kbd>⏎</kbd> to open. It starts on the map you were on before, so <kbd>⌥</kbd><kbd>M</kbd> <kbd>⏎</kbd> swaps back and forth.</td></tr>
@@ -871,6 +871,24 @@ function branchTieKey(){
   if(ids.length!==2){ flash(selected); flashSave("select the two branch nodes to tie (\u21e7+click or \u21e7+arrows)"); return; }
   branchTieReport(toggleBranchTie(ids[0],ids[1]), ids[1]);
 }
+/* A link node stands in for a whole map, so nothing can be put under it. Every
+   path that would give it a child says so instead. */
+function linkStop(id){
+  if(!N(id)||!N(id).link) return false;
+  flash(id); flashSave("a link stands in for a whole map \u00b7 \u2325B brings it in first");
+  return true;
+}
+/* A branch tie between a node and its own ancestor says nothing the tree does
+   not already say. It is refused when made; after a move or a merge puts the
+   two ends on one line, it becomes a plain tie. */
+function reseatBranchTies(){
+  var n=0;
+  (state.links||[]).forEach(function(l){
+    if(!l.branch||!N(l.a)||!N(l.b)) return;
+    if(pathTo(l.a).indexOf(l.b)>=0 || pathTo(l.b).indexOf(l.a)>=0){ delete l.branch; n++; }
+  });
+  return n;
+}
 function toggleBranchTie(a,b){
   if(!a||!b||a===b||!N(a)||!N(b)) return null;
   if(pathTo(a).indexOf(b)>=0 || pathTo(b).indexOf(a)>=0) return "same";
@@ -913,12 +931,15 @@ function branchTieSet(){
    line running into nothing is worse than an honest stand-in. */
 function visibleEnd(id){
   if(!N(id)) return null;
-  var chain=pathTo(id);
-  for(var i=0;i<chain.length;i++){
-    if(!visible(chain[i])) return null;
+  /* the walk starts at the view root: in a focus, the ancestors above it are
+     out of the picture but not in the way (before 0.36 the walk started at
+     the map's root, so no tie was drawn inside a focused branch at all) */
+  var chain=pathTo(id), from=chain.indexOf(VR());
+  if(from<0) return null;
+  for(var i=from;i<chain.length;i++){
     if(N(chain[i]).collapsed && chain[i]!==id) return { id:chain[i], proxy:true };
   }
-  return visible(id) ? { id:id, proxy:false } : null;
+  return { id:id, proxy:false };
 }
 /* The far ends of every link that currently lands on this node, which for a
    folded branch means everything tied up inside it. Returns the REAL far node,
@@ -931,19 +952,25 @@ var linkIdx=null, renderGen=0;
 function linkEnds(){
   var L=state.links||[];
   if(linkIdx && linkIdx.gen===renderGen && linkIdx.links===L && linkIdx.len===L.length && linkIdx.focus===focusId) return linkIdx;
-  var by={}, ends=[];
+  var by={}, out={}, ends=[];
   L.forEach(function(l){
     var ea=visibleEnd(l.a), eb=visibleEnd(l.b);
     ends.push([ea,eb]);
+    /* one end inside the focused branch, the other outside it: the arc cannot
+       be drawn, but the node inside still says it is tied to something */
+    if(ea && !eb && N(l.b)) (out[ea.id]=out[ea.id]||[]).push(l.b);
+    if(eb && !ea && N(l.a)) (out[eb.id]=out[eb.id]||[]).push(l.a);
     if(!ea||!eb||ea.id===eb.id) return;
     (by[ea.id]=by[ea.id]||[]).push(l.b);
     (by[eb.id]=by[eb.id]||[]).push(l.a);
   });
-  linkIdx={ gen:renderGen, links:L, len:L.length, focus:focusId, by:by, ends:ends };
+  linkIdx={ gen:renderGen, links:L, len:L.length, focus:focusId, by:by, out:out, ends:ends };
   return linkIdx;
 }
 function linksAt(id){ return (linkEnds().by[id]||[]).slice(); }
 function linkTally(id){ var x=linkEnds().by[id]; return x?x.length:0; }
+/* links from this node that leave the focused branch */
+function linksOut(id){ return focusId ? (linkEnds().out[id]||[]).slice() : []; }
 
 /* ---------- the connections lens ----------
    Two kinds of relationship now share one picture, and past a handful of links
@@ -1276,6 +1303,7 @@ function storyPick(i){ storiesReady(); if(i===state.storyAt) return; state.story
 function storyRename(i,name){
   var L=storiesReady(); name=(name||"").replace(/\s+/g," ").trim().slice(0,40);
   if(!L[i] || !name || name===L[i].name) { drawCrumbs(); return; }
+  if(L.some(function(x,j){ return j!==i && x.name===name; })){ drawCrumbs(); flashSave("there is already a story called “"+name+"”"); return; }
   snap(); L[i].name=name; saveSoon(); drawCrumbs();
 }
 var storyDelArmed=null;
@@ -1291,6 +1319,13 @@ function storyDelete(i){
 function storyChanged(msg){
   saveSoon();
   if(pres && pres.arrange){ render(true); presFrame(Object.keys(pos),1); }
+  else if(pres){
+    /* a different story mid-talk means a different walk: start it from the top
+       rather than keep stepping through the old order */
+    var r=VR(), sh={}; sh[r]=1;
+    pres.order=presOrder(); pres.shown=sh; pres.here=r; pres.lit=presLitFor(r); pres.hist=[]; pres.finale=false; pres.full=false; pres.over=false;
+    selected=r; render(true); presFrame([r]);
+  }
   drawCrumbs();
   if(msg) flashSave(msg);
 }
@@ -1304,8 +1339,18 @@ function storySweepOne(S){
     var g=S[p], P=N(p);
     if(!P){ delete S[p]; return; }
     var mine=function(x){ return x && N(x) && N(x).parent===p; };
-    if(g.start && !mine(g.start)) g.start=null;
-    Object.keys(g.next).forEach(function(a){ if(!mine(a)||!mine(g.next[a])) delete g.next[a]; });
+    /* A node that left the level is spliced out, not cut out: whoever pointed
+       at it now points at what it pointed at, so the rest of the chain is
+       still told. Cutting used to drop everything after the gone node. */
+    var gone={};
+    Object.keys(g.next).forEach(function(a){ if(!mine(a)) gone[a]=1; if(g.next[a] && !mine(g.next[a])) gone[g.next[a]]=1; });
+    if(g.start && !mine(g.start)) gone[g.start]=1;
+    Object.keys(gone).forEach(function(x){
+      var after=g.next[x]; while(after && gone[after]) after=g.next[after];
+      Object.keys(g.next).forEach(function(a){ if(g.next[a]===x){ if(after) g.next[a]=after; else delete g.next[a]; } });
+      if(g.start===x) g.start=after||null;
+      delete g.next[x];
+    });
     if(!g.start && !Object.keys(g.next).length) delete S[p];
   });
 }
@@ -1444,10 +1489,14 @@ var presLast=null;
 function presStart(){
   if(editing) commitEdit();
   if(lensActive()) lensOff();
+  if(carry) carryEnd();                     /* a talk is no place to be holding something */
+  toggleMaps(false);
+  /* the selection is put back when the talk ends, so it is stashed, not lost */
+  var keep={ marked:marked, selFrame:selFrame };
   clearMarks();
   var r=VR(), sh={}, order=presOrder(); sh[r]=1;
   pres={ order:order, shown:sh, here:r, lit:presLitFor(r), hist:[], over:false, arrange:false,
-         home:{ focus:focusId, sel:selected, view:{x:view.x,y:view.y,z:view.z} } };
+         home:{ focus:focusId, sel:selected, view:{x:view.x,y:view.y,z:view.z}, marked:keep.marked, selFrame:keep.selFrame } };
   var L=presLast, resumed=false;
   if(L && L.root===r && L.sig===storyCur().id+"|"+order.join(",") && L.hist.length && N(L.here)){
     pres.shown=L.shown; pres.here=L.here; pres.lit=L.lit; pres.hist=L.hist; pres.frame=L.frame; resumed=true;
@@ -1456,7 +1505,8 @@ function presStart(){
   document.body.classList.add("presenting");
   presWake();
   hardRender();
-  presFrame(resumed && pres.frame ? pres.frame : [pres.here]);
+  var live=resumed && pres.frame ? pres.frame.filter(function(i){ return pos[i]; }) : null;
+  presFrame(live && live.length ? live : [pres.here]);
   flashSave(resumed ? "picked up where you left off \u00b7 Home to start over" : "presenting");
 }
 /* While presenting, the bar and the pointer get out of the way after a few
@@ -1486,6 +1536,8 @@ function presEnd(){
   clearTimeout(presIdleT);
   if(h.focus && N(h.focus)) focusId=h.focus;
   if(h.sel && N(h.sel)) selected=h.sel;
+  if(h.marked){ marked={}; Object.keys(h.marked).forEach(function(i){ if(N(i)) marked[i]=1; }); }
+  if(h.selFrame && (state.frames||[]).some(function(f){ return f.id===h.selFrame; })) selFrame=h.selFrame;
   hardRender();
   if(focusId) fit();
   else { view.x=h.view.x; view.y=h.view.y; view.z=h.view.z; applyView(); }
@@ -1581,6 +1633,7 @@ function presArrange(on){
   pres.arrange=on; pres.pick=null;
   document.body.classList.toggle("arranging",on);
   presWake();
+  storyMenuClose();
   if(on){ pres.over=false; render(true); presFrame(Object.keys(pos),1); flashSave("arranging the story"); return; }
   var r=VR(), sh={}; sh[r]=1;
   pres.order=presOrder(); pres.shown=sh; pres.here=r; pres.lit=presLitFor(r); pres.hist=[]; pres.finale=false; pres.full=false;
@@ -1670,9 +1723,11 @@ function copyMenu(anchor){
 function copyMenuKey(e){
   if(!elSMenu || elSMenu.dataset.kind!=="copy") return false;
   var items=copyItems(), mod=e.metaKey||e.ctrlKey;
-  e.preventDefault();
-  if(!mod && /^[1-9]$/.test(e.key) && +e.key<=items.length){ storyMenuClose(); items[+e.key-1][2](); return true; }
+  if(!mod && /^[1-9]$/.test(e.key) && +e.key<=items.length){ e.preventDefault(); storyMenuClose(); items[+e.key-1][2](); return true; }
   storyMenuClose();
+  /* a chord closes the menu and still does what it does: one press, not two */
+  if(mod||e.altKey) return false;
+  e.preventDefault();
   return true;
 }
 function presTie(a,b){
@@ -1684,7 +1739,16 @@ function arrangeKey(e){
   var k=e.key, mod=e.metaKey||e.ctrlKey;
   if(elSMenu && elSMenu.dataset.kind!=="copy"){ e.preventDefault(); if(!mod && /^[1-9]$/.test(k) && +k<=storiesReady().length){ storyMenuClose(); storyPick(+k-1); } return; }
   if(!mod && (k==="["||k==="]")){ e.preventDefault(); storySwitch(k==="]"?1:-1); return; }
-  if(mod && (k==="z"||k==="Z")){ e.preventDefault(); e.shiftKey?redo():undo(); storySweep(); render(true); return; }
+  if(mod && (k==="z"||k==="Z")){
+    e.preventDefault();
+    /* the undo step may have been taken on another story or another focus;
+       arranging stays on this one */
+    var sAt=storyCur().id, fWas=focusId;
+    e.shiftKey?redo():undo();
+    var L=storiesReady(), si=-1; L.forEach(function(x,i){ if(x.id===sAt) si=i; }); if(si>=0) state.storyAt=si;
+    focusId = (fWas && N(fWas)) ? fWas : null;
+    storySweep(); render(true); return;
+  }
   if(mod) return;
   e.preventDefault();
   if(KEYDIR[k]){ var t=navigate(N(selected),KEYDIR[k]); if(t){ selected=t; render(true); cameraTo(t); } else flash(selected); return; }
@@ -1704,11 +1768,16 @@ function presKey(e){
   if(mod && e.shiftKey && (k==="c"||k==="C")){ e.preventDefault(); storyImage(presScope()); return; }
   if(mod && (k==="k"||k==="K") && !pres.arrange){ e.preventDefault(); openJump(); return; }
   if(mod && k==="0"){ e.preventDefault(); presFrame(Object.keys(pos),1); if(!pres.arrange && !pres.full && !pres.finale){ pres.over=true; } return; }
+  /* the story menu closes on Esc, and R does not carry it into the talk */
+  if(elSMenu && elSMenu.dataset.kind!=="copy" && !mod && (k==="Escape"||k==="r"||k==="R")){ e.preventDefault(); storyMenuClose(); return; }
   if(!mod && (k==="r"||k==="R")){ e.preventDefault(); pres.full=false; presArrange(!pres.arrange); return; }
-  if(k==="Escape" && elSMenu){ e.preventDefault(); storyMenuClose(); return; }
   if(pres.arrange && k==="Escape" && pres.pick){ e.preventDefault(); pres.pick=null; render(true); return; }
   if(pres.arrange && k!=="Escape" && !(mod&&/^[123]$/.test(k)) && !(e.altKey&&/^Digit[123]$/.test(code))){ arrangeKey(e); return; }
   var dig = (mod&&!e.shiftKey&&/^[123]$/.test(k)) ? k : ((e.altKey&&!mod&&/^Digit[123]$/.test(code)) ? code.slice(5) : null);
+  /* Esc peels one layer, as it does everywhere else: the whole story, then
+     the overview, then the talk itself. */
+  if(k==="Escape" && !pres.arrange && pres.full){ e.preventDefault(); presFullToggle(); return; }
+  if(k==="Escape" && !pres.arrange && pres.over){ e.preventDefault(); presOverview(); return; }
   if(k==="Escape"||dig==="1"||dig==="3"){ e.preventDefault(); presEnd(); flashSave("normal view"); return; }
   if(dig==="2"){ e.preventDefault(); presEnd(); return "lens"; }
   if(mod) return;                       /* leave the browser its own chords */
@@ -2219,6 +2288,7 @@ function render(keepView,lead){
   renderGen++;
   state.frames = state.frames || [];
   if(lensOne && !N(lensOne)){ lensOne=null; lensFold={}; lens=true; }
+  Object.keys(lensFold).forEach(function(i){ if(!N(i)) delete lensFold[i]; });
   storySweep();
   if(pres){
     pres.orderSet={}; pres.order.forEach(function(i){ pres.orderSet[i]=1; });
@@ -2247,7 +2317,8 @@ function render(keepView,lead){
       if(n.link){
         var li=linkInfo(n.link);
         if(li.name && n.text!==li.name) n.text=li.name;
-        var lh=esc(li.name||n.text||"a map")+'<span class="lmeta">'+esc(li.meta)+'</span>';
+        var lm=pres ? li.meta.replace(/\s*\u00b7\s*\u2325\u23ce open$/,"") : li.meta;
+        var lh=esc(li.name||n.text||"a map")+'<span class="lmeta">'+esc(lm)+'</span>';
         if(el.innerHTML!==lh) el.innerHTML=lh;
       } else {
         var t=n.text||(isVR(n)?"Central idea":"…");
@@ -2363,15 +2434,17 @@ function drawBadges(){
       else if(d==="D"){ x=p.cx-12; y=p.cy+b.h/2+7; }
       else { x=p.cx-12; y=p.cy-b.h/2-27; }
       var fb=badgeAt(id,id,lh?"badge link":"badge","+"+(lh||descCount(id)));
-      fb.dataset.lf=lh?id:"";
+      fb.dataset.lf=lh?id:""; if(lh) fb.dataset.tie="";
       fb.style.transform="translate("+x+"px,"+y+"px)";
     }
-    var tn=linkTally(id);
-    if(tn){
+    var tn=linkTally(id), to=lr?0:linksOut(id).length;
+    if(tn||to){
       var tk="tie"+id; live[tk]=1;
       var th=lr ? netHiddenLinks(id,lr.set) : 0;
+      var parts=[]; if(tn-th) parts.push("\u223f"+(tn-th)); if(th) parts.push(th+" hidden"); if(to) parts.push(to+" outside");
+      if(!(tn-th)) parts[0]="\u223f"+parts[0];
       /* opposite corner from the fold badge, so the two never collide */
-      badgeAt(id,tk,"badge link","\u223f"+(tn-th)+(th?" \u00b7 "+th+" hidden":""))
+      badgeAt(id,tk,"badge link",parts.join(" \u00b7 "))
         .style.transform="translate("+(p.cx-b.w/2-8)+"px,"+(p.cy+b.h/2-4)+"px)";
     }
   });
@@ -2390,7 +2463,7 @@ elBadges.addEventListener("click",function(e){
    between the same two. */
 var hopFrom=null, hopAt=0;
 function hopLink(id){
-  var far=linksAt(id);
+  var far=linksAt(id).concat(linksOut(id));
   if(!far.length){ flash(id); return; }
   if(hopFrom!==id) hopAt=0;
   var to=far[hopAt%far.length];
@@ -2489,8 +2562,9 @@ function shapes(ids, opt){
       if(lensOne && !opt.exporting && (!reachSet[ea.id] || !reachSet[eb.id])) return;
       if(pres && !opt.exporting && (pres.arrange || !presVisible(ea.id) || !presVisible(eb.id))) return;
       var on=!opt.exporting && (lensActive() || selected===ea.id || selected===eb.id);
+      var pa=ea.proxy||!!l.va, pb=eb.proxy||!!l.vb;   /* folded away, or away in a linked map */
       var lkey="lk"+l.a+"_"+l.b+"|"+SC.gen+"|"+geo(ea.id)+"|"+geo(eb.id)+"|"+
-               (ea.proxy?1:0)+(eb.proxy?1:0)+"|"+(on?1:0)+"|"+lensSig()+"|"+(l.branch?"B":"");
+               (pa?1:0)+(pb?1:0)+"|"+(on?1:0)+"|"+lensSig()+"|"+(l.branch?"B":"");
       if(cache){
         var lhit=SC.edge[lkey];
         if(lhit!==undefined){ nEdge[lkey]=lhit; emit(lkey,lhit); return; }
@@ -2524,8 +2598,8 @@ function shapes(ids, opt){
         capAt(ka,1); capAt(kb,-1);
       }
       /* hollow end = the node you actually tied is folded inside this one */
-      [[A,ea],[B,eb]].forEach(function(pr){
-        lout += pr[1].proxy
+      [[A,pa],[B,pb]].forEach(function(pr){
+        lout += pr[1]
           ? '<circle cx="'+pr[0].cx+'" cy="'+pr[0].cy+'" r="5" fill="'+(dark()?"#16161a":"#fdfcf8")+
             '" stroke="'+lcol+'" stroke-width="1.7" opacity="'+(on?.9:.4)+'"/>'
           : '<circle cx="'+pr[0].cx+'" cy="'+pr[0].cy+'" r="3.2" fill="'+lcol+'" opacity="'+(on?.9:.4)+'"/>';
@@ -3132,7 +3206,7 @@ function flash(id){ var el=els[id]; if(!el) return; el.classList.remove("nudge")
    step that made it already covers it. */
 var editOld=null, editOldWasBlank=null;
 function beginEdit(id,selectAll){
-  if(N(id) && N(id).link){ flash(id); flashSave("a link shows its map's name \u00b7 open it (\u2325\u23ce) to rename"); return; }
+  if(N(id) && N(id).link){ flash(id); flashSave("a link shows its map's name \u00b7 open it (\u2325\u23ce) to rename"); return false; }
   if(editing&&editing!==id) commitEdit();
   if(editing!==id) editOld={id:id,text:N(id).text||""};
   if(fresh===id) fresh=null;
@@ -3269,6 +3343,7 @@ function select(id){
 }
 function doBranch(pressed){
   var node=N(selected);
+  if(node.link && (isRoot(node) || pressed===dirOf(node.id))){ linkStop(node.id); return; }
   /* Only when the press disagrees with the mode. Pressing right in "All right"
      is not a takeover, it is the mode doing its job. */
   if(isVR(node) && CFG.spread!=="manual" && (SPREAD[CFG.spread]||[]).indexOf(pressed)<0) takeOverSpread();
@@ -3397,8 +3472,12 @@ function sortLevel(kind){
   if(!changed){ flash(selected); flashSave("already "+label.toLowerCase()); return; }
   snap();
   p.children=next;
+  /* a level you just sorted is told in the new order; an old arrangement of
+     it would quietly contradict what you see */
+  var told=0;
+  storiesReady().forEach(function(st){ if(st.flow[p.id]){ delete st.flow[p.id]; told++; } });
   render(true); saveSoon();
-  flashSave(label+" \u00b7 "+t.n+" nodes");
+  flashSave(label+" \u00b7 "+t.n+" nodes"+(told?" \u00b7 this level is back to map order in the story":""));
 }
 function stableSort(arr,f){ return arr.map(function(x,i){ return [x,i]; }).sort(function(a,b){ return f(a[0],b[0])||a[1]-b[1]; }).map(function(x){ return x[0]; }); }
 function sortMenu(){
@@ -3419,10 +3498,11 @@ function sortMenu(){
 }
 function sortMenuKey(e){
   if(!elSMenu || elSMenu.dataset.kind!=="sort") return false;
-  e.preventDefault();
   var mod=e.metaKey||e.ctrlKey;
-  if(!mod && /^[1-9]$/.test(e.key) && +e.key<=SORTS.length){ storyMenuClose(); sortLevel(SORTS[+e.key-1][0]); return true; }
+  if(!mod && /^[1-9]$/.test(e.key) && +e.key<=SORTS.length){ e.preventDefault(); storyMenuClose(); sortLevel(SORTS[+e.key-1][0]); return true; }
   storyMenuClose();
+  if(mod||e.altKey) return false;
+  e.preventDefault();
   return true;
 }
 
@@ -3474,6 +3554,7 @@ function carryDrop(target,after){
   if(c.set[target]){ flash(target); flashSave("can't drop it inside itself"); return false; }
   var T=N(target);
   if(after && (isVR(T)||isRoot(T))){ flash(target); flashSave("the centre has no siblings \u00b7 \u23ce drops inside"); return false; }
+  if(!after && linkStop(T.id)) return false;
   carryEnd();
   snap();
   var host=after?N(T.parent):T, at=after?host.children.indexOf(T.id)+1:host.children.length;
@@ -3486,6 +3567,15 @@ function carryDrop(target,after){
     setDirDeep(id, d||dirOf(id)||"R");
   });
   host.collapsed=false;
+  /* a frame does not stretch across the map after what it wrapped: carried
+     roots leave it, and a frame left with nothing goes */
+  state.frames=(state.frames||[]).filter(function(f){
+    var stay=f.roots.filter(function(r){ return !c.set[r]; });
+    if(stay.length===f.roots.length) return true;
+    if(!stay.length) return false;
+    f.roots=stay; return true;
+  });
+  reseatBranchTies();
   c.ids.forEach(function(i){ marked[i]=1; });
   selected=c.ids[0]; render(); saveSoon();
   flashSave("moved "+c.ids.length+(after?" after \u201c":" into \u201c")+trunc(T.text||"\u2026")+"\u201d");
@@ -3501,6 +3591,8 @@ function mergeMarked(){
   var ids=Object.keys(marked).filter(function(i){ var n=N(i); return n && !isRoot(n) && !isVR(n); });
   ids.sort(function(a,b){ return tree.indexOf(a)-tree.indexOf(b); });
   if(ids.length<2){ flash(selected); flashSave("select two or more nodes to merge"); return; }
+  var lk=ids.filter(function(i){ return N(i).link; })[0];
+  if(lk){ flash(lk); flashSave("a link to a map cannot be merged \u00b7 \u2325B brings the map in first"); return; }
   if(editing) commitEdit();
   snap();
   var keep=N(ids[0]), gone={}, d=dirOf(keep.id);
@@ -3525,12 +3617,23 @@ function mergeMarked(){
   if(take.length) keep.collapsed=false;
   ids.slice(1).forEach(function(i){ delete state.nodes[i]; });
   var seen={};
-  state.links=(state.links||[]).map(function(l){ var o={a:gone[l.a]?keep.id:l.a, b:gone[l.b]?keep.id:l.b}; if(l.branch) o.branch=true; return o; })
+  state.links=(state.links||[]).map(function(l){ var o={a:gone[l.a]?keep.id:l.a, b:gone[l.b]?keep.id:l.b}; if(l.branch) o.branch=true; if(l.va) o.va=l.va; if(l.vb) o.vb=l.vb; return o; })
     .filter(function(l){ var k=[l.a,l.b].sort().join("|"); if(l.a===l.b||seen[k]) return false; seen[k]=1; return true; });
   state.frames=(state.frames||[]).filter(function(f){
     var r2=[]; f.roots.forEach(function(r){ var x=gone[r]?keep.id:r; if(r2.indexOf(x)<0) r2.push(x); });
     f.roots=r2; return f.roots.length;
   });
+  /* story order that named a merged node names the survivor */
+  storiesReady().forEach(function(st){
+    var S=st.flow, m=function(x){ return gone[x]?keep.id:x; };
+    Object.keys(S).forEach(function(pp){
+      var g=S[pp], nx={};
+      Object.keys(g.next).forEach(function(a){ var A=m(a), B=m(g.next[a]); if(A!==B && !nx[A]) nx[A]=B; });
+      g.next=nx; if(g.start) g.start=m(g.start);
+      if(gone[pp]){ if(!S[keep.id]) S[keep.id]=g; delete S[pp]; }
+    });
+  });
+  reseatBranchTies();
   clearMarks(); selected=keep.id; render(); saveSoon();
   flashSave("merged "+ids.length+" into one");
 }
@@ -3582,6 +3685,7 @@ function insertBetween(dir){
     return;
   }
   if(forward){
+    if(linkStop(n.id)) return;
     var kids = isRoot(n) ? n.children.filter(function(c){ return dirOf(c)===dir; }) : n.children.slice();
     snap();
     var mid2=addNode(n.id,dir,null);
@@ -3629,7 +3733,16 @@ function deleteMarked(ids){
     });
   })(rid,null);
   dead.forEach(function(i){ delete state.nodes[i]; });
-  state.links=(state.links||[]).filter(function(l){ return !D[l.a] && !D[l.b]; });
+  /* a tie to a node that went, whose children stayed, lands on the first of
+     them, the way a frame does; a tie with nowhere to land goes */
+  var seenL={};
+  state.links=(state.links||[]).map(function(l){
+    var o={a:l.a,b:l.b}; if(l.branch) o.branch=true; if(l.va) o.va=l.va; if(l.vb) o.vb=l.vb;
+    if(D[o.a]) o.a=(heirs[o.a]||[]).filter(function(x){ return !D[x]; })[0]||null;
+    if(D[o.b]) o.b=(heirs[o.b]||[]).filter(function(x){ return !D[x]; })[0]||null;
+    return o;
+  }).filter(function(l){ if(!l.a||!l.b||l.a===l.b) return false; var k=[l.a,l.b].sort().join("|"); if(seenL[k]) return false; seenL[k]=1; return true; });
+  reseatBranchTies();
   /* a frame whose root went keeps wrapping what that root handed up */
   state.frames=(state.frames||[]).filter(function(f){
     var r2=[];
@@ -3714,6 +3827,7 @@ function moveMarked(dir){
       while(h>=0 && moving[g[h]]) h--;
       if(h<0) return;
       var host=N(g[h]);
+      if(host.link) return;
       p.children.splice(p.children.indexOf(id),1);
       n.parent=host.id; host.children.push(id); host.collapsed=false;
       setDirDeep(id, dirOf(host.id)); moved++;
@@ -3728,7 +3842,7 @@ function moveMarked(dir){
       var g2=sibGroup(n), i2=g2.indexOf(id), j=i2+(up?-1:1);
       if(j<0||j>=g2.length){
         var q=hopTarget(n,up);
-        if(q && !moving[q]){ hopInto(id,q,up); moved++; }
+        if(q && !moving[q] && !N(q).link){ hopInto(id,q,up); moved++; }
         return;
       }
       if(moving[g2[j]]) return;   /* a selected neighbour that could not move */
@@ -3737,6 +3851,7 @@ function moveMarked(dir){
     }
   });
   if(!moved){ undoPop(); flash(selected); return; }
+  reseatBranchTies();
   render(); saveSoon();
 }
 /* Option+arrow: reorder among siblings, or promote / demote a level */
@@ -3748,6 +3863,7 @@ function moveNode(dir){
     var g=sibGroup(n), i=g.indexOf(n.id);
     if(i<=0){ flash(selected); return; }
     var host=N(g[i-1]);
+    if(linkStop(host.id)) return;
     snap();
     p.children.splice(p.children.indexOf(n.id),1);
     n.parent=host.id; host.children.push(n.id); host.collapsed=false;
@@ -3766,6 +3882,7 @@ function moveNode(dir){
     if(j<0||j>=g2.length){
       var q1=hopTarget(n,up1);
       if(!q1){ flash(selected); return; }
+      if(linkStop(q1)) return;
       snap(); hopInto(n.id,q1,up1);
       clearMarks(); render(); saveSoon();
       flashSave("moved into \u201c"+trunc(N(q1).text||"\u2026")+"\u201d");
@@ -3775,6 +3892,7 @@ function moveNode(dir){
     var a=p.children.indexOf(g2[i2]), b=p.children.indexOf(g2[j]);
     p.children[a]=g2[j]; p.children[b]=g2[i2];
   }
+  reseatBranchTies();
   clearMarks(); render(); saveSoon();
 }
 
@@ -3819,15 +3937,9 @@ function duplicateBranch(){
   if(isRoot(src)||isVR(src)){ flash(selected); return; }
   snap();
   var p=N(src.parent), idx=p.children.indexOf(src.id);
-  function clone(sid,parentId){
-    var o=N(sid);
-    var n={id:nid(),parent:parentId,children:[],text:o.text,dir:o.dir,collapsed:o.collapsed,mark:o.mark};
-    state.nodes[n.id]=n;
-    o.children.forEach(function(c){ n.children.push(clone(c,n.id).id); });
-    return n;
-  }
-  var copy=clone(src.id,p.id);
+  var map={}, copy=cloneBranch(src.id,p.id,map);
   p.children.splice(idx+1,0,copy.id);
+  cloneLinks(map);
   clearMarks(); selected=copy.id; render(); saveSoon();
   flashSave("branch duplicated");
 }
@@ -3846,30 +3958,47 @@ function makeFrame(){
   beginFrameEdit(f.id);
 }
 function ungroup(){
-  if(!selFrame) return;
+  if(editing) commitEdit();
+  if(!selFrame){ flash(selected); flashSave("click a frame's name to select it first"); return; }
   snap();
   state.frames=state.frames.filter(function(f){ return f.id!==selFrame; });
   selFrame=null; render(true); saveSoon();
   flashSave("frame removed");
 }
-function cloneBranch(sid,parentId){
+/* A copy keeps everything the node carries, a map link included: two links to
+   one map are fine. map, if given, collects old id to new id so the ties
+   between copied nodes can be copied too. */
+function cloneBranch(sid,parentId,map){
   var o=N(sid);
   var n={id:nid(),parent:parentId,children:[],text:o.text,dir:o.dir,collapsed:o.collapsed,mark:o.mark};
+  if(o.link) n.link=o.link;
   state.nodes[n.id]=n;
-  o.children.forEach(function(c){ n.children.push(cloneBranch(c,n.id).id); });
+  if(map) map[sid]=n.id;
+  o.children.forEach(function(c){ n.children.push(cloneBranch(c,n.id,map).id); });
   return n;
+}
+/* the same ties between the copies as between the originals, as a paste does */
+function cloneLinks(map){
+  var add=[];
+  (state.links||[]).forEach(function(l){
+    if(!map[l.a]||!map[l.b]) return;
+    var o={a:map[l.a],b:map[l.b]}; if(l.branch) o.branch=true; add.push(o);
+  });
+  if(add.length) state.links=(state.links||[]).concat(add);
+  return add.length;
 }
 /* Every selected branch, each copied right below itself; the copies come
    out selected so they can be moved on at once. */
 function duplicateMany(roots){
   snap();
-  var made=[];
+  var made=[], map={};
   roots.forEach(function(r){
     var p=N(N(r).parent);
-    var c=cloneBranch(r,p.id);
+    var c=cloneBranch(r,p.id,map);
     p.children.splice(p.children.indexOf(r)+1,0,c.id);
     made.push(c.id);
   });
+  cloneLinks(map);
   clearMarks();
   made.forEach(function(i){ marked[i]=1; });
   selected=made[0]; render(); saveSoon();
@@ -3892,9 +4021,7 @@ function selectAllVisible(){
   if(selectLevel()) return;
   var all=Object.keys(pos).filter(function(x){ return x!==VR() && N(x); });
   if(all.length){ marked={}; selFrame=null; all.forEach(function(x){ marked[x]=1; }); render(true); flashSave(all.length+" selected"); return; }
-  marked={}; selFrame=null;
-  N(VR()).children.forEach(function(c){ marked[c]=1; });
-  marked={}; marked[VR()]=1;
+  marked={}; selFrame=null; marked[VR()]=1;
   render(true);
 }
 
@@ -4028,7 +4155,9 @@ function pristine(){
 function insertOutline(items,opt){
   if(!items.length) return 0;
   opt=opt||{};
-  var base=N(selected); snap();
+  var base=N(selected);
+  if(base.link && !opt.sibling){ linkStop(base.id); return 0; }   /* the paste handler says so first; this is for the test API */
+  snap();
   /* Shift+Cmd+V: in as siblings, right after the selection */
   var sib=null;
   if(opt.sibling && !isVR(base) && base.parent){
@@ -4069,6 +4198,9 @@ function insertOutline(items,opt){
     n.text=it.text; made++; last=n.id; madeIds.push(n.id);
     if(it.mark) n.mark=it.mark;
     if(it.collapsed) n.collapsed=true;
+    /* a copied link is a second link to the same map; only from Mappr's own
+       clipboard, so a pasted outline cannot name a map id */
+    if(it.link && opt.clip) n.link=it.link;
     stack.push({indent:it.indent,id:n.id,dir:dir});
   });
   (opt.links||[]).forEach(function(l){
@@ -4166,7 +4298,7 @@ function selectionCopy(){
     var p=N(id).parent; while(p && !has[p]) p=N(p).parent;
     var d=p?depth[p]+1:0; depth[id]=d; idx[id]=k;
     var n=N(id), t=(n.text||"").replace(/\n/g," ");
-    items.push({indent:d, text:t, mark:n.mark||null,
+    items.push({indent:d, text:t, mark:n.mark||null, link:n.link||null,
       collapsed:!!n.collapsed && n.children.length>0 && n.children.every(function(c){ return has[c]; })});
     lines.push("  ".repeat(d)+"- "+t);
   });
@@ -4200,10 +4332,12 @@ document.addEventListener("paste",function(e){
   var txt=cd.getData("text/plain")||"", html="";
   try{ html=cd.getData("text/html")||""; }catch(err){ html=""; }
   if(!txt.trim()&&!html.trim()) return;
+  if(pres){ e.preventDefault(); return; }         /* a talk is not edited from the clipboard */
   var multi=/\n/.test(txt.trim())||/<li|<ul|<ol/i.test(html);
   var mine=clip && txt===clip.txt;
   if(editing&&!multi&&!mine) return;
   e.preventDefault();
+  if(!editing && !pasteSibling && N(selected) && N(selected).link){ pasteSibling=false; linkStop(selected); return; }
   editOldWasBlank=(editing && !(N(editing).text||"").replace(/\u200b/g,"").trim() && editOld && editOld.text==="") ? editing : null;
   if(editing) commitEdit();
   var sibling=pasteSibling; pasteSibling=false;
@@ -4528,7 +4662,14 @@ function trashList(){
 }
 function trashPrune(){
   var l=trashList();
-  for(var i=TRASH_KEEP;i<l.length;i++){ try{ localStorage.removeItem(TRASHP+l[i].id); }catch(e){} }
+  /* a map set aside by bringing it in stays while undo could still want it */
+  var pinned=function(id){ return !!(madeByBreak[id] && madeByBreak[id].back) && undoStack.length>0; };
+  var kept=0;
+  for(var i=0;i<l.length;i++){
+    if(pinned(l[i].id)) continue;
+    if(kept++<TRASH_KEEP) continue;
+    try{ localStorage.removeItem(TRASHP+l[i].id); }catch(e){}
+  }
 }
 function trashPut(id,doc){
   if(!doc) return false;
@@ -4707,7 +4848,7 @@ function linkNodeTo(nodeId,target,newName){
     var now=Date.now();
     if(!docWriteRaw(target,{id:target,name:st.nodes[st.rootId].text,count:1,updated:now,uid:1,state:st,selected:st.rootId,focusId:null,view:null,cfg:CFG})) return;
     var lib=idxRead(); lib.docs[target]={id:target,name:st.nodes[st.rootId].text,count:1,updated:now}; idxWrite(lib);
-    madeByBreak[target]={from:curDoc, at:now};
+    madeByBreak[target]={from:curDoc, at:now, node:nodeId};
   }
   if(target===curDoc){ flash(nodeId); flashSave("a map cannot link to itself"); return; }
   snap();
@@ -4742,21 +4883,39 @@ function breakOut(){
   var target=docId(), now=Date.now(), count=ids.length;
   if(!docWriteRaw(target,{id:target,name:(n.text||"Untitled").split("\n")[0],count:count,updated:now,uid:uid,state:st,selected:n.id,focusId:null,view:null,cfg:CFG})){ return; }
   var lib=idxRead(); lib.docs[target]={id:target,name:(n.text||"Untitled").split("\n")[0],count:count,updated:now};
+  /* the new map's own outgoing links, so Linked from and delete know about them */
+  var lo=linksIn(st); if(lo.length){ lib.linksFrom=lib.linksFrom||{}; lib.linksFrom[target]=lo; }
   idxWrite(lib);
-  madeByBreak[target]={from:curDoc, at:now};
+  madeByBreak[target]={from:curDoc, at:now, root:n.id};
   /* this map: the branch goes, a link takes its place */
   snap();
   ids.forEach(function(i){ if(i!==n.id) delete state.nodes[i]; });
   n.children=[]; n.collapsed=false; n.link=target;
-  state.links=(state.links||[]).filter(function(l){
-    var ia=inside[l.a]&&l.a!==n.id, ib=inside[l.b]&&l.b!==n.id; return !ia && !ib;
+  /* A tie across the cut is kept: the link node stands in for the end that
+     left, drawn hollow the way a folded branch is, and remembers which node
+     it stood for (va, vb) so bringing the map back in puts the tie back. */
+  var seenX={};
+  state.links=(state.links||[]).map(function(l){
+    var o={a:l.a,b:l.b}; if(l.branch) o.branch=true; if(l.va) o.va=l.va; if(l.vb) o.vb=l.vb;
+    if(inside[o.a]&&o.a!==n.id){ o.va=o.a; o.a=n.id; }
+    if(inside[o.b]&&o.b!==n.id){ o.vb=o.b; o.b=n.id; }
+    return o;
+  }).filter(function(l){
+    if(l.a===l.b) return false;
+    if(!l.va&&!l.vb) return true;
+    var k=[l.a,l.b].sort().join("|"); if(seenX[k]) return false; seenX[k]=1; return true;
   });
+  var lostFrames=0;
   state.frames=(state.frames||[]).filter(function(f){
+    var before=f.roots.length;
     f.roots=f.roots.filter(function(r){ return !inside[r] || r===n.id; });
+    if(f.roots.length!==before) lostFrames++;
     return f.roots.length;
   });
   clearMarks(); selected=n.id; render(); save(); drawMaps();
-  flashSave("\u201c"+trunc(n.text)+"\u201d is its own map \u00b7 "+(count-1)+" nodes moved"+(cut?" \u00b7 "+cut+" link"+(cut>1?"s":"")+" across the cut removed":"")+" \u00b7 \u2318Z undoes");
+  flashSave("\u201c"+trunc(n.text)+"\u201d is its own map \u00b7 "+(count-1)+" nodes moved"+
+    (cut?" \u00b7 "+cut+" tie"+(cut>1?"s":"")+" across the cut now land"+(cut>1?"":"s")+" on the link":"")+
+    (lostFrames?" \u00b7 "+lostFrames+" frame"+(lostFrames>1?"s":"")+" across the cut trimmed":"")+" \u00b7 \u2318Z undoes");
 }
 /* Option+B on a link: the linked map comes back in as this branch. */
 function bringIn(){
@@ -4779,7 +4938,14 @@ function bringIn(){
   n.text=r.text; delete n.link;
   if(r.mark && !n.mark) n.mark=r.mark;
   state.links=state.links||[];
+  /* a tie that landed on the link while the branch was away goes back to the
+     node it stood for, if that node came back */
+  state.links.forEach(function(l){
+    if(l.va && l.a===n.id){ if(map[l.va]) l.a=map[l.va]; delete l.va; }
+    if(l.vb && l.b===n.id){ if(map[l.vb]) l.b=map[l.vb]; delete l.vb; }
+  });
   (src.links||[]).forEach(function(l){ if(map[l.a]&&map[l.b]) state.links.push(l.branch?{a:map[l.a],b:map[l.b],branch:true}:{a:map[l.a],b:map[l.b]}); });
+  reseatBranchTies();
   (src.frames||[]).forEach(function(f){
     var roots=f.roots.map(function(x){ return map[x]; }).filter(Boolean);
     if(roots.length) state.frames.push({id:"f"+Date.now().toString(36)+Math.random().toString(36).slice(2,5), title:f.title, roots:roots});
@@ -4803,18 +4969,27 @@ function bringIn(){
 function healLinks(){
   if(!state) return;
   var want=linksIn(state), lib=idxRead(), changed=false;
+  /* only a map this session set aside by bringing it in comes back; a map you
+     deleted on purpose stays deleted, whatever an unrelated undo touches */
   want.forEach(function(id){
     if(lib.docs[id]) return;
+    if(!(madeByBreak[id] && madeByBreak[id].back)) return;
     var raw=null; try{ raw=localStorage.getItem(TRASHP+id); }catch(e){}
     if(raw){ trashRestore(id); lib=idxRead(); changed=true; }
   });
+  /* a map this session broke out is set aside again only when the branch is
+     back in place (an undone break out), never because its link was deleted */
   Object.keys(madeByBreak).forEach(function(id){
     var m=madeByBreak[id];
     if(m.from!==curDoc || want.indexOf(id)>=0 || !lib.docs[id]) return;
+    var undone = m.root ? (N(m.root) && !N(m.root).link && N(m.root).children.length>0)
+                        : (m.node ? (N(m.node) && N(m.node).link!==id) : false);
+    if(!undone) return;
     if(backlinksTo(id).filter(function(x){ return x!==curDoc; }).length) return;
     var doomed=docRead(id);
     delete lib.docs[id]; dropFromLib(lib,id); if(lib.linksFrom) delete lib.linksFrom[id]; idxWrite(lib);
     trashPut(id,doomed); docDrop(id); changed=true;
+    m.back=true;                      /* set aside by an undo, so a redo may bring it back */
   });
   if(changed) drawMaps();
 }
@@ -4985,10 +5160,21 @@ function toggleMaps(on){
   }
   elMaps.classList.toggle("on",want);
 }
+/* Nothing that belongs to one map's session may outlive a switch: a lens, a
+   carry, a talk, a menu. Views are cleared without the camera moves leaving
+   them would make, since the next map sets its own. */
+function leaveViews(){
+  if(pres) presEnd();
+  if(carry) carryEnd();
+  storyMenuClose();
+  lens=false; lensOne=null; lensFold={}; lensHome=null; lensMoved=false;
+  followBefore=null; camBefore=null;
+}
 function switchDoc(id){
   save();
   var lib=idxRead(); if(!lib||!lib.docs[id]) return;
   var d=docRead(id); if(!d) return;
+  if(curDoc!==id) leaveViews();
   if(curDoc && curDoc!==id && lib.docs[curDoc]) lib.prev=curDoc;
   if(!linkSwitch){
     var ti=-1; linkTrail.forEach(function(t,i){ if(t.doc===id) ti=i; });
@@ -5015,6 +5201,7 @@ function newDoc(st){
   save();
   var lib=idxRead()||{current:null,docs:{}};
   var id=docId();
+  leaveViews();
   state=st||freshState(); state.frames=state.frames||[];
   uid=1; selected=state.rootId; focusId=null; editing=null; clearMarks();
   stashUndo(curDoc); if(curDoc) viewByDoc[curDoc]=camNow(); clearUndo();
@@ -5439,7 +5626,8 @@ document.addEventListener("keydown",function(e){
   }
   if(e.key==="Backspace"||e.key==="Delete"){ e.preventDefault(); doDelete(mod); return; }
   if(!mod&&!e.altKey&&e.key.length===1){
-    e.preventDefault(); beginEdit(selected,true);
+    e.preventDefault();
+    if(beginEdit(selected,true)===false) return;
     document.execCommand("insertText",false,e.key);
   }
 });
