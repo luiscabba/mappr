@@ -2220,6 +2220,30 @@ group("Option+arrow carries on past the edge");
   await M(() => __mf.spread("sides"));
 }
 
+group("new map from the keyboard, and the key log");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(200); };
+  const maps = () => M(() => Object.keys(JSON.parse(localStorage.getItem("mappr.index")).docs).length);
+  await M((t) => __mf.paste(t), "Keep\n- me");
+  await page.waitForTimeout(450);
+  const n0 = await maps();
+  await press("Alt+n");
+  ok("Option+N opens a new map", (await maps()) === n0 + 1 && (await M(() => __mf.state.nodes[__mf.state.rootId].children.length)) === 0, [n0, await maps()]);
+  await press("Alt+n");
+  ok("and again", (await maps()) === n0 + 2);
+  await press("KeyA");
+  await press("Alt+n");
+  ok("but not while typing", (await maps()) === n0 + 2);
+  await press("Escape");
+  await page.goto(APP + "#keys"); await page.reload();
+  await page.waitForTimeout(400);
+  await press("Meta+k"); await press("Escape");
+  ok("#keys shows what reaches the page", await M(() => /key="k".*handled/.test(document.getElementById("keylog").textContent)), await M(() => document.getElementById("keylog").textContent));
+  await page.goto(APP); await page.reload();
+  await page.waitForTimeout(400);
+  ok("and stays away otherwise", await M(() => !document.getElementById("keylog")));
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 

@@ -501,7 +501,7 @@
   <span id="saveState">saved</span>
 </div>
 
-<div id="maps"><div id="mapsList"></div><div id="mapsTrash"></div><div id="mapsFoot"><button id="btnNewMap">New map</button></div></div>
+<div id="maps"><div id="mapsList"></div><div id="mapsTrash"></div><div id="mapsFoot"><button id="btnNewMap" title="New map (⌥N)">New map</button></div></div>
 
 <div id="jump">
   <input id="jumpIn" type="text" placeholder="Jump to…" autocomplete="off" spellcheck="false">
@@ -638,6 +638,7 @@
       <tr><td><kbd>⌘</kbd><kbd>V</kbd></td><td>Paste an indented list and it becomes a branch. Tabs, spaces, bullets, numbers and markdown headings all read as depth. Paste onto the centre and the top level balances left and right.</td></tr>
       <tr><td>Export ▾</td><td>PNG and SVG of the frame or the whole map, and the full JSON with every setting.</td></tr>
       <tr><td>Maps ▾</td><td>Every map you have made, newest first. A map is named after its centre node, so renaming the centre renames the map. Copy and delete live in the same row.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>N</kbd></td><td>A new map.</td></tr>
       <tr><td><b>Maps</b></td><td>Every map is stored on its own. Delete asks once before it goes, and the last few deleted maps wait under <em>Recently deleted</em> in the same panel with a Restore button.</td></tr>
       <tr><td><b>Touch</b></td><td>One finger pans, two fingers pinch to zoom, and a tap opens a folded branch. Making a map needs a keyboard, so touch is for reading one you already have.</td></tr>
     </table></section>
@@ -4350,6 +4351,23 @@ addEventListener("keyup",function(e){
     tabDown=false; tabUsed=false;
   }
 });
+/* #keys in the address bar shows every key the page receives and whether
+   Mappr acted on it. For finding out what a browser keeps for itself. */
+(function(){
+  if(!/keys/.test(location.hash)) return;
+  var box=document.createElement("div"); box.id="keylog";
+  box.style.cssText="position:fixed;right:12px;bottom:70px;z-index:99;font:12px ui-monospace,monospace;background:rgba(0,0,0,.82);color:#e8e8e8;padding:8px 10px;border-radius:8px;white-space:pre;pointer-events:none;max-width:60vw";
+  document.body.appendChild(box);
+  var rows=[];
+  function show(){ box.textContent="keys reaching the page (newest first)\n"+rows.join("\n"); }
+  function mods(e){ return (e.metaKey?"\u2318":"")+(e.ctrlKey?"\u2303":"")+(e.altKey?"\u2325":"")+(e.shiftKey?"\u21e7":""); }
+  addEventListener("keydown",function(e){
+    var row={t:"down "+mods(e)+" key="+JSON.stringify(e.key)+" code="+e.code+" on "+(document.activeElement?document.activeElement.tagName.toLowerCase()+(document.activeElement.className?"."+String(document.activeElement.className).split(" ")[0]:""):"none")};
+    setTimeout(function(){ rows.unshift(row.t+(e.defaultPrevented?"  \u2192 Mappr handled it":"  \u2192 not handled")); rows.length=Math.min(rows.length,14); show(); },0);
+  },true);
+  addEventListener("keyup",function(e){ if(e.key==="Meta"||e.key==="Control"){ rows.unshift("up   "+e.key); rows.length=Math.min(rows.length,14); show(); } },true);
+  show();
+})();
 document.addEventListener("keydown",function(e){
   var mod=e.metaKey||e.ctrlKey;
   /* a presentation owns the keyboard, except for the browser's own chords */
@@ -4375,6 +4393,15 @@ document.addEventListener("keydown",function(e){
   if(mod&&(e.key==="k"||e.key==="K")){
     e.preventDefault();
     elJump.classList.contains("on")?closeJump():openJump();
+    return;
+  }
+  /* Option+N: a new map. Browsers keep Cmd+N for a new window, so Option it
+     is, matched by e.code so the Mac's dead key does not get in the way. Off
+     while typing, where it types. */
+  if(e.altKey && !mod && !editing && e.code==="KeyN"){
+    e.preventDefault();
+    if(editing) commitEdit();
+    newDoc(); toggleMaps(false); flashSave("new map");
     return;
   }
 

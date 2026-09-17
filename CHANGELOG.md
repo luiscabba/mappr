@@ -3,6 +3,15 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.29.0] - 2026-09-17
+
+### Added
+- **`⌥N` makes a new map**, from anywhere but the middle of typing.
+- **A key log for troubleshooting.** Open Mappr with `#keys` at the end of the
+  address and a small box lists every key the page receives and whether
+  Mappr acted on it, so a browser keeping a shortcut for itself is easy to
+  spot.
+
 ## [0.28.0] - 2026-09-16
 
 ### Added
