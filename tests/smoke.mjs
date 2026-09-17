@@ -748,7 +748,7 @@ group("deleting a map asks first");
 
   // The bin is capped, so it can never eat the maps you still have.
   for (let i = 0; i < 5; i++) { await openPanel(); await clickDel(); await clickDel(); }
-  ok("the bin keeps only the last few", (await M(() => __mf.trash())).length <= 3, (await M(() => __mf.trash())).length);
+  ok("the bin keeps only the last few", (await M(() => __mf.trash())).length <= 12, (await M(() => __mf.trash())).length);
   await M(() => document.getElementById("btnMaps").click());
   await page.waitForTimeout(150);
 }
@@ -2299,7 +2299,7 @@ group("pinned maps, colour tags, the switcher and the previous map");
   // switcher lists pinned first
   await press("Alt+m");
   const order = await M(() => [...document.querySelectorAll("#swList .swsec, #swList .swr .mn")].map((e) => e.textContent).join("|"));
-  ok("pinned first, then recent", /^Pinned\|Alpha\|Charlie\|Recent\|/.test(order), order);
+  ok("pinned first, then all maps", /^Pinned\|Alpha\|Charlie\|All maps\|/.test(order), order);
   ok("pinned rows show their number", await M(() => /2/.test([...document.querySelectorAll(".swr")][1].querySelector(".mslot").textContent)));
   await M(() => document.querySelectorAll(".swr")[1].querySelector("[data-tag]").dispatchEvent(new MouseEvent("mousedown", { bubbles: true })));
   ok("clicking a dot colours that map", (await lib()).tags[(await lib()).pins[1]] === "red");
@@ -2308,7 +2308,7 @@ group("pinned maps, colour tags, the switcher and the previous map");
   // Maps panel
   await M(() => document.getElementById("btnMaps").click());
   const panel = await M(() => document.getElementById("mapsList").textContent);
-  ok("the Maps menu has a Pinned section on top", /^Pinned/.test(panel) && /Everything else/.test(panel), panel);
+  ok("the Maps menu has a Pinned section on top", /^Pinned/.test(panel) && /All maps/.test(panel), panel);
   await M(() => document.querySelector('#mapsList .mrow:not(.on) [data-pin]:not(.p)').click());
   ok("its pin buttons pin", (await lib()).pins.length === 3);
   await M(() => document.getElementById("btnMaps").click());
@@ -3173,6 +3173,102 @@ group("0.39: flags you can find, and the maps rail");
   ok("the pill shows the path to where you are", await M(() => [...document.querySelectorAll("#pill button[data-open]")].map((b) => b.textContent).join() === "Q4 plan,Collections ops,Agent behaviour"), await M(() => document.getElementById("pill").textContent));
   await press("Alt+Shift+KeyM");
   ok("and back", await M(() => !document.getElementById("rail").hidden));
+  ok("no runtime errors", errors.length === 0, errors);
+  await M(() => __mf.spread("sides"));
+}
+
+group("1.0: maps under their root, and a reload keeps your place");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(250); };
+  const status = () => M(() => document.getElementById("saveState").textContent);
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  const lib = () => M(() => JSON.parse(localStorage.getItem("mappr.index")));
+  const name = () => M(() => __mf.state.nodes[__mf.state.rootId].text);
+  const newMap = async (t) => {
+    await M(() => document.getElementById("btnMaps").click());
+    await M(() => document.getElementById("btnNewMap").click());
+    await page.waitForTimeout(220);
+    await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, t);
+    await page.waitForTimeout(300);
+  };
+  const panelRows = async () => { await M(() => document.getElementById("btnMaps").click()); const r = await M(() => [...document.querySelectorAll("#mapsList .mrow")].map((x) => (x.className.match(/\bd(\d)/) || [, "0"])[1] + ":" + x.querySelector(".mn").textContent)); await M(() => document.getElementById("btnMaps").click()); return r; };
+  await newMap("Hub\n- Ops\n  - Hiring\n    - Budget\n  - Payroll\n- Sales\n  - Pipeline");
+  const hub = await M(() => __mf.doc);
+  await M((x) => __mf.select(x), await id("Ops")); await press("Alt+KeyB"); await press("Alt+Enter");
+  await M((x) => __mf.select(x), await id("Hiring")); await press("Alt+KeyB");
+  const ops = await M(() => __mf.doc);
+  await M(() => __mf.select(__mf.state.rootId)); await press("Alt+Enter");
+  ok("back at the root map", (await name()) === "Hub");
+  await M((x) => __mf.select(x), await id("Sales")); await press("Alt+KeyB");
+  const rows = await panelRows();
+  const hi = rows.indexOf("0:Hub");
+  ok("the Maps panel lists linked maps under their root", hi >= 0 && rows[hi + 1] === "1:Ops" && rows[hi + 2] === "2:Hiring" && rows[hi + 3] === "1:Sales", rows);
+  ok("a root row counts the maps under it", await M(() => { document.getElementById("btnMaps").click(); const r = [...document.querySelectorAll("#mapsList .mrow")].find((x) => x.querySelector(".mn").textContent === "Hub"); const t = r.querySelector(".mm").textContent; document.getElementById("btnMaps").click(); return /3 maps/.test(t); }));
+  await press("Alt+m");
+  const sw = await M(() => [...document.querySelectorAll("#swList .swr")].map((x) => (x.className.match(/\bd(\d)/) || [, "0"])[1] + ":" + x.querySelector(".mn").textContent));
+  await press("Escape");
+  ok("the switcher nests them too", sw.indexOf("0:Hub") >= 0 && sw[sw.indexOf("0:Hub") + 1] === "1:Ops", sw);
+  // export carries the tree, import rebuilds it
+  const json = await M(() => __mf.exportJson());
+  ok("JSON export of a root bundles the maps under it", JSON.parse(json).maps.length === 3 && /with 3 maps under it/.test(await status()), await status());
+  const nDocs = Object.keys((await lib()).docs).length;
+  await M((j) => __mf.importJson(j), json);
+  await page.waitForTimeout(400);
+  ok("import makes four new maps, links pointed at the copies", Object.keys((await lib()).docs).length === nDocs + 4 && (await M(() => Object.values(__mf.state.nodes).filter((n) => n.link).every((n) => JSON.parse(localStorage.getItem("mappr.index")).docs[n.link]))));
+  const impRoot = await M(() => __mf.doc);
+  ok("and none of the new links point at the originals", (await M((h) => Object.values(__mf.state.nodes).filter((n) => n.link).map((n) => n.link), hub)).every((l) => l !== ops));
+  // copy of a root copies the tree; delete of a root takes the tree
+  await M(() => document.getElementById("btnMaps").click());
+  await M((r) => document.querySelector('#mapsList [data-dup="' + r + '"]').click(), impRoot);
+  await page.waitForTimeout(400);
+  ok("Copy on a root copies the maps under it", Object.keys((await lib()).docs).length === nDocs + 8 && /copy$/.test(await name()) && /with the maps under it/.test(await status()), await status());
+  const copyRoot = await M(() => __mf.doc);
+  await M(() => document.getElementById("btnMaps").click());
+  await M((r) => document.querySelector('#mapsList [data-del="' + r + '"]').click(), copyRoot);
+  ok("delete on a root asks, and says how many", await M((r) => /4 maps/.test(document.querySelector('#mapsList [data-del="' + r + '"]').textContent), copyRoot));
+  await M((r) => document.querySelector('#mapsList [data-del="' + r + '"]').click(), copyRoot);
+  await page.waitForTimeout(300);
+  ok("and takes the tree to the bin", Object.keys((await lib()).docs).length === nDocs + 4 && (await M(() => __mf.trash())).length >= 4, [Object.keys((await lib()).docs).length, nDocs, (await M(() => __mf.trash())).length, await status()]);
+  // detach
+  await M(() => { if (document.getElementById("maps").classList.contains("on")) document.getElementById("btnMaps").click(); });
+  await M((h) => { const lib = JSON.parse(localStorage.getItem("mappr.index")); }, hub);
+  const before = await M((o) => __mf.libTree().find((r) => r.doc === o).depth, ops);
+  const n = await M((o) => __mf.detach(o), ops);
+  ok("Detach makes a map its own and turns the links to it into plain nodes", n === 1 && (await M((o) => __mf.libTree().find((r) => r.doc === o).depth, ops)) === 0 && before === 1, [n, before]);
+  ok("the map that linked to it now holds a plain node with the name", await M((h) => { const d = JSON.parse(localStorage.getItem("mappr.doc." + h)); return Object.values(d.state.nodes).some((x) => x.text === "Ops" && !x.link); }, hub));
+  ok("Hiring stays under Ops", (await M((o) => __mf.libTree().filter((r) => r.root === o).length, ops)) === 2);
+  // a reload keeps the view and the undo steps
+  await M((h) => { const lib = JSON.parse(localStorage.getItem("mappr.index")); }, hub);
+  await M(() => document.getElementById("btnMaps").click());
+  await M((h) => { const r = [...document.querySelectorAll("#mapsList .mrow")].find((x) => x.dataset.m === h); r.click(); }, hub);
+  await page.waitForTimeout(300);
+  await M((x) => __mf.select(x), await id("Ops"));
+  await press("Meta+Enter"); await page.keyboard.type("Bonus"); await press("Escape");
+  await press("Meta+Enter"); await page.keyboard.type("Tax"); await press("Escape");
+  await press("Meta+Equal"); await press("Meta+Equal");
+  const cam = await M(() => JSON.stringify(__mf.cam()));
+  const steps = await M(() => __mf.undoSteps);
+  await page.waitForTimeout(1800);
+  await page.reload(); await page.waitForTimeout(500);
+  ok("after a reload the map opens where you left it", (await M(() => JSON.stringify(__mf.cam()))) === cam, [cam, await M(() => JSON.stringify(__mf.cam()))]);
+  ok("and the undo steps are still there", (await M(() => __mf.undoSteps)) >= Math.min(steps, 2), [steps, await M(() => __mf.undoSteps)]);
+  await press("Meta+z");
+  ok("Cmd+Z after a reload undoes the last edit", !(await id("Tax")) && !!(await id("Bonus")), [await name(), await M(() => Object.values(__mf.state.nodes).map((n) => n.text)), await M(() => __mf.undoSteps)]);
+  // switching to another map opens at its saved view, not fitted
+  await M(() => document.getElementById("btnMaps").click());
+  await M((o) => { const r = [...document.querySelectorAll("#mapsList .mrow")].find((x) => x.dataset.m === o); r.click(); }, ops);
+  await page.waitForTimeout(300);
+  await press("Meta+Equal"); await press("Meta+Equal"); await press("Meta+Equal");
+  const camOps = await M(() => JSON.stringify(__mf.cam()));
+  await page.waitForTimeout(600);
+  await page.reload(); await page.waitForTimeout(500);
+  await M(() => document.getElementById("btnMaps").click());
+  await M((h) => { const r = [...document.querySelectorAll("#mapsList .mrow")].find((x) => x.dataset.m === h); r.click(); }, hub);
+  await page.waitForTimeout(300);
+  await M(() => document.getElementById("btnMaps").click());
+  await M((o) => { const r = [...document.querySelectorAll("#mapsList .mrow")].find((x) => x.dataset.m === o); r.click(); }, ops);
+  await page.waitForTimeout(300);
+  ok("switching to a map after a reload opens it at its saved view", (await M(() => JSON.stringify(__mf.cam()))) === camOps, [camOps, await M(() => JSON.stringify(__mf.cam()))]);
   ok("no runtime errors", errors.length === 0, errors);
   await M(() => __mf.spread("sides"));
 }

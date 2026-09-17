@@ -388,6 +388,8 @@
   .swr.on{background:var(--sel-soft)}
   .swr .mn{flex:1;font-family:var(--font-sketch);font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .swr .mm{font-size:10px;color:var(--muted)}
+  .swr.d1{padding-left:22px}.swr.d2{padding-left:36px}.swr.d3{padding-left:50px}.swr.d4{padding-left:64px}
+  .swr.d1 .mn:before,.swr.d2 .mn:before,.swr.d3 .mn:before,.swr.d4 .mn:before{content:"\21B3";color:var(--muted);font-size:11px;margin-right:5px}
   .swr .here{font-size:10px;color:var(--sel)}
   #swFoot{padding:7px 18px;font-size:10.5px;color:var(--muted);border-top:1px solid var(--panel-line)}
   .mswitch{display:flex;width:100%;justify-content:space-between;align-items:center;border:0;background:none;color:var(--ink);font:12.5px var(--font-ui);padding:7px 8px;border-radius:8px;cursor:pointer;margin-bottom:2px}
@@ -409,6 +411,8 @@
   .mrow.on{background:var(--sel-soft)}
   .mrow .mn{flex:1;font-family:var(--font-sketch);font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .mrow .mm{font-size:10px;color:var(--muted);white-space:nowrap}
+  .mrow.d1{padding-left:24px}.mrow.d2{padding-left:40px}.mrow.d3{padding-left:56px}.mrow.d4{padding-left:72px}
+  .mrow.d1 .mn:before,.mrow.d2 .mn:before,.mrow.d3 .mn:before,.mrow.d4 .mn:before{content:"\21B3";color:var(--muted);font-size:11px;margin-right:5px}
   .mrow .mx{
     font:inherit;font-size:11px;color:var(--muted);background:none;border:0;
     padding:2px 5px;border-radius:5px;cursor:pointer;opacity:0;
@@ -569,7 +573,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v0.39.0">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
+  <span class="brand" id="brand" title="Mappr v1.0.0">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -653,7 +657,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.39.0</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.0.0</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <div id="helpBody">
@@ -748,7 +752,7 @@
       <tr><td><kbd>⌥</kbd><kbd>⇧</kbd><kbd>1</kbd>…<kbd>9</kbd></td><td>Open a pinned map, in pin order.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>T</kbd></td><td>Give the map a colour tag; press again for the next colour, and past the last one it clears. The dot beside each map in the lists does the same on a click.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>`</kbd></td><td>Back to the map you were on before.</td></tr>
-      <tr><td><b>Maps</b></td><td>Every map is stored on its own. Delete asks once before it goes, and the last few deleted maps wait under <em>Recently deleted</em> in the same panel with a Restore button.</td></tr>
+      <tr><td><b>Maps</b></td><td>Every map is stored on its own. A map that a link opens is kept under the map that links to it, up to a root map that nothing links to, and the Maps menu and the switcher list each root with the maps under it. Copy on a root copies the whole tree, links pointed at the copies; Delete on a root takes the tree to <em>Recently deleted</em>, each map restorable on its own; Export as JSON bundles the tree and Import rebuilds it. <em>Detach</em> makes a map its own again: every link to it becomes a plain node with its name. A map opens at the zoom and place you left it, reload included, and the last few undo steps come back with it.</td></tr>
       <tr><td><b>Touch</b></td><td>One finger pans, two fingers pinch to zoom, and a tap opens a folded branch. Making a map needs a keyboard, so touch is for reading one you already have.</td></tr>
     </table></section>
     <section class="hpane" data-tab="canvas"><h3>Canvas</h3>
@@ -769,9 +773,9 @@
      panel cannot drift from the record of what actually shipped. -->
 <div id="notes">
   <div id="notesCard">
-    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.39.0</span></h2>
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.0.0</span></h2>
     <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
-    <div id="notesBody"><h3 class="rel">0.39.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>The maps rail.</b> Top left, every map under the root map as a tree, with the one you are on lit and each map&#x27;s size beside it. Click a name to open it, <code>⌥[</code> and <code>⌥]</code> walk them, a twist folds a branch of maps. A map linked from two places is listed under the first and marked under the second. <code>⌥⇧M</code> folds the rail to one line that says where you are, root to here, with the count; the choice is remembered. It replaces the trail bar and <em>Linked from</em>: the lit row is the trail, and a map that something links to hangs under it. Nothing shows until the map has a link.</li><li><b>Flags, drawn by hand.</b> The flag is a pennant on a pole in the same hand as the boxes, seeded on its node so it is the same every render, and it exports. The Style panel offers a ribbon, a ring and an asterisk instead.</li><li><b>Flags you can find.</b> <code>⌘4</code> (or <code>⌥4</code>) is a view on the number row, offered while the map has a flag: everything without one drops to a ghost, <code>Tab</code> and the arrows step flag to flag, <code>Esc</code> puts you back. In <code>⌘K</code>, <code>!</code> first lists only flagged nodes. Sort has <em>Flagged first</em>. A copied outline writes <code>!</code> before a flagged line, and a pasted <code>!</code> line comes in flagged. The end of a story counts the flags in it.</li></ul><h3 class="rel">0.38.1 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>A network with a branch tie keeps its trees.</b> Opening a node&#x27;s network (<code>⌘/</code> in connections) arranged every node of a branch-tied subtree as a loose point, so the boxes landed on each other and the tree edges ran through them. Each tied branch now keeps the shape the map gave it and moves as one block; blocks keep clear of each other by their edges, not their centres, so a wide branch is given room.</li></ul><h3 class="rel">0.38.0 <span>2026-09-17</span></h3><h4>Changed</h4><ul><li><b>Big maps are quick again.</b> The bench picked the targets: in a 1500-node map, adding a node cost 76ms and a keystroke while typing 22ms, most of it spent redrawing shapes that had only shifted and restyling nodes that had not changed. Now adding a node costs 11ms and a keystroke 6ms; an arrow move is unchanged at 8ms and a full render is 7ms. What changed underneath: a shape is drawn once and moved by a transform when its node shifts; nodes and shapes sit in one group per branch, so a branch that moves as a block moves with one transform; a node&#x27;s class and place are written only when they changed, since writing the same value still makes the browser restyle it; and the selection halos are their own layer, so typing beside a big selection no longer rebuilds them on every keystroke. Exports draw afresh as before. The bench now records the two keys pressed most, a letter and an arrow, in a 600 and a 1500-node map.</li></ul><h3 class="rel">0.37.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Right-click is Mappr&#x27;s own menu.</b> On a node it lists everything that can be done to it, each row with its key beside it, so the menu teaches the keys: focus, fold, tie to the node you had selected, tie the branches, open or break out or link a map, retype, done, flag, duplicate, split, merge, sort, carry, frame, copy as an outline or an image, delete. What does not apply is not shown, and inside a selection the menu acts on the selection. On empty canvas it offers the views, the camera and the maps. In a network it works on the network. <code>Esc</code> closes it, and any other key closes it and still does what it does. Nothing was unbound: every key is still a key. Right-click used to focus into a branch; that is the first row now, and <code>⌘/</code> is unchanged.</li></ul><h4>Changed</h4><ul><li><b><code>⌥⏎</code> crosses a link either way.</b> On a link it opens the map, as before. On any other node it goes back up to the link you came through, at the view you left. <code>⌥U</code> is gone. Double-click on empty canvas goes back up too, the mouse twin of double-clicking a link to go down. The trail in the top bar still jumps straight to any map on the way.</li></ul><h3 class="rel">0.36.0 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Ties inside a focused branch are drawn again.</b> Focus on a branch and a tie between two of its nodes was not drawn at all, and the nodes wore no badge. A tie that leaves the branch still cannot be drawn, but the node now wears a badge that counts it as <em>outside</em>, and a click on the badge steps out of the focus to the other end.</li><li><b>Break out keeps the ties across the cut.</b> They used to be removed. Now the link node stands in for the end that left, drawn hollow the way a folded branch is, and bringing the map back in puts each tie back on its node.</li><li><b>Deleting a node hands its ties to the child that moved up</b>, the way a frame already followed. A branch tie whose ends end up on one line after a move, a carry or a merge becomes a plain tie instead of tying a branch to itself.</li><li><b>Duplicate keeps the ties between the copied nodes</b>, as copy and paste did, and both keep a map link: the copy is a second link to the same map.</li><li><b>A link stands in for a whole map, so nothing can be put under it.</b> <code>⌘</code>+arrow, paste, <code>⌥</code>+arrow, carry and merge all said nothing and did something odd; merging into a link threw the merged text away. Each now says so and leaves the map alone.</li><li><b>A story survives what happens to its nodes.</b> Deleting or moving a node out of an arranged level used to drop everything told after it; the chain is spliced instead. Merging told nodes tells the survivor in their place. Sorting a told level puts that level back to map order and says so, rather than showing one order and telling another.</li><li><b>Presenting.</b> <code>Esc</code> from the overview or the whole story goes back to the talk instead of ending it. Paste does nothing mid-talk. Starting a talk puts a carried node down, closes the maps panel and stashes the selection, which is back when the talk ends. The story menu closes when <code>R</code> is pressed, and a different story picked mid-talk starts from the top. Undo while arranging stays on the story and the focus you are arranging. A link node no longer advertises <code>⌥⏎</code> while presenting, where the key advances the talk.</li><li><b>Switching map leaves the lens, the carry and the talk behind.</b> A dim or a network used to follow you into the next map, and a carry could be dropped in a map that did not contain it.</li><li><b>Maps.</b> An unrelated undo no longer brings back a map you deleted from the panel; only a map set aside by an undo or a bring in comes back with its redo. A map set aside by bringing it in is not evicted from Recently deleted while undo could still want it. Breaking out a branch that holds links records them, so <em>Linked from</em> and delete know about them. A frame trimmed by a break out is counted in the message.</li><li>Smaller: the fold badge inside a network folds again rather than hopping a link; a node whose only ties are hidden says how many rather than <code>∿0</code>; a story cannot take another story&#x27;s name; <code>⌘⇧G</code> with no frame says what it needs; a chord pressed with the sort or copy menu open closes the menu and still does what it does; carrying a branch out of a frame leaves the frame round what stayed.</li></ul><h3 class="rel">0.35.1 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Coming back to a map keeps your view.</b> Going back up from a linked map (<code>⌥U</code> or the trail), <code>⌥</code> plus backtick, or the map switcher used to fit the whole map again. A map you already visited this session now opens at the zoom and place you left it, with the same node selected.</li></ul></div>
+    <div id="notesBody"><h3 class="rel">1.0.0 <span>2026-09-17</span></h3><h4>Changed</h4><ul><li><b>Maps live under their root map.</b> A map that a link opens is kept under the map that links to it, up to a root that nothing links to. The Maps menu and the switcher list each root with the maps under it, indented, and a root row says how many. Copy on a root copies the whole tree with the links pointed at the copies; Delete on a root takes the tree to <em>Recently deleted</em>, each map on its own so any one can come back; the bin holds twelve now. Export as JSON bundles the maps under the one you export, and Import rebuilds them with fresh ids. A map is listed once, under the first map found linking to it.</li><li><b>Detach.</b> A map under another can be made its own again from the Maps menu: every link to it, in any map, becomes a plain node carrying its name, and it moves up to the roots. The part in the open map is one undo step.</li><li><b>A reload keeps your place.</b> Every map opens at the zoom and place you left it, whether you switch to it or reopen the app; only a map never opened is fitted. The last few undo steps are kept with the map (as many of the most recent as fit a small budget, since each is a whole snapshot), so <code>⌘Z</code> works after a reload too.</li></ul><h4>Fixed</h4><ul><li>Deleting the map you were on wrote it straight back into the library on the way out. It stays deleted.</li><li>Closing a tab, switching apps on a phone and a tab going to the background all flush the map and its undo steps now; before, only a full close did.</li><li>Two tabs of Mappr on the same store: the listings in each refresh when the other writes. A map open in both is still last writer wins.</li></ul><h3 class="rel">0.39.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>The maps rail.</b> Top left, every map under the root map as a tree, with the one you are on lit and each map&#x27;s size beside it. Click a name to open it, <code>⌥[</code> and <code>⌥]</code> walk them, a twist folds a branch of maps. A map linked from two places is listed under the first and marked under the second. <code>⌥⇧M</code> folds the rail to one line that says where you are, root to here, with the count; the choice is remembered. It replaces the trail bar and <em>Linked from</em>: the lit row is the trail, and a map that something links to hangs under it. Nothing shows until the map has a link.</li><li><b>Flags, drawn by hand.</b> The flag is a pennant on a pole in the same hand as the boxes, seeded on its node so it is the same every render, and it exports. The Style panel offers a ribbon, a ring and an asterisk instead.</li><li><b>Flags you can find.</b> <code>⌘4</code> (or <code>⌥4</code>) is a view on the number row, offered while the map has a flag: everything without one drops to a ghost, <code>Tab</code> and the arrows step flag to flag, <code>Esc</code> puts you back. In <code>⌘K</code>, <code>!</code> first lists only flagged nodes. Sort has <em>Flagged first</em>. A copied outline writes <code>!</code> before a flagged line, and a pasted <code>!</code> line comes in flagged. The end of a story counts the flags in it.</li></ul><h3 class="rel">0.38.1 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>A network with a branch tie keeps its trees.</b> Opening a node&#x27;s network (<code>⌘/</code> in connections) arranged every node of a branch-tied subtree as a loose point, so the boxes landed on each other and the tree edges ran through them. Each tied branch now keeps the shape the map gave it and moves as one block; blocks keep clear of each other by their edges, not their centres, so a wide branch is given room.</li></ul><h3 class="rel">0.38.0 <span>2026-09-17</span></h3><h4>Changed</h4><ul><li><b>Big maps are quick again.</b> The bench picked the targets: in a 1500-node map, adding a node cost 76ms and a keystroke while typing 22ms, most of it spent redrawing shapes that had only shifted and restyling nodes that had not changed. Now adding a node costs 11ms and a keystroke 6ms; an arrow move is unchanged at 8ms and a full render is 7ms. What changed underneath: a shape is drawn once and moved by a transform when its node shifts; nodes and shapes sit in one group per branch, so a branch that moves as a block moves with one transform; a node&#x27;s class and place are written only when they changed, since writing the same value still makes the browser restyle it; and the selection halos are their own layer, so typing beside a big selection no longer rebuilds them on every keystroke. Exports draw afresh as before. The bench now records the two keys pressed most, a letter and an arrow, in a 600 and a 1500-node map.</li></ul><h3 class="rel">0.37.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Right-click is Mappr&#x27;s own menu.</b> On a node it lists everything that can be done to it, each row with its key beside it, so the menu teaches the keys: focus, fold, tie to the node you had selected, tie the branches, open or break out or link a map, retype, done, flag, duplicate, split, merge, sort, carry, frame, copy as an outline or an image, delete. What does not apply is not shown, and inside a selection the menu acts on the selection. On empty canvas it offers the views, the camera and the maps. In a network it works on the network. <code>Esc</code> closes it, and any other key closes it and still does what it does. Nothing was unbound: every key is still a key. Right-click used to focus into a branch; that is the first row now, and <code>⌘/</code> is unchanged.</li></ul><h4>Changed</h4><ul><li><b><code>⌥⏎</code> crosses a link either way.</b> On a link it opens the map, as before. On any other node it goes back up to the link you came through, at the view you left. <code>⌥U</code> is gone. Double-click on empty canvas goes back up too, the mouse twin of double-clicking a link to go down. The trail in the top bar still jumps straight to any map on the way.</li></ul><h3 class="rel">0.36.0 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Ties inside a focused branch are drawn again.</b> Focus on a branch and a tie between two of its nodes was not drawn at all, and the nodes wore no badge. A tie that leaves the branch still cannot be drawn, but the node now wears a badge that counts it as <em>outside</em>, and a click on the badge steps out of the focus to the other end.</li><li><b>Break out keeps the ties across the cut.</b> They used to be removed. Now the link node stands in for the end that left, drawn hollow the way a folded branch is, and bringing the map back in puts each tie back on its node.</li><li><b>Deleting a node hands its ties to the child that moved up</b>, the way a frame already followed. A branch tie whose ends end up on one line after a move, a carry or a merge becomes a plain tie instead of tying a branch to itself.</li><li><b>Duplicate keeps the ties between the copied nodes</b>, as copy and paste did, and both keep a map link: the copy is a second link to the same map.</li><li><b>A link stands in for a whole map, so nothing can be put under it.</b> <code>⌘</code>+arrow, paste, <code>⌥</code>+arrow, carry and merge all said nothing and did something odd; merging into a link threw the merged text away. Each now says so and leaves the map alone.</li><li><b>A story survives what happens to its nodes.</b> Deleting or moving a node out of an arranged level used to drop everything told after it; the chain is spliced instead. Merging told nodes tells the survivor in their place. Sorting a told level puts that level back to map order and says so, rather than showing one order and telling another.</li><li><b>Presenting.</b> <code>Esc</code> from the overview or the whole story goes back to the talk instead of ending it. Paste does nothing mid-talk. Starting a talk puts a carried node down, closes the maps panel and stashes the selection, which is back when the talk ends. The story menu closes when <code>R</code> is pressed, and a different story picked mid-talk starts from the top. Undo while arranging stays on the story and the focus you are arranging. A link node no longer advertises <code>⌥⏎</code> while presenting, where the key advances the talk.</li><li><b>Switching map leaves the lens, the carry and the talk behind.</b> A dim or a network used to follow you into the next map, and a carry could be dropped in a map that did not contain it.</li><li><b>Maps.</b> An unrelated undo no longer brings back a map you deleted from the panel; only a map set aside by an undo or a bring in comes back with its redo. A map set aside by bringing it in is not evicted from Recently deleted while undo could still want it. Breaking out a branch that holds links records them, so <em>Linked from</em> and delete know about them. A frame trimmed by a break out is counted in the message.</li><li>Smaller: the fold badge inside a network folds again rather than hopping a link; a node whose only ties are hidden says how many rather than <code>∿0</code>; a story cannot take another story&#x27;s name; <code>⌘⇧G</code> with no frame says what it needs; a chord pressed with the sort or copy menu open closes the menu and still does what it does; carrying a branch out of a frame leaves the frame round what stayed.</li></ul></div>
     <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
 </div>
@@ -785,7 +789,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="0.39.0";
+var VERSION="1.0.0";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid", flagStyle:"pennant",
   width:2, dash:"solid", slop:1, edges:"round",
@@ -1901,6 +1905,7 @@ function clearUndo(){ undoStack.length=0; redoStack.length=0; undoBytes=0; }
 var undoByDoc={}, UNDO_KEEP_MAPS=4, viewByDoc={};
 function stashUndo(doc){
   if(!doc) return;
+  if(doc===curDoc) undoSave();
   undoByDoc[doc]={u:undoStack.slice(), r:redoStack.slice(), b:undoBytes, t:Date.now()};
   var ks=Object.keys(undoByDoc).sort(function(a,b){ return undoByDoc[b].t-undoByDoc[a].t; });
   ks.slice(UNDO_KEEP_MAPS).forEach(function(k){ delete undoByDoc[k]; });
@@ -1908,13 +1913,36 @@ function stashUndo(doc){
 function loadUndo(doc){
   var h=undoByDoc[doc];
   clearUndo();
-  if(!h) return;
+  if(!h){ undoLoadSaved(doc); return; }
   h.u.forEach(function(x){ undoStack.push(x); }); h.r.forEach(function(x){ redoStack.push(x); }); undoBytes=h.b;
   delete undoByDoc[doc];
 }
+/* The last few undo steps are kept with the map, so a reload does not lose
+   them: as many of the most recent as fit in a small budget, since each step
+   is a whole snapshot and the store is shared with the maps themselves. A
+   write that does not fit is skipped, never an error. */
+var UNDOP="mappr.undo.", UNDO_SAVE_BYTES=240000, undoSaveTimer=null;
+function undoSaveSoon(){ clearTimeout(undoSaveTimer); undoSaveTimer=setTimeout(undoSave,1500); }
+function undoSave(){
+  clearTimeout(undoSaveTimer);
+  if(!curDoc) return;
+  var keep=[], bytes=0;
+  for(var i=undoStack.length-1;i>=0;i--){ if(bytes+undoStack[i].length>UNDO_SAVE_BYTES) break; bytes+=undoStack[i].length; keep.unshift(undoStack[i]); }
+  try{
+    if(!keep.length){ localStorage.removeItem(UNDOP+curDoc); return; }
+    localStorage.setItem(UNDOP+curDoc, JSON.stringify(keep));
+  }catch(e){}
+}
+function undoLoadSaved(doc){
+  var raw=null; try{ raw=localStorage.getItem(UNDOP+doc); }catch(e){}
+  if(!raw) return;
+  try{ var u=JSON.parse(raw); if(Array.isArray(u)){ u.forEach(function(x){ if(typeof x==="string") undoPush(x); }); } }catch(e){}
+}
+function undoDrop(doc){ try{ localStorage.removeItem(UNDOP+doc); }catch(e){} }
 function snap(){
   undoPush(shot());
   redoStack.length=0;
+  undoSaveSoon();
 }
 function restore(j){
   var o=JSON.parse(j);
@@ -4804,8 +4832,15 @@ function download(blobOrText,type,name){
 function doExport(kind){
   if(editing) commitEdit();
   if(kind==="json"){
-    download(JSON.stringify({v:4,state:state,cfg:CFG},null,2),"application/json",fileName(N(state.rootId).text||"map","json"));
-    flashSave("JSON saved"); return;
+    /* the maps under this one travel with it, so the file is the whole tree */
+    save();
+    var lib=idxCached(), under=libUnder(curDoc,lib).filter(function(d){ return d!==curDoc; }), maps=[];
+    under.forEach(function(d){ var doc=docRead(d); if(doc&&doc.state) maps.push({id:d, state:doc.state}); });
+    var payload={v:5, id:curDoc, state:state, cfg:CFG};
+    if(maps.length) payload.maps=maps;
+    lastJson=JSON.stringify(payload);
+    download(lastJson,"application/json",fileName(N(state.rootId).text||"map","json"));
+    flashSave("JSON saved"+(maps.length?" with "+maps.length+(maps.length===1?" map under it":" maps under it"):"")); return;
   }
   if(kind==="outline"){
     if(pres){ storyOutline(presScope()); return; }
@@ -4816,7 +4851,7 @@ function doExport(kind){
   var t=exportTargets();
   imageOut(buildSvg(t.ids,t.frame), kind, t.name);
 }
-var lastSvg=null;
+var lastSvg=null, lastJson=null;
 function imageOut(svgText,kind,name,label){
   var t={name:name}; lastSvg=svgText;
   if(!svgText){ flashSave("nothing to export"); return; }
@@ -4958,7 +4993,7 @@ function docWriteRaw(id,doc){
 function docRead(id){
   try{ return JSON.parse(localStorage.getItem(DOCP+id))||null; }catch(e){ return null; }
 }
-function docDrop(id){ try{ localStorage.removeItem(DOCP+id); }catch(e){} }
+function docDrop(id){ try{ localStorage.removeItem(DOCP+id); }catch(e){} undoDrop(id); }
 /* Kept for the call sites that only ever wanted the list of maps. */
 function libRead(){ return idxRead(); }
 function libWrite(l){ return idxWrite(l); }
@@ -4968,7 +5003,7 @@ function docId(){ return "d"+Date.now().toString(36)+Math.random().toString(36).
    localStorage is about 5MB with no eviction, and a bin that grows without
    limit would eventually cost you the maps you still want. A trash write that
    does not fit is not an error, it just means this one was not kept. */
-var TRASHP="mappr.trash.", TRASH_KEEP=3;
+var TRASHP="mappr.trash.", TRASH_KEEP=12;
 function trashList(){
   var out=[];
   try{
@@ -5024,6 +5059,74 @@ var PIN_SVG='<svg viewBox="0 0 16 16" aria-hidden="true"><g transform="rotate(35
   '<path class="head" d="M5.4 1.9 Q8 2.5 10.6 1.9 L10.1 6.4 Q12.3 7.4 12.6 9.1 L3.4 9.1 Q3.7 7.4 5.9 6.4 Z"/>'+
   '<path d="M8 9.3 L8.1 14.6" fill="none"/></g></svg>';
 function libPins(lib){ lib=lib||idxRead()||{docs:{}}; return (lib.pins||[]).filter(function(id){ return lib.docs[id]; }); }
+/* ---------- maps under maps ----------
+   A map that a link opens is kept under the map that links to it, all the
+   way up to a root map that nothing links to. The library lists roots, each
+   with the maps under it, and the whole tree is one thing to copy, delete or
+   export. A map is listed once, under the first map found linking to it. A map
+   can be made its own again (detached): every link to it becomes a plain
+   node carrying its name, and it moves up to the roots. Ownership is read off
+   the links themselves, so nothing extra is stored. */
+function libTree(lib){
+  lib=lib||idxRead()||{docs:{}};
+  var from=lib.linksFrom||{}, isTarget={};
+  Object.keys(from).forEach(function(d){ if(!lib.docs[d]) return; (from[d]||[]).forEach(function(t){ if(lib.docs[t] && t!==d) isTarget[t]=1; }); });
+  var ids=Object.keys(lib.docs), placed={}, out=[];
+  function walk(doc,depth,root){
+    if(placed[doc]) return;
+    placed[doc]=1; out.push({doc:doc, depth:depth, root:root});
+    (from[doc]||[]).forEach(function(t){ if(lib.docs[t] && t!==doc) walk(t,depth+1,root); });
+  }
+  var roots=ids.filter(function(d){ return !isTarget[d]; }).sort(function(a,b){ return (lib.docs[b].updated||0)-(lib.docs[a].updated||0); });
+  roots.forEach(function(r){ walk(r,0,r); });
+  /* maps that only link to each other in a ring have no root; they become roots */
+  ids.forEach(function(d){ if(!placed[d]) walk(d,0,d); });
+  return out;
+}
+function libUnder(id,lib){ return libTree(lib).filter(function(r){ return r.root===id; }).map(function(r){ return r.doc; }); }
+function libRootOf(id,lib){ var r=libTree(lib).filter(function(x){ return x.doc===id; })[0]; return r?r.root:id; }
+/* Make a map its own again: every link to it, in any map, becomes a plain
+   node with the map's name. The current map's part is one undo step. */
+function detachMap(id){
+  var lib=idxRead(); if(!lib||!lib.docs[id]) return 0;
+  var from=lib.linksFrom||{}, n=0;
+  Object.keys(from).forEach(function(d){
+    if(!lib.docs[d] || (from[d]||[]).indexOf(id)<0) return;
+    if(d===curDoc){
+      var mine=Object.keys(state.nodes).filter(function(i){ return state.nodes[i].link===id; });
+      if(mine.length){ snap(); mine.forEach(function(i){ delete state.nodes[i].link; n++; }); }
+    } else {
+      var doc=docRead(d); if(!doc||!doc.state) return;
+      Object.keys(doc.state.nodes).forEach(function(i){ if(doc.state.nodes[i].link===id){ delete doc.state.nodes[i].link; n++; } });
+      docWriteRaw(d,doc);
+    }
+    var left=(from[d]||[]).filter(function(t){ return t!==id; });
+    if(left.length) from[d]=left; else delete from[d];
+  });
+  lib.linksFrom=from; idxWrite(lib);
+  if(n){ hardRender(); save(); }
+  drawMaps(); drawTrail();
+  return n;
+}
+/* A whole tree of maps copied with fresh ids, links pointed at the copies. */
+function copyTree(rootId){
+  var lib=idxRead(); if(!lib||!lib.docs[rootId]) return null;
+  var ids=libUnder(rootId,lib), map={}, now=Date.now();
+  ids.forEach(function(d){ map[d]=docId(); });
+  var docs={};
+  ids.forEach(function(d){ var doc=(d===curDoc)?{state:state,uid:uid,cfg:CFG,selected:selected}:docRead(d); if(doc&&doc.state) docs[d]=JSON.parse(JSON.stringify(doc)); });
+  ids.forEach(function(d){
+    var doc=docs[d]; if(!doc) return;
+    Object.keys(doc.state.nodes).forEach(function(i){ var l=doc.state.nodes[i].link; if(l && map[l]) doc.state.nodes[i].link=map[l]; });
+    if(d===rootId) doc.state.nodes[doc.state.rootId].text=(doc.state.nodes[doc.state.rootId].text||"Untitled")+" copy";
+    var nid2=map[d], name=docName(doc.state);
+    docWriteRaw(nid2,{id:nid2,name:name,count:nodeCount(doc.state),updated:now,uid:doc.uid||100000,state:doc.state,selected:doc.selected||doc.state.rootId,focusId:null,view:null,cfg:doc.cfg||CFG});
+    lib.docs[nid2]={id:nid2,name:name,count:nodeCount(doc.state),updated:now};
+    var lo=linksIn(doc.state); if(lo.length){ lib.linksFrom=lib.linksFrom||{}; lib.linksFrom[nid2]=lo; }
+  });
+  idxWrite(lib);
+  return map[rootId];
+}
 function isPinned(id,lib){ return libPins(lib).indexOf(id)>=0; }
 function tagOf(id,lib){ lib=lib||idxRead()||{}; return (lib.tags||{})[id]||null; }
 function togglePin(id){
@@ -5411,14 +5514,14 @@ function swList(){
   var lib=idxRead(); if(!lib) return {pins:[],rest:[]};
   var q=elSwIn.value.trim();
   var m=function(id){ return !q || fuzzy(q,lib.docs[id].name||"Untitled")>=0; };
-  var pins=libPins(lib);
-  var rest=Object.keys(lib.docs).filter(function(id){ return pins.indexOf(id)<0; })
-    .sort(function(a,b){ return (lib.docs[b].updated||0)-(lib.docs[a].updated||0); });
+  var pins=libPins(lib), tree=libTree(lib), depth={};
+  tree.forEach(function(r){ depth[r.doc]=r.depth; });
+  var rest=tree.map(function(r){ return r.doc; }).filter(function(id){ return pins.indexOf(id)<0; });
   if(q){
     var sc=function(id){ return fuzzy(q,lib.docs[id].name||"Untitled"); };
     rest=rest.filter(m).sort(function(a,b){ return sc(b)-sc(a); });
   }
-  return {lib:lib, pins:pins.filter(m), rest:rest, allPins:pins};
+  return {lib:lib, pins:pins.filter(m), rest:rest, allPins:pins, depth:q?{}:depth};
 }
 function drawSwitcher(){
   if(!swOpen()) return;
@@ -5432,7 +5535,8 @@ function drawSwitcher(){
   var k=0;
   function row(id){
     var d=lib.docs[id], slot=L.allPins.indexOf(id)+1, i=k++;
-    return '<div class="swr'+(i===swAt?" on":"")+'" data-sw="'+id+'">'+
+    var dp=(L.depth||{})[id]||0;
+    return '<div class="swr'+(i===swAt?" on":"")+(dp?" d"+Math.min(4,dp):"")+'" data-sw="'+id+'">'+
       pinBtn(id,slot>0)+tagBtn(id,tagOf(id,lib))+
       '<span class="mn">'+esc(d.name||"Untitled")+'</span>'+
       (id===curDoc?'<span class="here">open</span>':'')+
@@ -5446,7 +5550,7 @@ function drawSwitcher(){
       '<div class="swr'+(k++===swAt?" on":"")+'" data-sw="__new"><span class="pin"></span><span class="mn">+ New map \u201c'+esc(nm)+'\u201d</span></div>';
   }
   if(L.pins.length) h+='<div class="swsec">Pinned</div>'+L.pins.map(row).join("");
-  if(L.rest.length) h+='<div class="swsec">'+(elSwIn.value.trim()?"Maps":"Recent")+'</div>'+L.rest.map(row).join("");
+  if(L.rest.length) h+='<div class="swsec">'+(elSwIn.value.trim()?"Maps":"All maps")+'</div>'+L.rest.map(row).join("");
   if(!swRows.length) h='<div class="swsec">No map matches</div>';
   elSwIn.placeholder=swPick?"Link to a map…":"Go to a map…";
   elSwList.innerHTML=h;
@@ -5531,23 +5635,23 @@ function armDelete(id){
 }
 function drawMaps(){
   var lib=idxRead(); if(!lib) return;
-  var pins=libPins(lib);
-  var ids=Object.keys(lib.docs).sort(function(a,b){ return (lib.docs[b].updated||0)-(lib.docs[a].updated||0); });
-  var rest=ids.filter(function(id){ return pins.indexOf(id)<0; });
-  function row(id){
-    var d=lib.docs[id], slot=pins.indexOf(id)+1;
-    return '<div class="mrow'+(id===curDoc?" on":"")+'" data-m="'+id+'">'+
+  var pins=libPins(lib), tree=libTree(lib), ids=Object.keys(lib.docs);
+  var under={}; tree.forEach(function(r){ under[r.root]=(under[r.root]||0)+(r.depth?1:0); });
+  function row(r){
+    var id=r.doc, d=lib.docs[id], slot=pins.indexOf(id)+1, depth=r.depth||0, sub=under[id]||0;
+    var isRoot=!depth;
+    return '<div class="mrow'+(id===curDoc?" on":"")+(depth?" d"+Math.min(4,depth):"")+'" data-m="'+id+'">'+
       pinBtn(id,slot>0)+tagBtn(id,tagOf(id,lib))+
       '<span class="mn">'+esc(d.name||"Untitled")+'</span>'+
-      '<span class="mm">'+d.count+'</span>'+
+      '<span class="mm">'+d.count+(isRoot&&sub?' \u00b7 '+sub+(sub===1?' map':' maps'):'')+'</span>'+
       (slot&&slot<=9?'<span class="mslot">\u2325\u21e7'+slot+'</span>':'')+
-      '<button class="mx" data-dup="'+id+'">Copy</button>'+
-      (ids.length>1?'<button class="mx'+(delArm===id?" arm":"")+'" data-del="'+id+'">'+(delArm===id?"Sure?":"Delete")+'</button>':"")+
+      (depth?'<button class="mx" data-detach="'+id+'" title="Make it its own map: every link to it becomes a plain node">Detach</button>':'')+
+      '<button class="mx" data-dup="'+id+'" title="'+(isRoot&&sub?"Copy this map and the maps under it":"Copy")+'">Copy</button>'+
+      (ids.length>1?'<button class="mx'+(delArm===id?" arm":"")+'" data-del="'+id+'">'+(delArm===id?(isRoot&&sub?"Sure? ("+(sub+1)+" maps)":"Sure?"):"Delete")+'</button>':"")+
     '</div>';
   }
-  elMapsList.innerHTML = pins.length
-    ? '<div class="msec">Pinned</div>'+pins.map(row).join("")+(rest.length?'<div class="msec">Everything else</div>'+rest.map(row).join(""):"")
-    : ids.map(row).join("");
+  var pinRows=pins.map(function(id){ return {doc:id, depth:0}; });
+  elMapsList.innerHTML = (pins.length ? '<div class="msec">Pinned</div>'+pinRows.map(row).join("")+'<div class="msec">All maps</div>' : '')+tree.map(row).join("");
   /* The bin is part of the same panel: a map you deleted is one click from
      coming back, and one glance from being seen to still exist. */
   var tl=trashList();
@@ -5601,8 +5705,11 @@ function switchDoc(id){
   migrateSpread();
   editing=null; clearMarks(); if(!sameDoc) loadUndo(id);
   applyCss(); drawPanel(); hardRender();
-  /* a map you already visited this session opens exactly as you left it */
-  if(viewByDoc[id] && !sameDoc) camRestore(viewByDoc[id]); else fit();
+  /* a map opens exactly as you left it: from this session's memory first,
+     else from the view saved with the map; only a map never opened is fitted */
+  if(viewByDoc[id] && !sameDoc) camRestore(viewByDoc[id]);
+  else if(d.view && !sameDoc && isFinite(d.view.z) && d.view.z>0) camRestore(d.view);
+  else fit();
   drawMaps(); drawPinMark(); drawTrail();
   flashSave("opened \u201c"+trunc(docName(state))+"\u201d");
 }
@@ -5628,10 +5735,23 @@ elMaps.addEventListener("click",function(e){
   var dup=e.target.closest("[data-dup]"), del=e.target.closest("[data-del]");
   var res=e.target.closest("[data-restore]");
   if(res){ disarmDelete(false); trashRestore(res.dataset.restore); return; }
+  var det=e.target.closest("[data-detach]");
+  if(det){
+    disarmDelete(false);
+    var nd=detachMap(det.dataset.detach);
+    flashSave("\u201c"+esc(idxCached().docs[det.dataset.detach].name)+"\u201d is its own map \u00b7 "+nd+(nd===1?" link became a plain node":" links became plain nodes"));
+    return;
+  }
   if(dup){
     disarmDelete(false);
-    var src=docRead(dup.dataset.dup); if(!src) return;
-    var copy=JSON.parse(JSON.stringify(src.state));
+    var src=dup.dataset.dup, lib3=idxRead();
+    if(libUnder(src,lib3).length>1 && libRootOf(src,lib3)===src){
+      save();
+      var made=copyTree(src); if(!made) return;
+      switchDoc(made); toggleMaps(false); flashSave("copied, with the maps under it"); return;
+    }
+    var srcDoc=docRead(src); if(!srcDoc) return;
+    var copy=JSON.parse(JSON.stringify(srcDoc.state));
     copy.nodes[copy.rootId].text=(copy.nodes[copy.rootId].text||"Untitled")+" copy";
     newDoc(copy); toggleMaps(false); return;
   }
@@ -5641,11 +5761,19 @@ elMaps.addEventListener("click",function(e){
     if(Object.keys(lib2.docs).length<2) return;
     if(delArm!==did){ armDelete(did); return; }
     disarmDelete(false);
-    var doomed=docRead(did);
-    delete lib2.docs[did]; dropFromLib(lib2,did); idxWrite(lib2);
-    trashPut(did,doomed); docDrop(did);
-    if(did===curDoc) switchDoc(Object.keys(lib2.docs)[0]);
+    /* a root goes with the maps under it; each lands in the bin on its own */
+    var gone=libRootOf(did,lib2)===did ? libUnder(did,lib2) : [did];
+    if(gone.length>=Object.keys(lib2.docs).length) gone=gone.filter(function(d){ return d!==did; }).concat([did]).slice(0,Object.keys(lib2.docs).length-1);
+    gone.slice().reverse().forEach(function(g){
+      var doomed=docRead(g);
+      delete lib2.docs[g]; dropFromLib(lib2,g); if(lib2.linksFrom) delete lib2.linksFrom[g];
+      trashPut(g,doomed); docDrop(g);
+    });
+    idxWrite(lib2);
+    /* the map being left is gone: nothing of it may be saved on the way out */
+    if(gone.indexOf(curDoc)>=0){ state=null; clearUndo(); switchDoc(Object.keys(lib2.docs)[0]); }
     else drawMaps();
+    if(gone.length>1) flashSave(gone.length+" maps in Recently deleted");
     return;
   }
   disarmDelete();
@@ -6343,20 +6471,44 @@ function load(){
   }catch(err){ return false; }
 }
 document.getElementById("btnImport").onclick=function(){ document.getElementById("filePicker").click(); };
-document.getElementById("filePicker").onchange=function(e){
-  var f=e.target.files[0]; if(!f) return;
-  var r=new FileReader();
-  r.onload=function(){
-    try{
-      var o=JSON.parse(r.result), s=o.state||o;
+/* The maps under an exported map come back with fresh ids, links pointed at
+   the new copies; the root's own links are remapped in place before it opens. */
+function importMaps(o,s){
+  if(!o.maps||!o.maps.length) return 0;
+  var lib=idxRead()||{current:null,docs:{}}, map={}, now=Date.now(), n=0;
+  o.maps.forEach(function(m){ if(m&&m.id&&m.state&&m.state.nodes) map[m.id]=docId(); });
+  var remap=function(st){ Object.keys(st.nodes).forEach(function(i){ var l=st.nodes[i].link; if(l){ if(map[l]) st.nodes[i].link=map[l]; else delete st.nodes[i].link; } }); };
+  o.maps.forEach(function(m){
+    if(!map[m.id]) return;
+    remap(m.state);
+    var nid2=map[m.id], name=docName(m.state);
+    if(!docWriteRaw(nid2,{id:nid2,name:name,count:nodeCount(m.state),updated:now,uid:100000,state:m.state,selected:m.state.rootId,focusId:null,view:null,cfg:CFG})) return;
+    lib.docs[nid2]={id:nid2,name:name,count:nodeCount(m.state),updated:now};
+    var lo=linksIn(m.state); if(lo.length){ lib.linksFrom=lib.linksFrom||{}; lib.linksFrom[nid2]=lo; }
+    n++;
+  });
+  remap(s);
+  idxWrite(lib);
+  return n;
+}
+function importJsonText(text){
+  try{
+      var o=JSON.parse(text), s=o.state||o;
       if(!s.nodes||!s.rootId) throw new Error("bad");
       if(o.cfg) CFG=Object.assign({},DEFAULTS,o.cfg);
+      var nUnder=importMaps(o,s);
       newDoc(s);
+      if(nUnder) setTimeout(function(){ flashSave("imported with "+nUnder+(nUnder===1?" map under it":" maps under it")); },50);
       migrateSpread();
       applyCss(); drawPanel(); hardRender(); fit(); save();
       flashSave("imported");
-    }catch(err){ alert("That file does not look like a Mappr map."); }
-  };
+      return true;
+  }catch(err){ alert("That file does not look like a Mappr map."); return false; }
+}
+document.getElementById("filePicker").onchange=function(e){
+  var f=e.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){ importJsonText(r.result); };
   r.readAsText(f); e.target.value="";
 };
 (function(){
@@ -6468,13 +6620,29 @@ document.addEventListener("fullscreenchange",function(){
   drawCrumbs();
   setTimeout(function(){ if(pres && !pres.arrange && pres.frame) presFrame(pres.frame); },120);
 });
-addEventListener("beforeunload",function(){ if(editing) commitEdit(); if(editFrame) commitFrameEdit(); save(); });
+/* Everything that leaves the page flushes: closing, navigating, a tab going
+   to the background, a phone switching apps. pagehide and visibilitychange
+   are the ones mobile browsers actually fire. */
+function flushAll(){ if(editing) commitEdit(); if(editFrame) commitFrameEdit(); save(); undoSave(); }
+addEventListener("beforeunload",flushAll);
+/* Another tab of Mappr writing to the same store: the index cache is stale the
+   moment it does, so the listings are redrawn from what is there now. A map
+   this tab is editing is left alone, and the last writer wins, as it always
+   did; the other tab's version is the one in the store. */
+addEventListener("storage",function(e){
+  if(!e.key || e.key.indexOf("mappr.")!==0) return;
+  idxVer++;
+  if(e.key===IDX || e.key.indexOf(DOCP)===0 || e.key.indexOf(TRASHP)===0){ drawMaps(); drawTrail(); drawPinMark(); }
+});
+addEventListener("pagehide",flushAll);
+document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="hidden") flushAll(); });
 
 /* ============================================================
    BOOT
    ============================================================ */
 var restored=load();
 if(!restored){ state=freshState(); selected=state.rootId; uid=1; }
+if(restored && curDoc) undoLoadSaved(curDoc);
 localizeKeys(); applyCss(); drawPanel(); notesOnBoot();
 function boot(){ render(true); restored?applyView():center(); }
 if(document.fonts&&document.fonts.load) document.fonts.load('17px "Excalifont"').then(boot,boot);
@@ -6567,7 +6735,7 @@ window.__mf={
   png:function(cb){ var t=exportTargets(); svgToPng(buildSvg(t.ids,t.frame),2,cb); },
   panel:function(on){ toggleStyle(on); },
   boxes:function(){ return box; }, pos:function(){ return pos; }, fit:fit,
-  get nodeMoves(){ return nodeMoves; }, get undoBytes(){ return undoBytes; }, get lastSvg(){ return lastSvg; }, get focusTrail(){ return focusTrail.length; }, copyMenu:function(){ var b=document.querySelector('#crumbs [data-cmenu]'); if(b) copyMenu(b); return !!elSMenu; }, get undoSteps(){ return undoStack.length; },
+  get nodeMoves(){ return nodeMoves; }, get lastJson(){ return lastJson; }, importJson:importJsonText, exportJson:function(){ doExport("json"); return lastJson; }, libTree:function(){ return libTree(); }, detach:detachMap, get doc(){ return curDoc; }, get undoBytes(){ return undoBytes; }, get lastSvg(){ return lastSvg; }, get focusTrail(){ return focusTrail.length; }, copyMenu:function(){ var b=document.querySelector('#crumbs [data-cmenu]'); if(b) copyMenu(b); return !!elSMenu; }, get undoSteps(){ return undoStack.length; },
   bounds:function(f){ return frameBounds(f); },
   onScreen:function(id){
     var p=pos[id],b=box[id]; if(!p||!b) return false;

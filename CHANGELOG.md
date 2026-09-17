@@ -3,6 +3,39 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.0.0] - 2026-09-17
+
+Version one. Everything since 0.36 was the road here: the interaction sweep,
+the right-click menu, the speed pass, the rail, the flags. This release is
+about how maps are kept.
+
+### Changed
+- **Maps live under their root map.** A map that a link opens is kept under
+  the map that links to it, up to a root that nothing links to. The Maps menu
+  and the switcher list each root with the maps under it, indented, and a
+  root row says how many. Copy on a root copies the whole tree with the links
+  pointed at the copies; Delete on a root takes the tree to *Recently deleted*,
+  each map on its own so any one can come back; the bin holds twelve now.
+  Export as JSON bundles the maps under the one you export, and Import
+  rebuilds them with fresh ids. A map is listed once, under the first map
+  found linking to it.
+- **Detach.** A map under another can be made its own again from the Maps
+  menu: every link to it, in any map, becomes a plain node carrying its name,
+  and it moves up to the roots. The part in the open map is one undo step.
+- **A reload keeps your place.** Every map opens at the zoom and place you
+  left it, whether you switch to it or reopen the app; only a map never
+  opened is fitted. The last few undo steps are kept with the map (as many of
+  the most recent as fit a small budget, since each is a whole snapshot), so
+  `⌘Z` works after a reload too.
+
+### Fixed
+- Deleting the map you were on wrote it straight back into the library on
+  the way out. It stays deleted.
+- Closing a tab, switching apps on a phone and a tab going to the background
+  all flush the map and its undo steps now; before, only a full close did.
+- Two tabs of Mappr on the same store: the listings in each refresh when the
+  other writes. A map open in both is still last writer wins.
+
 ## [0.39.0] - 2026-09-17
 
 ### Added
