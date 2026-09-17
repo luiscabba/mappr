@@ -431,6 +431,9 @@
   #storyMenu .armed{background:var(--panel-hover);font-weight:600}
   #storyMenu .sep{height:1px;background:var(--panel-line);margin:4px 2px}
   #storyMenu .srename{margin:3px 4px}
+  #storyMenu.ctx{min-width:240px}
+  #storyMenu.ctx .mi{padding:5px 9px}
+  #storyMenu.ctx .mk{padding-left:18px;white-space:nowrap}
   .srename{font:12px var(--font-ui);color:var(--ink);background:var(--panel);border:1.5px solid var(--sel);border-radius:6px;padding:3px 6px;width:140px;outline:none}
   #crumbs .c.sdel{font-size:12px;padding:2px 6px;color:var(--muted)}
   #crumbs .c.sdel.armed{color:var(--danger)}
@@ -718,7 +721,7 @@
       <tr><td><kbd>⌥</kbd><kbd>N</kbd></td><td>A new map.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>B</kbd></td><td><b>Break out</b> a branch into a map of its own. The branch moves, with its marks, folds, frames and the links inside it, and a <b>link</b> takes its place. A tie that crossed the cut now lands on the link, drawn hollow, and goes back to its node when the map is brought back in. On a link, <kbd>⌥</kbd><kbd>B</kbd> brings the map back in as a branch; the map goes to Recently deleted unless something else links to it. <kbd>⌘</kbd><kbd>Z</kbd> undoes either, map and all.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>K</kbd></td><td><b>Link</b> the selected node to a map: pick one, or make a new one named after the node. A link shows the map's name and size, and its look is in the style panel under <em>Map links</em>. Its name follows the map, so open the map to rename it.</td></tr>
-      <tr><td><kbd>⌥</kbd><kbd>⏎</kbd> / double-click</td><td>Open a linked map. The top bar keeps a trail of the maps you came through; <kbd>⌥</kbd><kbd>U</kbd> or a name in the trail goes back up, to the link you left from. <em>Linked from</em> in the top bar says which other maps link here. A link whose map was deleted says so, and <kbd>⌥</kbd><kbd>⏎</kbd> restores the map.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>⏎</kbd> / double-click</td><td>Open a linked map. The same key on any other node, or a double-click on empty canvas, goes back up to the link you came through, at the view you left. The top bar keeps a trail of the maps you came through, and a name in it jumps straight there. <em>Linked from</em> in the top bar says which other maps link here. A link whose map was deleted says so, and <kbd>⌥</kbd><kbd>⏎</kbd> restores the map.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>M</kbd></td><td>Switch map: pinned maps first, then recent ones. Type to filter, arrows and <kbd>⏎</kbd> to open. It starts on the map you were on before, so <kbd>⌥</kbd><kbd>M</kbd> <kbd>⏎</kbd> swaps back and forth.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>P</kbd></td><td>Pin or unpin the open map (in the switcher, the highlighted one). Pinned maps sit at the top of the switcher and of Maps ▾, and the pin shows next to the Mappr name.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>⇧</kbd><kbd>1</kbd>…<kbd>9</kbd></td><td>Open a pinned map, in pin order.</td></tr>
@@ -731,6 +734,7 @@
     <table class="keys">
       <tr><td>The camera</td><td>Follows on its own. It holds still while you work mid-screen and slides only when you are about to run off an edge.</td></tr>
       <tr><td>Drag / scroll</td><td>Pan. <kbd>⌘</kbd>+scroll zooms.</td></tr>
+      <tr><td>Right-click</td><td>Mappr's own menu. On a node: everything that can be done to it, each row with its key beside it, so the menu teaches the keys. On empty canvas: the views, the camera and the maps. Any key closes it and still does what it does.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>,</kbd></td><td>Style panel. It never takes the keyboard, so shortcuts keep working while it is open.</td></tr>
     </table></section>
       </div>
@@ -3506,6 +3510,129 @@ function sortMenuKey(e){
   return true;
 }
 
+/* ---------- the right-click menu ----------
+   Every key is still a key; the menu is the same actions found by pointing.
+   It shows what applies to the node under the pointer (or the canvas), each
+   row with its key beside it, so the menu teaches the key. It reuses the
+   story menu's element and rules: mousedown never takes the keyboard, Escape
+   closes, a click outside closes, and a chord pressed while it is open closes
+   it and still does what it does. */
+function ctxItems(id,from){
+  var it=[], t=id?N(id):null, sel=(marked && Object.keys(marked).filter(function(i){ return N(i); })), many=sel.length>1;
+  function add(label,key,fn,cls){ it.push({t:label,k:key||"",f:fn,c:cls||""}); }
+  function sep(){ if(it.length && it[it.length-1]!=="sep") it.push("sep"); }
+  if(!t){
+    if(linkTrail.length){ var lib=idxCached(), up=linkTrail[linkTrail.length-1]; add("Back up to \u201c"+trunc((lib.docs[up.doc]||{}).name||"Untitled")+"\u201d","\u2325\u23ce",function(){ linkUp(); }); }
+    if(focusId) add("Out of the focus","Esc",function(){ exitFocus(); });
+    if(lensActive()) add("Back to the map","\u23181",function(){ lensOff(); });
+    else if((state.links||[]).length) add("Connections","\u23182",function(){ lensSet(true,null,false); });
+    add("Present","\u23183",function(){ presStart(); });
+    sep();
+    add("Fit everything","\u23180",function(){ fitAll(); });
+    if(followBefore) add("Back where you were","Esc",function(){ camRestore(followBefore); followBefore=null; });
+    sep();
+    add("New map","\u2325N",function(){ newDoc(); toggleMaps(false); flashSave("new map"); });
+    add("Switch map","\u2325M",function(){ openSwitcher(); });
+    add("Style","\u2318,",function(){ toggleStyle(true); });
+    add("All the keys","?",function(){ toggleHelp(true); });
+    return it;
+  }
+  if(lensOne){
+    if(id!==lensOne && linkTally(id)) add("Its own network","\u2318/",function(){ lensSet(false,id); });
+    if(id===lensOne) add("Back out of the network","\u2318/",function(){ if(netBack==="off") lensOff(); else lensSet(true,null); });
+    add(lensFold[id]?"Unfold beyond":"Fold beyond","\u2318E",function(){ toggleLensFold(id); });
+    add("Clear its links","\u21e7 double-click",function(){ clearLinksOf(id); },"danger");
+    sep();
+    add("Copy the network as an outline","\u2318C",function(){ document.execCommand("copy"); });
+    add("Copy the network as an image","\u21e7\u2318C",function(){ doExport("png-copy"); });
+    sep();
+    add("Back to the map","\u23181",function(){ lensOff(); });
+    return it;
+  }
+  var centre=isVR(t)||isRoot(t);
+  if(focusId===id) add("Back out of the focus","\u2318/",function(){ focusBack(); });
+  else if(!isRoot(t)) add("Focus on this branch","\u2318/",function(){ enterFocus(); });
+  if(t.children.length) add(t.collapsed?"Unfold":"Fold","\u2318E",function(){ toggleCollapse(id); });
+  /* the node that was selected before the right-click, as Cmd+click reads it */
+  if(from && from!==id && N(from)){
+    var li=linkIndex(from,id), isB=li>=0 && state.links[li].branch;
+    add((li>=0&&!isB)?"Untie from \u201c"+trunc(N(from).text)+"\u201d":"Tie to \u201c"+trunc(N(from).text)+"\u201d","\u2318 click",function(){ tieFromSelected(from,id); });
+    add(isB?"Untie the branches":"Tie the branches","\u2318\u21e7 click",function(){ branchTieReport(toggleBranchTie(from,id), id); });
+  }
+  if(t.link){ add("Open the map","\u2325\u23ce",function(){ openLink(id); }); add("Bring the map back in","\u2325B",function(){ breakOut(); }); }
+  else if(!centre && t.children.length) add("Break out into a map","\u2325B",function(){ breakOut(); });
+  else if(!centre) add("Link to a map","\u2325K",function(){ openLinkPicker(); });
+  sep();
+  if(!t.link) add("Retype","Space",function(){ beginEdit(id,true); });
+  add(t.mark==="done"?"Not done":"Done","\u2318\u21e7D",function(){ toggleMark("done"); });
+  add(t.mark==="flag"?"Unflag":"Flag","\u2318\u21e7F",function(){ toggleMark("flag"); });
+  if(!centre) add(many?"Duplicate the selection":"Duplicate","\u2318D",function(){ duplicateBranch(); });
+  if(splitLines(t.text).length>1 && !centre) add("Split into one node per line","\u2325S",function(){ splitNode(false); });
+  if(many) add("Merge the selection into one","\u2325J",function(){ mergeMarked(); });
+  if(t.children.length>1 || many) add(many?"Sort the selection":"Sort its children","\u2325O",function(){ sortMenu(); });
+  if(!centre) add(many?"Carry the selection":"Carry","\u2325X",function(){ carryStart(); });
+  add(many?"Frame the selection":"Frame","\u2318G",function(){ makeFrame(); });
+  sep();
+  add(many?"Copy the selection as an outline":"Copy as an outline","\u2318C",function(){ document.execCommand("copy"); });
+  add("Copy as an image","\u21e7\u2318C",function(){ doExport("png-copy"); });
+  sep();
+  if(!centre){
+    add(many?"Delete the selection":"Delete, keep its children","\u232b",function(){ doDelete(false); },"danger");
+    add(many?"Delete the selected branches":"Delete the branch","\u2318\u232b",function(){ doDelete(true); },"danger");
+  }
+  return it;
+}
+/* Cmd+click's job, from the menu: tie the selected node to this one */
+function tieFromSelected(from,id){
+  var was=N(from).text||"a node";
+  var r=toggleLink(from,id);
+  if(!r){ flash(id); return; }
+  clearMarks(); hardRender(); saveSoon();
+  flashSave(r==="tied" ? "tied to "+trunc(was) : "untied");
+}
+function clearLinksOf(cid){
+  var n0=linksOf(cid).length;
+  if(!n0){ flash(cid); flashSave("nothing tied to this"); return; }
+  snap();
+  state.links=state.links.filter(function(l){ return l.a!==cid && l.b!==cid; });
+  saveSoon();
+  flashSave("cleared "+n0+(n0===1?" link":" links"));
+  if(!state.links.length){ lensOff(); return; }
+  if(lensOne && !linkTally(lensOne)){ lensSet(true,null); return; }
+  hardRender();
+}
+function ctxMenu(x,y,id,from){
+  storyMenuClose();
+  var items=ctxItems(id,from);
+  while(items.length && items[items.length-1]==="sep") items.pop();
+  if(!items.length) return;
+  var m=document.createElement("div"); m.id="storyMenu"; m.className="bar ctx"; m.dataset.kind="ctx";
+  var head = id ? trunc(N(id).text||(isVR(N(id))?"Central idea":"\u2026")) : trunc(docName(state));
+  m.innerHTML='<div class="smhead">'+esc(head)+'</div>'+items.map(function(it,i){
+    if(it==="sep") return '<div class="sep"></div>';
+    /* off a Mac the glyphs become words, which need a space between them */
+    var kk=IS_MAC ? it.k : keyWords(it.k).replace(/(Ctrl|Alt|Shift)(?=\S)/g,"$1+");
+    return '<button class="mi'+(it.c?" "+it.c:"")+'" data-x="'+i+'">'+esc(it.t)+(it.k?'<span class="mk">'+esc(kk)+'</span>':'')+'</button>';
+  }).join("");
+  m.addEventListener("mousedown",function(e){ e.preventDefault(); e.stopPropagation(); });
+  m.addEventListener("click",function(e){
+    var b=e.target.closest("[data-x]"); if(!b) return;
+    var it=items[+b.dataset.x]; storyMenuClose(); if(it && it.f) it.f();
+  });
+  document.body.appendChild(m); elSMenu=m;
+  var r=m.getBoundingClientRect();
+  m.style.left=Math.max(8,Math.min(innerWidth-r.width-8,x))+"px";
+  m.style.top=Math.max(8,Math.min(innerHeight-r.height-8,y))+"px";
+}
+/* With the menu open, Escape closes it; any other key closes it and goes on
+   to do what it does, so the menu never gets between you and the map. */
+function ctxMenuKey(e){
+  if(!elSMenu || elSMenu.dataset.kind!=="ctx") return false;
+  storyMenuClose();
+  if(e.key==="Escape"){ e.preventDefault(); return true; }
+  return false;
+}
+
 /* ---------- carry (Option+X) ----------
    Pick the selection up: it goes faint where it is, the arrows walk a drop
    target round the map, Enter drops it inside the target, Shift+Enter right
@@ -4767,7 +4894,7 @@ function drawPinMark(){
    the map's current name and size, opens it with Option+Enter, and Option+B
    breaks a branch out into a new map (leaving a link) or brings a linked map
    back in as a branch. Maps opened through links leave a trail in the top bar,
-   and Option+U walks back up it. The index keeps, per map, the maps it links
+   and Option+Enter walks back up it. The index keeps, per map, the maps it links
    to, so any map can say which maps link to it. */
 var linkTrail=[], madeByBreak={};
 function linkInfo(id){
@@ -4818,7 +4945,7 @@ function drawTrail(){
   linkTrail=linkTrail.filter(function(t){ return lib.docs[t.doc]; });
   if(linkTrail.length){
     el.hidden=false;
-    el.innerHTML=linkTrail.map(function(t,i){ return '<button data-up="'+i+'" title="Back up (\u2325U)">'+esc((lib.docs[t.doc]||{}).name||"Untitled")+'</button><i>\u25b8</i>'; }).join("")+
+    el.innerHTML=linkTrail.map(function(t,i){ return '<button data-up="'+i+'" title="Back up (\u2325\u23ce)">'+esc((lib.docs[t.doc]||{}).name||"Untitled")+'</button><i>\u25b8</i>'; }).join("")+
       '<b>'+esc(docName(state))+'</b>';
   } else { el.hidden=true; el.innerHTML=""; }
   var from=curDoc?backlinksTo(curDoc):[];
@@ -5439,6 +5566,7 @@ document.addEventListener("keydown",function(e){
   if(helpOpen()){ helpKey(e); return; }
   if(copyMenuKey(e)) return;
   if(sortMenuKey(e)) return;
+  if(ctxMenuKey(e)) return;
   if(carryKey(e)) return;
 
   if(elJump.classList.contains("on")){
@@ -5457,10 +5585,12 @@ document.addEventListener("keydown",function(e){
      a pinned map, Option+` the map you were on before. By e.code, so the Mac's
      dead keys do not matter, and never while typing. */
   if(e.altKey && !mod && !editing){
-    if(e.key==="Enter"){ e.preventDefault(); openLink(); return; }
+    /* Option+Enter crosses a link either way: on a link it opens the map, on
+       anything else it goes back up to the link you came through, at the view
+       you left. */
+    if(e.key==="Enter"){ e.preventDefault(); if(N(selected)&&N(selected).link) openLink(); else if(linkTrail.length) linkUp(); else { flash(selected); flashSave("not a link, and nothing to go back up to \u00b7 \u2325K makes one"); } return; }
     if(e.code==="KeyB" && !e.shiftKey){ e.preventDefault(); breakOut(); return; }
     if(e.code==="KeyK" && !e.shiftKey){ e.preventDefault(); openLinkPicker(); return; }
-    if(e.code==="KeyU" && !e.shiftKey){ e.preventDefault(); linkUp(); return; }
     if(e.code==="KeyM"){ e.preventDefault(); swOpen()?closeSwitcher():openSwitcher(); return; }
     if(e.code==="KeyP" && !e.shiftKey){ e.preventDefault(); save(); togglePin(curDoc); return; }
     if(e.code==="KeyT" && !e.shiftKey){ e.preventDefault(); save(); cycleTag(curDoc); return; }
@@ -5652,6 +5782,7 @@ elNodes.addEventListener("input",function(){
    ============================================================ */
 elNodes.addEventListener("mousedown",function(e){
   var el=e.target.closest(".node"); if(!el) return;
+  if(e.button===2 && !pres) return;              /* the menu, on contextmenu, decides */
   if(pres){
     e.preventDefault(); e.stopPropagation();
     if(!pres.arrange){ if(e.button===0) presNext(false); return; }
@@ -5700,39 +5831,41 @@ elNodes.addEventListener("dblclick",function(e){
   if(pres){ e.preventDefault(); e.stopPropagation(); return; }
   if(lensActive() && e.shiftKey){
     e.preventDefault(); e.stopPropagation();
-    var cid=el.dataset.id, n0=linksOf(cid).length;
-    if(!n0){ flash(cid); flashSave("nothing tied to this"); return; }
-    snap();
-    state.links=state.links.filter(function(l){ return l.a!==cid && l.b!==cid; });
-    saveSoon();
-    flashSave("cleared "+n0+(n0===1?" link":" links"));
-    if(!state.links.length){ lensOff(); return; }
-    if(lensOne && !linkTally(lensOne)){ lensSet(true,null); return; }
-    hardRender();
+    clearLinksOf(el.dataset.id);
     return;
   }
   e.stopPropagation(); selected=el.dataset.id; clearMarks(); render(); beginEdit(el.dataset.id,true);
 });
-/* Right-click is the mouse equivalent of Cmd+/ : on a node it focuses into that
-   branch, on empty canvas it steps back out one level, the same as Escape. The
-   native menu is suppressed across the stage either way, since a menu that
-   appears on some of the surface and not the rest reads as a bug. The one
-   exception is the node you are currently typing in, where the browser's own
-   cut/copy/paste menu is the useful thing. */
+/* Right-click opens Mappr's own menu: on a node, what can be done to it; on
+   the canvas, the views and the maps. The native menu is suppressed across the
+   stage, since a menu that appears on some of the surface and not the rest
+   reads as a bug. The one exception is the node you are currently typing in,
+   where the browser's own cut/copy/paste menu is the useful thing. While
+   presenting, right-click still steps back. */
 elStage.addEventListener("contextmenu",function(e){
   if(pres){ e.preventDefault(); if(!pres.arrange) presBack(); return; }
   var el=e.target.closest(".node");
   if(el && editing===el.dataset.id) return;
   e.preventDefault();
-  if(el){
-    if(editing) commitEdit();
-    selected=el.dataset.id; clearMarks(); selFrame=null;
-    enterFocus();
-    return;
-  }
+  if(carry){ flash(selected); return; }
   if(e.target.closest(".ftitle")) return;
   if(editing) commitEdit();
-  if(focusId) exitFocus();
+  if(el){
+    var id=el.dataset.id, from=selected;
+    /* a node inside the selection keeps the selection; any other becomes it */
+    if(!marked[id]){ clearMarks(); selected=id; render(true); }
+    ctxMenu(e.clientX,e.clientY,id,from);
+    return;
+  }
+  ctxMenu(e.clientX,e.clientY,null);
+});
+/* Double-click on the canvas goes back up to the link you came through, the
+   mouse twin of double-clicking a link to go down. */
+elStage.addEventListener("dblclick",function(e){
+  if(e.target.closest(".node")||e.target.closest(".ftitle")||e.target.closest(".badge")||pres||carry) return;
+  if(!linkTrail.length) return;
+  e.preventDefault(); if(editing) commitEdit();
+  linkUp();
 });
 elFrames.addEventListener("mousedown",function(e){
   var el=e.target.closest(".ftitle"); if(!el) return;

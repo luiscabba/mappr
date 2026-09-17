@@ -577,7 +577,7 @@ group("copying an outline");
   ok("a framed copy leaves the rest out", !frameCopy.text.includes("Decision Support") && !frameCopy.html.includes("Decision Support"), frameCopy.text);
 }
 
-group("focus by right-click");
+group("right-click is the menu (focus moved into it in 0.37)");
 {
   const newMap = async () => {
     await M(() => document.getElementById("btnMaps").click());
@@ -587,7 +587,6 @@ group("focus by right-click");
   await newMap();
   await M(() => __mf.paste("Tree\n- Trunk\n  - Leaf one\n  - Leaf two"));
   await page.waitForTimeout(250);
-
   const rightClick = async (text) => {
     const box = await M((t) => {
       const el = [...document.querySelectorAll(".node")].find((n) => n.textContent === t);
@@ -597,25 +596,26 @@ group("focus by right-click");
     await page.mouse.click(box.x, box.y, { button: "right" });
     await page.waitForTimeout(250);
   };
-
+  const menuHas = (t) => M((t) => !!document.getElementById("storyMenu") && [...document.querySelectorAll("#storyMenu .mi")].some((b) => b.firstChild.textContent === t), t);
   await rightClick("Trunk");
-  ok("right-click on a node focuses into it", (await M(() => __mf.focus)) !== null);
-  ok("it focuses the node that was clicked", (await M(() => __mf.state.nodes[__mf.focus].text)) === "Trunk");
-
-  // Empty canvas steps back out, the same as Escape.
+  ok("right-click on a node no longer focuses by itself", (await M(() => __mf.focus)) === null);
+  ok("focus is a row in the menu", await menuHas("Focus on this branch"));
+  await M(() => [...document.querySelectorAll("#storyMenu .mi")].find((b) => b.firstChild.textContent === "Focus on this branch").click());
+  await page.waitForTimeout(250);
+  ok("and picking it focuses the node that was clicked", (await M(() => __mf.focus)) !== null && (await M(() => __mf.state.nodes[__mf.focus].text)) === "Trunk");
   await page.mouse.click(40, 620, { button: "right" });
   await page.waitForTimeout(250);
-  ok("right-click on empty canvas steps back out", (await M(() => __mf.focus)) === null);
-
-  // A node with nothing under it has nothing to focus into.
+  ok("the canvas menu offers the way out of the focus", await menuHas("Out of the focus"));
+  await M(() => [...document.querySelectorAll("#storyMenu .mi")].find((b) => b.firstChild.textContent === "Out of the focus").click());
+  await page.waitForTimeout(250);
+  ok("and it steps back out", (await M(() => __mf.focus)) === null);
   await rightClick("Leaf one");
-  ok("a childless node does not focus", (await M(() => __mf.focus)) === null);
-
-  // The browser's own menu stays available inside the text you are typing.
+  ok("a childless node's menu has no fold row", !(await menuHas("Fold")) && await menuHas("Focus on this branch"));
+  await key("Escape");
   await M(() => { __mf.select(Object.values(__mf.state.nodes).find((n) => n.text === "Trunk").id); });
   await key("Space");
   await rightClick("Trunk");
-  ok("right-click while typing does not focus", (await M(() => __mf.focus)) === null);
+  ok("right-click while typing leaves the browser's own menu", (await M(() => !document.getElementById("storyMenu"))));
   await key("Escape");
 }
 
@@ -2623,9 +2623,9 @@ group("map links: break out, link, open, back up, bring back in");
   // rename the linked map; the link follows
   await M(() => { __mf.state.nodes[__mf.state.rootId].text = "Collections"; __mf.set("gap", __mf.cfg.gap); });
   await page.waitForTimeout(500);
-  await press("Alt+KeyU");
-  ok("Option+U comes back at the same zoom and view", (await M(() => JSON.stringify(__mf.cam()))) === camBefore, [await M(() => JSON.stringify(__mf.cam())), camBefore]);
-  ok("Option+U goes back up", (await name()) === "Q4 plan", [await name(), await M(() => document.getElementById("saveState").textContent)]);
+  await press("Alt+Enter");
+  ok("Option+Enter on a plain node comes back at the same zoom and view", (await M(() => JSON.stringify(__mf.cam()))) === camBefore, [await M(() => JSON.stringify(__mf.cam())), camBefore]);
+  ok("Option+Enter goes back up", (await name()) === "Q4 plan", [await name(), await M(() => document.getElementById("saveState").textContent)]);
   ok("to the link you left from", (await M(() => __mf.selected)) === cid);
   ok("the trail is gone at the top", await M(() => document.getElementById("trail").hidden));
   ok("the link shows the map's new name", (await M((x) => __mf.state.nodes[x].text, cid)) === "Collections" && await M((x) => /^Collections/.test(document.querySelector('.node[data-id="' + x + '"]').textContent), cid));
@@ -2690,7 +2690,8 @@ group("map links: break out, link, open, back up, bring back in");
   ok("Option+Enter restores it", !!(await lib()).docs[link] && (await name()) === "Q4 plan");
   await press("Alt+Enter");
   ok("and then opens it", (await name()) === "Collections");
-  await press("Alt+KeyU");
+  await press("Alt+Enter");
+  ok("Option+Enter on the root of a linked map goes back up", (await name()) === "Q4 plan");
   // the other looks
   for (const st of ["dashed", "arrow", "stack"]) {
     await M((v) => __mf.set("linkStyle", v), st);
@@ -2951,6 +2952,106 @@ group("0.36 sweep: how the features treat each other");
   // ---- ungroup says what it needs
   await press("Meta+Shift+g");
   ok("Cmd+Shift+G with no frame says so", /frame/.test(await status()), await status());
+  await M(() => __mf.spread("sides"));
+}
+
+group("0.37: the right-click menu, Option+Enter both ways");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(250); };
+  const status = () => M(() => document.getElementById("saveState").textContent);
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  const menu = () => M(() => { const m = document.getElementById("storyMenu"); return m && m.dataset.kind === "ctx" ? [...m.querySelectorAll(".mi")].map((b) => b.firstChild.textContent) : null; });
+  const rightClick = async (x) => {
+    const r = await M((x) => { const e = document.querySelector('.node[data-id="' + x + '"]').getBoundingClientRect(); return { x: e.left + e.width / 2, y: e.top + e.height / 2 }; }, x);
+    await page.mouse.click(r.x, r.y, { button: "right" }); await page.waitForTimeout(200);
+  };
+  const clickItem = async (t) => { await M((t) => [...document.querySelectorAll("#storyMenu .mi")].find((b) => b.firstChild.textContent === t).click(), t); await page.waitForTimeout(250); };
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, "Plan\n- Ops\n  - Hiring\n  - Budget\n- Sales\n- Notes\n  - a\n  - b");
+  await page.waitForTimeout(300);
+  const ops = await id("Ops"), sales = await id("Sales"), hiring = await id("Hiring");
+  await M((x) => __mf.select(x), ops);
+  await rightClick(ops);
+  const items = await menu();
+  ok("right-click on a node opens the menu", !!items, items);
+  ok("and selects the node", (await M(() => __mf.selected)) === ops);
+  ok("it offers focus, fold, break out, copy and delete", ["Focus on this branch", "Fold", "Break out into a map", "Copy as an outline", "Delete the branch"].every((t) => items.includes(t)), items);
+  ok("each row shows its key", await M(() => [...document.querySelectorAll("#storyMenu .mi .mk")].length > 8));
+  ok("the tie rows are absent when the node is the selection", !items.some((t) => /^Tie to/.test(t)));
+  await press("Escape");
+  ok("Escape closes it", (await menu()) === null);
+  await press("ArrowRight");
+  ok("and typing after works: the arrow moved", (await M(() => __mf.selected)) === hiring);
+  // tie from the menu
+  await M((x) => __mf.select(x), sales);
+  await rightClick(ops);
+  ok("with another node selected, the menu offers a tie to it", (await menu()).some((t) => t === "Tie to “Sales”"), await menu());
+  await clickItem("Tie to “Sales”");
+  ok("the tie is made", (await M(() => __mf.links)).length === 1 && /tied to/.test(await status()), await status());
+  await M((x) => __mf.select(x), sales);
+  await rightClick(ops);
+  ok("and the same row now unties", (await menu()).some((t) => t === "Untie from “Sales”"), await menu());
+  await press("Escape");
+  // fold from the menu
+  await rightClick(ops);
+  await clickItem("Fold");
+  ok("Fold from the menu folds", await M((x) => __mf.state.nodes[x].collapsed, ops));
+  await rightClick(ops);
+  ok("and reads Unfold now", (await menu()).includes("Unfold"));
+  await clickItem("Unfold");
+  // a chord with the menu open closes it and still acts
+  await rightClick(ops);
+  await press("Meta+e");
+  ok("a chord pressed with the menu open closes it and still acts", (await menu()) === null && await M((x) => __mf.state.nodes[x].collapsed, ops));
+  await press("Meta+e");
+  // link node menu
+  await rightClick(ops);
+  await clickItem("Break out into a map");
+  ok("break out from the menu", !!(await M((x) => __mf.state.nodes[x].link, ops)));
+  await rightClick(ops);
+  const li = await menu();
+  ok("a link node's menu opens the map or brings it back, and cannot be retyped", li.includes("Open the map") && li.includes("Bring the map back in") && !li.includes("Retype"), li);
+  await clickItem("Open the map");
+  ok("Open the map opens it", (await M(() => __mf.state.nodes[__mf.state.rootId].text)) === "Ops");
+  // Option+Enter on a plain node goes back up; double-click on canvas too
+  await M((x) => __mf.select(x), await id("Hiring"));
+  await press("Alt+Enter");
+  ok("Option+Enter on a plain node in a linked map goes back up", (await M(() => __mf.state.nodes[__mf.state.rootId].text)) === "Plan" && (await M(() => __mf.selected)) === ops);
+  await press("Alt+Enter");
+  ok("Option+Enter on the link goes down again", (await M(() => __mf.state.nodes[__mf.state.rootId].text)) === "Ops");
+  await page.mouse.dblclick(40, 500); await page.waitForTimeout(300);
+  ok("double-click on empty canvas goes back up", (await M(() => __mf.state.nodes[__mf.state.rootId].text)) === "Plan", await M(() => __mf.state.nodes[__mf.state.rootId].text));
+  await press("Alt+KeyU");
+  ok("Option+U is no longer bound", (await M(() => __mf.state.nodes[__mf.state.rootId].text)) === "Plan" && !/back/.test(await status()));
+  await M((x) => __mf.select(x), sales);
+  await press("Alt+Enter");
+  ok("Option+Enter with no link and no trail says so", /nothing to go back up to/.test(await status()), await status());
+  // canvas menu
+  await page.mouse.click(40, 500, { button: "right" }); await page.waitForTimeout(200);
+  const cm = await menu();
+  ok("right-click on the canvas offers views and maps", !!cm && cm.includes("Fit everything") && cm.includes("Present") && cm.includes("New map") && cm.includes("Connections"), cm);
+  await clickItem("Connections");
+  ok("Connections from the menu dims", (await M(() => __mf.lens)) === "dim");
+  await page.mouse.click(40, 500, { button: "right" }); await page.waitForTimeout(200);
+  ok("and the menu now offers the map", (await menu()).includes("Back to the map"));
+  await clickItem("Back to the map");
+  ok("back", (await M(() => __mf.lens)) === "off");
+  // selection menu
+  await M((ids) => __mf.mark(ids), [sales, await id("Notes")]);
+  await rightClick(sales);
+  const sm = await menu();
+  ok("right-click inside a selection keeps it and offers merge and the selection's actions", (await M(() => __mf.rawMarked)).length === 2 && sm.includes("Merge the selection into one") && sm.includes("Delete the selection"), sm);
+  await press("Escape");
+  await M(() => __mf.mark([]));
+  // typing node keeps the native menu (no Mappr menu)
+  await M((x) => __mf.select(x), sales);
+  await press("Space");
+  await rightClick(sales);
+  ok("right-click on the node being typed leaves the browser's own menu", (await menu()) === null);
+  await press("Escape");
+  ok("no runtime errors", errors.length === 0, errors);
   await M(() => __mf.spread("sides"));
 }
 

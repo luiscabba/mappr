@@ -3,6 +3,28 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.37.0] - 2026-09-17
+
+### Added
+- **Right-click is Mappr's own menu.** On a node it lists everything that can
+  be done to it, each row with its key beside it, so the menu teaches the
+  keys: focus, fold, tie to the node you had selected, tie the branches, open
+  or break out or link a map, retype, done, flag, duplicate, split, merge,
+  sort, carry, frame, copy as an outline or an image, delete. What does not
+  apply is not shown, and inside a selection the menu acts on the selection.
+  On empty canvas it offers the views, the camera and the maps. In a network
+  it works on the network. `Esc` closes it, and any other key closes it and
+  still does what it does. Nothing was unbound: every key is still a key.
+  Right-click used to focus into a branch; that is the first row now, and
+  `⌘/` is unchanged.
+
+### Changed
+- **`⌥⏎` crosses a link either way.** On a link it opens the map, as
+  before. On any other node it goes back up to the link you came through, at
+  the view you left. `⌥U` is gone. Double-click on empty canvas goes back
+  up too, the mouse twin of double-clicking a link to go down. The trail in
+  the top bar still jumps straight to any map on the way.
+
 ## [0.36.0] - 2026-09-17
 
 The interaction sweep. Every feature was checked against every other one:
