@@ -3,6 +3,31 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.34.0] - 2026-09-17
+
+### Added
+- **Map links.** A link is a node that stands in for a whole map: it shows
+  the map's name and size, and its name follows the map. The style panel has
+  three looks under *Map links*: a stacked card (the default), dashed, or an
+  arrow badge.
+- **Break out, `⌥B`.** A branch becomes a map of its own and a link takes its
+  place. Marks, folds, frames and the links inside the branch go with it;
+  links that crossed the cut are removed and counted. On a link, `⌥B` brings
+  the map back in as a branch, and the map goes to Recently deleted unless
+  something else still links to it. `⌘Z` undoes either, map and all.
+- **Link a node, `⌥K`.** Pick a map to link to, or make a new one named after
+  the node.
+- **Follow links.** `⌥⏎` or a double-click opens a linked map. A bar under
+  the top bar keeps the trail of maps you came through; `⌥U` or a name in it
+  goes back up to the link you left from. *Linked from* says which other maps
+  link to the one you are on. A link whose map was deleted says so, and
+  `⌥⏎` restores the map.
+
+### Changed
+- **Undo survives switching maps.** Each map keeps its own undo history for
+  the session, so going into a linked map and back, or switching away and
+  back, keeps the steps you took.
+
 ## [0.33.0] - 2026-09-17
 
 ### Added

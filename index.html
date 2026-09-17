@@ -34,6 +34,7 @@
     --danger:#c0392b;
     --tie:#c2410c; --tie-soft:#fde3d3;
     --pin:#e8590c;
+    --link:#0c8599; --link-soft:#e3fafc;
     --sel-soft:#e0dfff;
     --panel:#ffffff;
     --panel-line:#e9ecef;
@@ -61,6 +62,7 @@
     --danger:#ff8b7a;
     --tie:#ff9f6e; --tie-soft:#4a2a1c;
     --pin:#ffa94d;
+    --link:#66d9e8; --link-soft:#0b3b42;
     --sel-soft:#2a2856;
     --panel:#1e1e1e;
     --panel-line:#343434;
@@ -130,6 +132,22 @@
   /* already covered in a presentation: still there, stepped back */
   .node.past{opacity:.38;transition:opacity .35s}
   .node.carried{opacity:.4}
+  .node.link{flex-direction:column;align-items:center;justify-content:center}
+  .node.link .lmeta{display:block;font:10.5px var(--font-ui);color:var(--link);margin-top:2px;white-space:nowrap;font-style:normal;text-decoration:none}
+  .node.link.missing .lmeta{color:var(--danger)}
+  .node.link.la{padding-right:40px}
+  #mapbar{top:62px;left:14px;display:flex;align-items:center;gap:4px;padding:4px 6px;max-width:calc(100vw - 28px);overflow:hidden}
+  #mapbar[hidden]{display:none}
+  body.presenting #mapbar{display:none}
+  #trail{display:inline-flex;align-items:center;gap:1px;min-width:0;overflow:hidden}
+  #trail[hidden]{display:none}
+  #trail button{font:13px var(--font-sketch);border:0;background:none;color:var(--muted);cursor:pointer;padding:3px 5px;border-radius:6px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #trail button:hover{background:var(--panel-hover);color:var(--ink)}
+  #trail b{font:13px var(--font-sketch);font-weight:400;padding:3px 5px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #trail i{font-style:normal;color:var(--muted);font-size:10px}
+  #backlinks{font:11px var(--font-ui);color:var(--link);border:0;background:none;cursor:pointer;padding:4px 6px;border-radius:6px;white-space:nowrap;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+  #backlinks[hidden]{display:none}
+  #backlinks:hover{background:var(--panel-hover)}
   /* not reached yet: invisible but still measured, so the layout is the real one */
   .node.preshide{visibility:hidden}
   .node.skipped{opacity:.3;text-decoration:line-through;text-decoration-thickness:1px}
@@ -529,7 +547,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v0.33.0">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
+  <span class="brand" id="brand" title="Mappr v0.34.0">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -546,6 +564,8 @@
   <span id="selChip" hidden><b id="selCount">0</b> selected<button class="tb" data-sel="copy" title="Copy (⌘C)">Copy</button><button class="tb" data-sel="dup" title="Duplicate (⌘D)">Duplicate</button><button class="tb" data-sel="merge" title="Merge into one (⌥J)">Merge</button><button class="tb" data-sel="del" title="Delete (⌫)">Delete</button><button class="tb" data-sel="clear" title="Clear (Esc)">×</button></span>
   <span id="saveState">saved</span>
 </div>
+
+<div id="mapbar" class="bar" hidden><span id="trail" hidden></span><button id="backlinks" hidden></button></div>
 
 <div id="switcher">
   <input id="swIn" type="text" placeholder="Go to a map…" autocomplete="off" spellcheck="false">
@@ -610,7 +630,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.33.0</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.34.0</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <div id="helpBody">
@@ -695,6 +715,9 @@
       <tr><td>Export ▾</td><td>PNG and SVG of the frame or the whole map, and the full JSON with every setting.</td></tr>
       <tr><td>Maps ▾</td><td>Every map you have made, newest first. A map is named after its centre node, so renaming the centre renames the map. Copy and delete live in the same row.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>N</kbd></td><td>A new map.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>B</kbd></td><td><b>Break out</b> a branch into a map of its own. The branch moves, with its marks, folds, frames and the links inside it, and a <b>link</b> takes its place. Links that crossed the cut are removed and counted. On a link, <kbd>⌥</kbd><kbd>B</kbd> brings the map back in as a branch; the map goes to Recently deleted unless something else links to it. <kbd>⌘</kbd><kbd>Z</kbd> undoes either, map and all.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>K</kbd></td><td><b>Link</b> the selected node to a map: pick one, or make a new one named after the node. A link shows the map's name and size, and its look is in the style panel under <em>Map links</em>. Its name follows the map, so open the map to rename it.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>⏎</kbd> / double-click</td><td>Open a linked map. The top bar keeps a trail of the maps you came through; <kbd>⌥</kbd><kbd>U</kbd> or a name in the trail goes back up, to the link you left from. <em>Linked from</em> in the top bar says which other maps link here. A link whose map was deleted says so, and <kbd>⌥</kbd><kbd>⏎</kbd> restores the map.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>M</kbd></td><td>Switch map: pinned maps first, then recent ones. Type to filter, arrows and <kbd>⏎</kbd> to open. It starts on the map you were on before, so <kbd>⌥</kbd><kbd>M</kbd> <kbd>⏎</kbd> swaps back and forth.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>P</kbd></td><td>Pin or unpin the open map (in the switcher, the highlighted one). Pinned maps sit at the top of the switcher and of Maps ▾, and the pin shows next to the Mappr name.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>⇧</kbd><kbd>1</kbd>…<kbd>9</kbd></td><td>Open a pinned map, in pin order.</td></tr>
@@ -720,9 +743,9 @@
      panel cannot drift from the record of what actually shipped. -->
 <div id="notes">
   <div id="notesCard">
-    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.33.0</span></h2>
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.34.0</span></h2>
     <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
-    <div id="notesBody"><h3 class="rel">0.33.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Sort, <code>⌥O</code>.</b> A small menu next to the selection, where a number picks: A to Z, Z to A, reverse, biggest branch first, done last, or back to how it was. Selected siblings trade places only among the spots they already hold; with one node selected, its children are sorted. Names sort the way people read them, so &quot;item 9&quot; comes before &quot;item 10&quot;, and on the centre each side is sorted on its own so nothing changes sides.</li><li><b>Carry, <code>⌥X</code>.</b> Picks up the selection, or the selected node. It fades where it is while the arrows, or a click, move a ring to where it should go; <code>⏎</code> drops it inside, <code>⇧⏎</code> right after, <code>Esc</code> puts it back. Nothing moves until the drop, the dropped nodes stay selected, and one undo reverses it.</li></ul><h3 class="rel">0.32.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Merge nodes, <code>⌥J</code>.</b> The selected nodes become one: the first in map order keeps its place, its text becomes all of theirs, one per line, and it takes every child they had. Links and frames follow it. The selection bar has a Merge button too.</li><li><b>Split a node, <code>⌥S</code>.</b> A node with several lines becomes one node per line, as siblings right after it; <code>⌥⇧S</code> makes the extra lines its children instead. It keeps the first line and its own children, and bullets or numbers a pasted line carried are dropped. Works on a whole selection.</li></ul><h3 class="rel">0.31.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Group a selection under a new parent.</b> With nodes selected, hold <code>Tab</code> and press the arrow back toward the centre: a new parent slides in where the first of them was, and every selected branch becomes its child, in map order, even ones from elsewhere in the map. Type to name it; one undo takes the whole group back out. A frame that wrapped one of them wraps the new parent instead.</li></ul><h3 class="rel">0.30.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Pinned maps.</b> <code>⌥P</code> pins the open map, and a pin (Mappr&#x27;s own, drawn to match) shows next to the name. Pinned maps sit at the top of the Maps menu, each with its number: <code>⌥⇧1</code> to <code>⌥⇧9</code> open them in pin order.</li><li><b>The map switcher, <code>⌥M</code>.</b> Pinned maps first, then recent ones; type to filter, arrows and <code>⏎</code> to open. It starts on the map you were on before, so <code>⌥M</code> <code>⏎</code> swaps back and forth. <code>⌥P</code> and <code>⌥T</code> work on the highlighted map. The Maps menu opens it too.</li><li><b>Colour tags.</b> <code>⌥T</code> gives the open map a colour and steps through six; past the last it clears. The dot beside each map in the lists does the same on a click, and the colour shows next to the name.</li><li><b>Back to the last map.</b> <code>⌥</code> plus the backtick key flips between the map you are on and the one before.</li></ul><h4>Fixed</h4><ul><li><b>Shapes going missing after a move in a big map.</b> Moving a node between branches could leave boxes undrawn or drawn in the wrong place until the next full repaint. A shortcut in the repaint reused a shape that was still on screen elsewhere; it now only takes that shortcut when it is safe.</li></ul><h3 class="rel">0.29.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b><code>⌥N</code> makes a new map</b>, from anywhere but the middle of typing.</li><li><b>A key log for troubleshooting.</b> Open Mappr with <code>#keys</code> at the end of the address and a small box lists every key the page receives and whether Mappr acted on it, so a browser keeping a shortcut for itself is easy to spot.</li></ul><h3 class="rel">0.28.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b><code>⌥</code>+arrow carries on past the edge.</b> Moving a node past the last of its siblings takes it into the next branch along, the way a plain arrow walks there: going down it becomes that branch&#x27;s first child, going up the last child of the branch before. A folded branch opens to take it. It stays on its side of the map and does not wrap, and a top-level branch stays put. A selection hops over together, in order, and one undo puts it all back.</li></ul></div>
+    <div id="notesBody"><h3 class="rel">0.34.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Map links.</b> A link is a node that stands in for a whole map: it shows the map&#x27;s name and size, and its name follows the map. The style panel has three looks under <em>Map links</em>: a stacked card (the default), dashed, or an arrow badge.</li><li><b>Break out, <code>⌥B</code>.</b> A branch becomes a map of its own and a link takes its place. Marks, folds, frames and the links inside the branch go with it; links that crossed the cut are removed and counted. On a link, <code>⌥B</code> brings the map back in as a branch, and the map goes to Recently deleted unless something else still links to it. <code>⌘Z</code> undoes either, map and all.</li><li><b>Link a node, <code>⌥K</code>.</b> Pick a map to link to, or make a new one named after the node.</li><li><b>Follow links.</b> <code>⌥⏎</code> or a double-click opens a linked map. A bar under the top bar keeps the trail of maps you came through; <code>⌥U</code> or a name in it goes back up to the link you left from. <em>Linked from</em> says which other maps link to the one you are on. A link whose map was deleted says so, and <code>⌥⏎</code> restores the map.</li></ul><h4>Changed</h4><ul><li><b>Undo survives switching maps.</b> Each map keeps its own undo history for the session, so going into a linked map and back, or switching away and back, keeps the steps you took.</li></ul><h3 class="rel">0.33.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Sort, <code>⌥O</code>.</b> A small menu next to the selection, where a number picks: A to Z, Z to A, reverse, biggest branch first, done last, or back to how it was. Selected siblings trade places only among the spots they already hold; with one node selected, its children are sorted. Names sort the way people read them, so &quot;item 9&quot; comes before &quot;item 10&quot;, and on the centre each side is sorted on its own so nothing changes sides.</li><li><b>Carry, <code>⌥X</code>.</b> Picks up the selection, or the selected node. It fades where it is while the arrows, or a click, move a ring to where it should go; <code>⏎</code> drops it inside, <code>⇧⏎</code> right after, <code>Esc</code> puts it back. Nothing moves until the drop, the dropped nodes stay selected, and one undo reverses it.</li></ul><h3 class="rel">0.32.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Merge nodes, <code>⌥J</code>.</b> The selected nodes become one: the first in map order keeps its place, its text becomes all of theirs, one per line, and it takes every child they had. Links and frames follow it. The selection bar has a Merge button too.</li><li><b>Split a node, <code>⌥S</code>.</b> A node with several lines becomes one node per line, as siblings right after it; <code>⌥⇧S</code> makes the extra lines its children instead. It keeps the first line and its own children, and bullets or numbers a pasted line carried are dropped. Works on a whole selection.</li></ul><h3 class="rel">0.31.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Group a selection under a new parent.</b> With nodes selected, hold <code>Tab</code> and press the arrow back toward the centre: a new parent slides in where the first of them was, and every selected branch becomes its child, in map order, even ones from elsewhere in the map. Type to name it; one undo takes the whole group back out. A frame that wrapped one of them wraps the new parent instead.</li></ul><h3 class="rel">0.30.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Pinned maps.</b> <code>⌥P</code> pins the open map, and a pin (Mappr&#x27;s own, drawn to match) shows next to the name. Pinned maps sit at the top of the Maps menu, each with its number: <code>⌥⇧1</code> to <code>⌥⇧9</code> open them in pin order.</li><li><b>The map switcher, <code>⌥M</code>.</b> Pinned maps first, then recent ones; type to filter, arrows and <code>⏎</code> to open. It starts on the map you were on before, so <code>⌥M</code> <code>⏎</code> swaps back and forth. <code>⌥P</code> and <code>⌥T</code> work on the highlighted map. The Maps menu opens it too.</li><li><b>Colour tags.</b> <code>⌥T</code> gives the open map a colour and steps through six; past the last it clears. The dot beside each map in the lists does the same on a click, and the colour shows next to the name.</li><li><b>Back to the last map.</b> <code>⌥</code> plus the backtick key flips between the map you are on and the one before.</li></ul><h4>Fixed</h4><ul><li><b>Shapes going missing after a move in a big map.</b> Moving a node between branches could leave boxes undrawn or drawn in the wrong place until the next full repaint. A shortcut in the repaint reused a shape that was still on screen elsewhere; it now only takes that shortcut when it is safe.</li></ul><h3 class="rel">0.29.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b><code>⌥N</code> makes a new map</b>, from anywhere but the middle of typing.</li><li><b>A key log for troubleshooting.</b> Open Mappr with <code>#keys</code> at the end of the address and a small box lists every key the page receives and whether Mappr acted on it, so a browser keeping a shortcut for itself is easy to spot.</li></ul></div>
     <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
 </div>
@@ -736,13 +759,13 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="0.33.0";
+var VERSION="0.34.0";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid",
   width:2, dash:"solid", slop:1, edges:"round",
   arrow:"curve", head:"arrow", font:"sketch", size:"m",
   align:"center", valign:"center", nodew:"m", minSize:false,
-  gap:"m", paper:"graph", theme:"light", typeOnCreate:false, follow:true,
+  gap:"m", paper:"graph", theme:"light", typeOnCreate:false, follow:true, linkStyle:"stack",
   spread:"manual"
 };
 var CFG = Object.assign({}, DEFAULTS);
@@ -1698,6 +1721,23 @@ function undoPush(j){
 }
 function undoPop(){ var j=undoStack.pop(); if(j!=null) undoBytes-=j.length; return j; }
 function clearUndo(){ undoStack.length=0; redoStack.length=0; undoBytes=0; }
+/* Each map keeps its own undo history for the session, so going into a linked
+   map and back (or switching away and back) does not throw away the steps you
+   took there. Only the few most recent maps are kept, to bound memory. */
+var undoByDoc={}, UNDO_KEEP_MAPS=4;
+function stashUndo(doc){
+  if(!doc) return;
+  undoByDoc[doc]={u:undoStack.slice(), r:redoStack.slice(), b:undoBytes, t:Date.now()};
+  var ks=Object.keys(undoByDoc).sort(function(a,b){ return undoByDoc[b].t-undoByDoc[a].t; });
+  ks.slice(UNDO_KEEP_MAPS).forEach(function(k){ delete undoByDoc[k]; });
+}
+function loadUndo(doc){
+  var h=undoByDoc[doc];
+  clearUndo();
+  if(!h) return;
+  h.u.forEach(function(x){ undoStack.push(x); }); h.r.forEach(function(x){ redoStack.push(x); }); undoBytes=h.b;
+  delete undoByDoc[doc];
+}
 function snap(){
   undoPush(shot());
   redoStack.length=0;
@@ -1710,8 +1750,8 @@ function restore(j){
   if(!N(selected)) selected=VR();
   marked={}; selFrame=null;
 }
-function undo(){ if(!undoStack.length) return; redoStack.push(shot()); if(redoStack.length>UNDO_STEPS) redoStack.shift(); restore(undoPop()); hardRender(); saveSoon(); }
-function redo(){ if(!redoStack.length) return; undoPush(shot()); restore(redoStack.pop()); hardRender(); saveSoon(); }
+function undo(){ if(!undoStack.length) return; redoStack.push(shot()); if(redoStack.length>UNDO_STEPS) redoStack.shift(); restore(undoPop()); healLinks(); hardRender(); save(); }
+function redo(){ if(!redoStack.length) return; undoPush(shot()); restore(redoStack.pop()); healLinks(); hardRender(); save(); }
 
 function addNode(parentId,dir,index){
   var n={id:nid(),parent:parentId,children:[],text:"",dir:dir};
@@ -2161,8 +2201,15 @@ function render(keepView,lead){
     if(!el){ el=document.createElement("div"); el.dataset.id=id; elNodes.appendChild(el); els[id]=el; }
     var n=N(id);
     if(id!==editing){
-      var t=n.text||(isVR(n)?"Central idea":"…");
-      if(el.textContent!==t) el.textContent=t;
+      if(n.link){
+        var li=linkInfo(n.link);
+        if(li.name && n.text!==li.name) n.text=li.name;
+        var lh=esc(li.name||n.text||"a map")+'<span class="lmeta">'+esc(li.meta)+'</span>';
+        if(el.innerHTML!==lh) el.innerHTML=lh;
+      } else {
+        var t=n.text||(isVR(n)?"Central idea":"…");
+        if(el.textContent!==t || el.children.length) el.textContent=t;
+      }
     }
     el.className="node"+(isVR(n)?" root":"")+(id===editing?" editing":"")+
       (n.mark==="done"?" done":"")+(n.mark==="flag"?" flag":"")+
@@ -2171,7 +2218,8 @@ function render(keepView,lead){
       (pres && !presVisible(id) ? " preshide" : "")+
       (presDim(id) ? " past" : "")+
       (presSkip(id) ? " skipped" : "")+
-      (carry && carry.set[id] ? " carried" : "");
+      (carry && carry.set[id] ? " carried" : "")+
+      (n.link ? " link"+(CFG.linkStyle==="arrow"?" la":"")+(linkInfo(n.link).missing?" missing":"") : "");
   });
   Object.keys(els).forEach(function(id){ if(!showing[id]){ els[id].remove(); delete els[id]; } });
 
@@ -2441,7 +2489,7 @@ function shapes(ids, opt){
     if(lensHideTree) return;
     N(id).children.forEach(function(cid){
       if(!pos[cid] || !inSet[cid]) return;
-      var d=dirOf(cid), col=paletteFor(N(cid)).line, key=null;
+      var d=dirOf(cid), col=N(cid).link?(dark()?"#66d9e8":"#0c8599"):paletteFor(N(cid)).line, key=null;
       if(cache){
         key=cid+"|"+SC.gen+"|"+geo(id)+"|"+geo(cid)+"|"+d+"|"+col+"|"+(lensQuiet?1:0)+"|"+(presFade(cid)?1:0);
         var hit=SC.edge[key];
@@ -2477,13 +2525,26 @@ function shapes(ids, opt){
     var n=N(id), P=paletteFor(n), key=null;
     if(cache){
       key=id+"|"+SC.gen+"|"+geo(id)+"|"+P.line+"|"+(P.fill||"")+"|"+(n.mark||"")+"|"+(isVR(n)?1:0)+
-          "|"+((lensQuiet && !lensGhosts[id] && !isVR(n))?1:0)+"|"+(presFade(id)?1:0);
+          "|"+((lensQuiet && !lensGhosts[id] && !isVR(n))?1:0)+"|"+(presFade(id)?1:0)+
+          "|"+(n.link?CFG.linkStyle+(linkInfo(n.link).missing?"m":""):"");
       var hit=SC.body[key];
       if(hit!==undefined){ nBody[key]=hit; emit(key,hit.b); if(hit.d) defs.push(hit.d); return; }
     }
     var b=box[id], p=pos[id], out=[], def="";
     var x=p.cx-b.w/2, y=p.cy-b.h/2;
     var rad=CFG.edges==="round"?(isVR(n)?14:11):1;
+    var lk=n.link ? (dark()?"#66d9e8":"#0c8599") : null;
+    if(lk && linkInfo(n.link).missing) lk=dark()?"#ff8b7a":"#c0392b";
+    if(lk){ P={line:lk, fill:P.fill}; }
+    if(lk && CFG.linkStyle==="stack"){
+      /* two cards peeking out behind: a pile of nodes */
+      [[8,.45],[4,.8]].forEach(function(o,j){
+        var rr=rngFrom(seedOf(id+"st"+j));
+        if(P.fill) out.push('<path d="'+smoothRect(x+o[0],y+o[0],b.w,b.h,rad)+'" fill="'+P.fill+'" stroke="none"/>');
+        out.push('<path d="'+(amp?roughRect(x+o[0],y+o[0],b.w,b.h,rad,rr,amp):smoothRect(x+o[0],y+o[0],b.w,b.h,rad))+
+          '" fill="none" stroke="'+lk+'" stroke-width="'+Math.max(1,sw*.8)+'" opacity="'+o[1]+'"/>');
+      });
+    }
     if(CFG.fillStyle==="solid" && P.fill)
       out.push('<path d="'+smoothRect(x,y,b.w,b.h,rad)+'" fill="'+P.fill+'" stroke="none"/>');
     else if(CFG.fillStyle==="hachure"){
@@ -2497,11 +2558,20 @@ function shapes(ids, opt){
       out.push('<path d="M'+fx+','+(fy+7)+' L'+(fx+4)+','+(fy-4)+' L'+(fx+8)+','+(fy+7)+' Z" fill="'+P.line+'" opacity=".85" stroke="none"/>');
     }
     var bsw=isVR(n)?sw*1.25:sw;
+    var bda=(lk && CFG.linkStyle==="dashed") ? ' stroke-dasharray="'+(sw*3.2)+' '+(sw*2.4)+'"' : dattr;
+    if(lk && CFG.linkStyle==="dashed")
+      out.push('<path d="'+smoothRect(x,y,b.w,b.h,rad)+'" fill="'+(dark()?"#0b3b42":"#e3fafc")+'" opacity=".85" stroke="none"/>');
     for(var k=0;k<passes;k++){
       var r=rngFrom(seedOf(id+"b"+k));
       out.push('<path d="'+(amp?roughRect(x,y,b.w,b.h,rad,r,amp):smoothRect(x,y,b.w,b.h,rad))+
-        '" fill="none" stroke="'+P.line+'" stroke-width="'+bsw+'" stroke-linecap="round"'+dattr+
+        '" fill="none" stroke="'+P.line+'" stroke-width="'+bsw+'" stroke-linecap="round"'+bda+
         ' opacity="'+(amp?(k?.5:.95):1)+'"/>');
+    }
+    if(lk && CFG.linkStyle==="arrow"){
+      var ax=x+b.w-18, ay=p.cy;
+      out.push('<circle cx="'+ax+'" cy="'+ay+'" r="9" fill="'+lk+'"/>'+
+        '<path d="M'+(ax-3.2)+','+(ay+3.2)+' L'+(ax+3.2)+','+(ay-3.2)+' M'+(ax-1.6)+','+(ay-3.2)+' L'+(ax+3.2)+','+(ay-3.2)+' L'+(ax+3.2)+','+(ay+1.6)+
+        '" fill="none" stroke="'+(dark()?"#121212":"#fefefd")+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>');
     }
     var body=out.join("");
     if(lensQuiet && !lensGhosts[id] && !isVR(n)) body='<g opacity=".17">'+body+'</g>';
@@ -2769,7 +2839,7 @@ var HINTS={
   net:[["Move","←↑→↓"],["Walk","Tab"],["Fold beyond","⌘","E"],["New linked node","⏎"],["Back","Esc"]],
   carry:[["Choose where","←↑→↓"],["Drop inside","⏎"],["Drop after","⇧","⏎"],["Put back","Esc"]],
   sort:[],
-  sel:[["Grow","⇧","←↑→↓"],["Branches","⌘","⇧","←↑→↓"],["Move","⌥","←↑→↓"],["Carry","⌥","X"],["Sort","⌥","O"],["Merge","⌥","J"],["Copy","⌘","C"],["Cut","⌘","X"],["Delete","⌫"],["Frame","⌘","G"],["Clear","Esc"]],
+  sel:[["Grow","⇧","←↑→↓"],["Branches","⌘","⇧","←↑→↓"],["Move","⌥","←↑→↓"],["Carry","⌥","X"],["Sort","⌥","O"],["Merge","⌥","J"],["Break out","⌥","B"],["Copy","⌘","C"],["Cut","⌘","X"],["Delete","⌫"],["Frame","⌘","G"],["Clear","Esc"]],
   arrange:[["Pick next","⌘","+click"],["Pick up / drop","Space"],["Unpick","⌫"],["Story","[","]"],["Present","R"]]
 };
 var hintMin=false, hintSig="";
@@ -2833,6 +2903,7 @@ function goMode(m){
 }
 function drawCrumbs(){
   drawModebar();
+  setTimeout(placeMapbar,0);
   if(pres && pres.arrange){
     elCrumbs.className="bar on lensbar";
     var cur=storyCur();
@@ -3000,6 +3071,7 @@ function flash(id){ var el=els[id]; if(!el) return; el.classList.remove("nudge")
    step that made it already covers it. */
 var editOld=null, editOldWasBlank=null;
 function beginEdit(id,selectAll){
+  if(N(id) && N(id).link){ flash(id); flashSave("a link shows its map's name \u00b7 open it (\u2325\u23ce) to rename"); return; }
   if(editing&&editing!==id) commitEdit();
   if(editing!==id) editOld={id:id,text:N(id).text||""};
   if(fresh===id) fresh=null;
@@ -4335,7 +4407,13 @@ function idxRead(){
   if(l&&l.docs) return l;
   return splitOldLib();
 }
+var idxVer=0, idxMemo=null;
+function idxCached(){
+  if(!idxMemo || idxMemo.v!==idxVer) idxMemo={v:idxVer, lib:idxRead()||{docs:{}}};
+  return idxMemo.lib;
+}
 function idxWrite(l){
+  idxVer++;
   try{ localStorage.setItem(IDX,JSON.stringify(l)); return true; }
   catch(e){ storeFail(isQuota(e)?"storage full":"not saved"); return false; }
 }
@@ -4406,6 +4484,7 @@ function trashRestore(id){
   if(!docWriteRaw(id,d)) return;                 /* storeFail already said why */
   var lib=idxRead()||{current:null,docs:{}};
   lib.docs[id]={id:id,name:docName(d.state),count:nodeCount(d.state),updated:Date.now()};
+  var lo=linksIn(d.state); if(lo.length){ lib.linksFrom=lib.linksFrom||{}; lib.linksFrom[id]=lo; }
   if(!idxWrite(lib)) return;
   try{ localStorage.removeItem(TRASHP+id); }catch(e){}
   drawMaps(); flashSave("restored "+docName(d.state));
@@ -4446,6 +4525,7 @@ function dropFromLib(lib,id){
   lib.pins=(lib.pins||[]).filter(function(x){ return x!==id; });
   if(lib.tags) delete lib.tags[id];
   if(lib.prev===id) delete lib.prev;
+  if(lib.linksFrom) delete lib.linksFrom[id];
 }
 function openPinned(n){
   var pins=libPins();
@@ -4480,6 +4560,204 @@ function drawPinMark(){
   el.title=p?"Pinned (\u2325P to unpin)":"Colour tag (\u2325T)";
 }
 
+/* ---------- map links ----------
+   A link node stands in for a whole map: node.link is that map's id. It shows
+   the map's current name and size, opens it with Option+Enter, and Option+B
+   breaks a branch out into a new map (leaving a link) or brings a linked map
+   back in as a branch. Maps opened through links leave a trail in the top bar,
+   and Option+U walks back up it. The index keeps, per map, the maps it links
+   to, so any map can say which maps link to it. */
+var linkTrail=[], madeByBreak={};
+function linkInfo(id){
+  var lib=idxCached(), d=lib.docs[id];
+  if(d) return {name:d.name||"Untitled", count:d.count||0, missing:false,
+                meta:(d.count||0)+(d.count===1?" node":" nodes")+" \u00b7 \u2325\u23ce open"};
+  var tr=null; try{ tr=localStorage.getItem(TRASHP+id); }catch(e){}
+  return {name:null, missing:true, inTrash:!!tr, meta:tr?"map deleted \u00b7 \u2325\u23ce restores it":"map not found \u00b7 \u2325K relinks"};
+}
+function linksIn(st){
+  var out={}; Object.keys(st.nodes).forEach(function(i){ var l=st.nodes[i].link; if(l) out[l]=1; });
+  return Object.keys(out);
+}
+function backlinksTo(id){
+  var lib=idxCached(), from=lib.linksFrom||{};
+  return Object.keys(from).filter(function(d){ return d!==id && lib.docs[d] && (from[d]||[]).indexOf(id)>=0; });
+}
+function openLink(id){
+  var n=N(id||selected);
+  if(!n||!n.link){ flash(selected); flashSave("not a link \u00b7 \u2325K makes one"); return false; }
+  var info=linkInfo(n.link);
+  if(info.missing){
+    if(info.inTrash){ trashRestore(n.link); render(true); flashSave("restored the linked map"); return false; }
+    flash(n.id); flashSave("that map is gone \u00b7 \u2325K links this node to another"); return false;
+  }
+  var from=curDoc;
+  linkTrail.push({doc:from, sel:n.id});
+  linkSwitch=true; switchDoc(n.link); linkSwitch=false;
+  drawTrail();
+  return true;
+}
+var linkSwitch=false;
+function linkUp(i){
+  if(!linkTrail.length){ flash(selected); flashSave("nothing to go back up to"); return; }
+  if(i==null) i=linkTrail.length-1;
+  var t=linkTrail[i];
+  linkTrail=linkTrail.slice(0,i);
+  var lib=idxRead();
+  if(!lib.docs[t.doc]){ drawTrail(); flashSave("that map is gone"); return; }
+  linkSwitch=true; switchDoc(t.doc); linkSwitch=false;
+  if(N(t.sel)){ selected=t.sel; render(); }
+  drawTrail();
+}
+function drawTrail(){
+  var el=document.getElementById("trail"), bl=document.getElementById("backlinks");
+  if(!el) return;
+  var lib=idxCached();
+  linkTrail=linkTrail.filter(function(t){ return lib.docs[t.doc]; });
+  if(linkTrail.length){
+    el.hidden=false;
+    el.innerHTML=linkTrail.map(function(t,i){ return '<button data-up="'+i+'" title="Back up (\u2325U)">'+esc((lib.docs[t.doc]||{}).name||"Untitled")+'</button><i>\u25b8</i>'; }).join("")+
+      '<b>'+esc(docName(state))+'</b>';
+  } else { el.hidden=true; el.innerHTML=""; }
+  var from=curDoc?backlinksTo(curDoc):[];
+  var up=linkTrail.length?linkTrail[linkTrail.length-1].doc:null;
+  from=from.filter(function(d){ return d!==up; });
+  if(from.length){
+    bl.hidden=false;
+    bl.textContent="\u21a9 linked from "+(lib.docs[from[0]].name||"Untitled")+(from.length>1?" +"+(from.length-1):"");
+    bl.title="Linked from: "+from.map(function(d){ return lib.docs[d].name||"Untitled"; }).join(", ");
+    bl.dataset.to=from[0];
+  } else bl.hidden=true;
+  placeMapbar();
+}
+function placeMapbar(){
+  var mb=document.getElementById("mapbar"), tr=document.getElementById("trail"), bl=document.getElementById("backlinks");
+  if(!mb) return;
+  mb.hidden = tr.hidden && bl.hidden;
+  var cr=document.getElementById("crumbs");
+  mb.style.top = (cr && cr.classList.contains("on")) ? (cr.getBoundingClientRect().bottom+8)+"px" : "62px";
+}
+function linkNodeTo(nodeId,target,newName){
+  var n=N(nodeId); if(!n) return;
+  if(target==="__new"){
+    save();
+    var st=freshState(); st.nodes[st.rootId].text=newName||"New map";
+    target=docId();
+    var now=Date.now();
+    if(!docWriteRaw(target,{id:target,name:st.nodes[st.rootId].text,count:1,updated:now,uid:1,state:st,selected:st.rootId,focusId:null,view:null,cfg:CFG})) return;
+    var lib=idxRead(); lib.docs[target]={id:target,name:st.nodes[st.rootId].text,count:1,updated:now}; idxWrite(lib);
+    madeByBreak[target]={from:curDoc, at:now};
+  }
+  if(target===curDoc){ flash(nodeId); flashSave("a map cannot link to itself"); return; }
+  snap();
+  n.link=target;
+  n.text=linkInfo(target).name||n.text;
+  selected=nodeId; render(); save();
+  drawMaps();
+  flashSave("linked to \u201c"+trunc(n.text)+"\u201d \u00b7 \u2325\u23ce opens it");
+}
+/* Option+B on a branch: the branch becomes a map of its own. */
+function breakOut(){
+  var n=N(selected);
+  if(pres||lensOne){ flash(selected); flashSave("break out works on the map view"); return; }
+  if(!n||isVR(n)||isRoot(n)){ flash(selected); flashSave("pick a branch to break out"); return; }
+  if(n.link){ bringIn(); return; }
+  if(!n.children.length){ flash(selected); flashSave("nothing under this node \u00b7 \u2325K links it to a map"); return; }
+  if(editing) commitEdit();
+  save();
+  var ids=subtree(n.id), inside={}; ids.forEach(function(i){ inside[i]=1; });
+  /* the new map */
+  var nodes={};
+  ids.forEach(function(i){ nodes[i]=JSON.parse(JSON.stringify(N(i))); });
+  nodes[n.id].parent=null; delete nodes[n.id].collapsed;
+  var keepLinks=[], cut=0;
+  (state.links||[]).forEach(function(l){
+    var a=inside[l.a]&&l.a!==n.id, b=inside[l.b]&&l.b!==n.id;
+    if(inside[l.a]&&inside[l.b]) keepLinks.push({a:l.a,b:l.b});
+    else if(a||b) cut++;
+  });
+  var frames=(state.frames||[]).filter(function(f){ return f.roots.every(function(r){ return inside[r] && r!==n.id; }); });
+  var st={rootId:n.id, nodes:nodes, frames:JSON.parse(JSON.stringify(frames)), links:keepLinks};
+  var target=docId(), now=Date.now(), count=ids.length;
+  if(!docWriteRaw(target,{id:target,name:(n.text||"Untitled").split("\n")[0],count:count,updated:now,uid:uid,state:st,selected:n.id,focusId:null,view:null,cfg:CFG})){ return; }
+  var lib=idxRead(); lib.docs[target]={id:target,name:(n.text||"Untitled").split("\n")[0],count:count,updated:now};
+  idxWrite(lib);
+  madeByBreak[target]={from:curDoc, at:now};
+  /* this map: the branch goes, a link takes its place */
+  snap();
+  ids.forEach(function(i){ if(i!==n.id) delete state.nodes[i]; });
+  n.children=[]; n.collapsed=false; n.link=target;
+  state.links=(state.links||[]).filter(function(l){
+    var ia=inside[l.a]&&l.a!==n.id, ib=inside[l.b]&&l.b!==n.id; return !ia && !ib;
+  });
+  state.frames=(state.frames||[]).filter(function(f){
+    f.roots=f.roots.filter(function(r){ return !inside[r] || r===n.id; });
+    return f.roots.length;
+  });
+  clearMarks(); selected=n.id; render(); save(); drawMaps();
+  flashSave("\u201c"+trunc(n.text)+"\u201d is its own map \u00b7 "+(count-1)+" nodes moved"+(cut?" \u00b7 "+cut+" link"+(cut>1?"s":"")+" across the cut removed":"")+" \u00b7 \u2318Z undoes");
+}
+/* Option+B on a link: the linked map comes back in as this branch. */
+function bringIn(){
+  var n=N(selected); if(!n||!n.link) return;
+  var mid=n.link, d=docRead(mid);
+  if(!d||!d.state){ flash(selected); flashSave("that map is gone"); return; }
+  save();
+  var src=d.state, r=src.nodes[src.rootId], map={};
+  (function w(id){ if(id!==src.rootId) map[id]=nid(); src.nodes[id].children.forEach(w); })(src.rootId);
+  map[src.rootId]=n.id;
+  snap();
+  var dir=dirOf(n.id);
+  Object.keys(map).forEach(function(old){
+    if(old===src.rootId) return;
+    var o=src.nodes[old], c=JSON.parse(JSON.stringify(o));
+    c.id=map[old]; c.parent=map[o.parent]; c.children=o.children.map(function(x){ return map[x]; }); c.dir=dir;
+    state.nodes[c.id]=c;
+  });
+  n.children=r.children.map(function(x){ return map[x]; });
+  n.text=r.text; delete n.link;
+  if(r.mark && !n.mark) n.mark=r.mark;
+  state.links=state.links||[];
+  (src.links||[]).forEach(function(l){ if(map[l.a]&&map[l.b]) state.links.push({a:map[l.a],b:map[l.b]}); });
+  (src.frames||[]).forEach(function(f){
+    var roots=f.roots.map(function(x){ return map[x]; }).filter(Boolean);
+    if(roots.length) state.frames.push({id:"f"+Date.now().toString(36)+Math.random().toString(36).slice(2,5), title:f.title, roots:roots});
+  });
+  setDirDeep(n.id,dir);
+  /* the separate map goes to Recently deleted unless something else still links to it */
+  var stillHere=linksIn(state).indexOf(mid)>=0;
+  var others=backlinksTo(mid).filter(function(x){ return x!==curDoc; });
+  var kept=stillHere||others.length;
+  if(!kept){
+    var lib=idxRead(); var doomed=docRead(mid);
+    delete lib.docs[mid]; dropFromLib(lib,mid); if(lib.linksFrom) delete lib.linksFrom[mid]; idxWrite(lib);
+    trashPut(mid,doomed); docDrop(mid);
+    madeByBreak[mid]={from:curDoc, back:true};
+  }
+  render(); save(); drawMaps();
+  flashSave("brought \u201c"+trunc(n.text)+"\u201d back in"+(kept?" \u00b7 the map stays, other links use it":" \u00b7 its map is in Recently deleted"));
+}
+/* After undo or redo: a link whose map was set aside comes back with it, and a
+   map this session broke out that nothing links to any more is set aside. */
+function healLinks(){
+  if(!state) return;
+  var want=linksIn(state), lib=idxRead(), changed=false;
+  want.forEach(function(id){
+    if(lib.docs[id]) return;
+    var raw=null; try{ raw=localStorage.getItem(TRASHP+id); }catch(e){}
+    if(raw){ trashRestore(id); lib=idxRead(); changed=true; }
+  });
+  Object.keys(madeByBreak).forEach(function(id){
+    var m=madeByBreak[id];
+    if(m.from!==curDoc || want.indexOf(id)>=0 || !lib.docs[id]) return;
+    if(backlinksTo(id).filter(function(x){ return x!==curDoc; }).length) return;
+    var doomed=docRead(id);
+    delete lib.docs[id]; dropFromLib(lib,id); if(lib.linksFrom) delete lib.linksFrom[id]; idxWrite(lib);
+    trashPut(id,doomed); docDrop(id); changed=true;
+  });
+  if(changed) drawMaps();
+}
+
 /* ---------- the map switcher (Option+M) ---------- */
 var elSw=document.getElementById("switcher"), elSwIn=document.getElementById("swIn"), elSwList=document.getElementById("swList");
 var swRows=[], swAt=0;
@@ -4500,7 +4778,11 @@ function swList(){
 function drawSwitcher(){
   if(!swOpen()) return;
   var L=swList(), lib=L.lib; if(!lib) return;
-  swRows=L.pins.concat(L.rest);
+  if(swPick){
+    L.pins=L.pins.filter(function(i){ return i!==curDoc; });
+    L.rest=L.rest.filter(function(i){ return i!==curDoc; });
+  }
+  swRows=(swPick?["__new"]:[]).concat(L.pins,L.rest);
   if(swAt>=swRows.length) swAt=Math.max(0,swRows.length-1);
   var k=0;
   function row(id){
@@ -4513,11 +4795,28 @@ function drawSwitcher(){
       '<span class="mslot">'+(slot&&slot<=9?"\u2325\u21e7"+slot:"")+'</span></div>';
   }
   var h="";
+  if(swPick){
+    var nm=newMapName();
+    h+='<div class="swsec">Link \u201c'+esc(trunc(N(swPick).text||"\u2026"))+'\u201d to</div>'+
+      '<div class="swr'+(k++===swAt?" on":"")+'" data-sw="__new"><span class="pin"></span><span class="mn">+ New map \u201c'+esc(nm)+'\u201d</span></div>';
+  }
   if(L.pins.length) h+='<div class="swsec">Pinned</div>'+L.pins.map(row).join("");
   if(L.rest.length) h+='<div class="swsec">'+(elSwIn.value.trim()?"Maps":"Recent")+'</div>'+L.rest.map(row).join("");
   if(!swRows.length) h='<div class="swsec">No map matches</div>';
+  elSwIn.placeholder=swPick?"Link to a map…":"Go to a map…";
   elSwList.innerHTML=h;
   var on=elSwList.querySelector(".swr.on"); if(on) on.scrollIntoView({block:"nearest"});
+}
+var swPick=null;
+function newMapName(){ var q=elSwIn.value.trim(); return q || (N(swPick)&&N(swPick).text) || "New map"; }
+function openLinkPicker(){
+  var n=N(selected);
+  if(pres||lensOne){ flash(selected); flashSave("links are made on the map view"); return; }
+  if(isVR(n)||isRoot(n)){ flash(selected); flashSave("the centre cannot be a link"); return; }
+  if(n.children.length && !n.link){ flash(selected); flashSave("this node has a branch \u00b7 \u2325B breaks it out into its own map"); return; }
+  swPick=selected;
+  openSwitcher();
+  swAt=0; drawSwitcher();
 }
 function openSwitcher(){
   if(editing) commitEdit();
@@ -4533,8 +4832,11 @@ function openSwitcher(){
   drawSwitcher();
   elSwIn.focus();
 }
-function closeSwitcher(){ elSw.classList.remove("on"); elSwIn.blur(); }
-function swGo(id){ closeSwitcher(); if(id && id!==curDoc) switchDoc(id); }
+function closeSwitcher(){ elSw.classList.remove("on"); elSwIn.blur(); swPick=null; }
+function swGo(id){
+  if(swPick){ var nid0=swPick, nm=newMapName(); closeSwitcher(); linkNodeTo(nid0,id,nm); return; }
+  closeSwitcher(); if(id && id!==curDoc) switchDoc(id);
+}
 elSwIn.addEventListener("input",function(){ swAt=0; drawSwitcher(); });
 elSwIn.addEventListener("keydown",function(e){
   e.stopPropagation();
@@ -4544,6 +4846,8 @@ elSwIn.addEventListener("keydown",function(e){
   else if(e.key==="Enter"){ e.preventDefault(); swGo(cur); }
   else if(e.key==="Escape"){ e.preventDefault(); closeSwitcher(); }
   else if(e.altKey && e.code==="KeyM"){ e.preventDefault(); closeSwitcher(); }
+  else if(e.altKey && e.code==="KeyK"){ e.preventDefault(); closeSwitcher(); }
+  else if(cur==="__new" && e.altKey){ e.preventDefault(); }
   else if(e.altKey && e.code==="KeyP" && cur){ e.preventDefault(); togglePin(cur); var i=swRows.indexOf(cur); if(i>=0) swAt=i; drawSwitcher(); }
   else if(e.altKey && e.code==="KeyT" && cur){ e.preventDefault(); cycleTag(cur); }
   else if(e.altKey && e.shiftKey && /^Digit[1-9]$/.test(e.code)){ e.preventDefault(); closeSwitcher(); openPinned(+e.code.slice(5)); }
@@ -4625,6 +4929,12 @@ function switchDoc(id){
   var lib=idxRead(); if(!lib||!lib.docs[id]) return;
   var d=docRead(id); if(!d) return;
   if(curDoc && curDoc!==id && lib.docs[curDoc]) lib.prev=curDoc;
+  if(!linkSwitch){
+    var ti=-1; linkTrail.forEach(function(t,i){ if(t.doc===id) ti=i; });
+    linkTrail = ti>=0 ? linkTrail.slice(0,ti) : [];
+  }
+  if(curDoc!==id) stashUndo(curDoc);
+  var sameDoc=(curDoc===id);
   curDoc=id; lib.current=id; idxWrite(lib);
   state=d.state; state.frames=state.frames||[];
   uid=d.uid||100000; selected=d.selected; focusId=d.focusId||null;
@@ -4633,8 +4943,8 @@ function switchDoc(id){
   if(d.view) view=d.view;
   if(d.cfg) CFG=Object.assign({},DEFAULTS,d.cfg);
   migrateSpread();
-  editing=null; clearMarks(); clearUndo();
-  applyCss(); drawPanel(); hardRender(); fit(); drawMaps(); drawPinMark();
+  editing=null; clearMarks(); if(!sameDoc) loadUndo(id);
+  applyCss(); drawPanel(); hardRender(); fit(); drawMaps(); drawPinMark(); drawTrail();
   flashSave("opened \u201c"+trunc(docName(state))+"\u201d");
 }
 function newDoc(st){
@@ -4643,10 +4953,11 @@ function newDoc(st){
   var id=docId();
   state=st||freshState(); state.frames=state.frames||[];
   uid=1; selected=state.rootId; focusId=null; editing=null; clearMarks();
-  clearUndo();
+  stashUndo(curDoc); clearUndo();
   if(curDoc && lib.docs[curDoc]) lib.prev=curDoc;
   curDoc=id; lib.current=id; idxWrite(lib);
-  save(); hardRender(); center(); drawMaps(); drawPinMark();
+  if(!st) linkTrail=[];
+  save(); hardRender(); center(); drawMaps(); drawPinMark(); drawTrail();
 }
 document.getElementById("btnMaps").onclick=function(){ toggleMaps(); };
 document.getElementById("btnNewMap").onclick=function(){ newDoc(); toggleMaps(false); flashSave("new map"); };
@@ -4706,6 +5017,9 @@ var I={
   w1:svg('<path d="M3 10h14" stroke-width="1.2"/>'), w2:svg('<path d="M3 10h14" stroke-width="2.4"/>'), w3:svg('<path d="M3 10h14" stroke-width="4"/>'),
   dsol:svg('<path d="M3 10h14" stroke-width="2"/>'), ddash:svg('<path d="M3 10h14" stroke-width="2" stroke-dasharray="4 3"/>'), ddot:svg('<path d="M3 10h14" stroke-width="2.2" stroke-dasharray="0.01 3.6"/>'),
   s0:svg('<path d="M3 10h14"/>'), s1:svg('<path d="M3 10q3.5-2 7 0t7 0"/>'), s2:svg('<path d="M3 11q3-4 6-1t3.5-2 4.5 2"/>'), s3:svg('<path d="M3 12q2-6 4.5-2t2.5-5 3 6 4-3"/>'),
+  lstack:svg('<rect x="3" y="3" width="10" height="8" rx="2"/><path d="M6 14h9.5a1.5 1.5 0 0 0 1.5-1.5V6.5" opacity=".7"/>'),
+  ldash:svg('<rect x="3" y="5" width="14" height="10" rx="2.5" stroke-dasharray="3 2.4"/>'),
+  larrow:svg('<rect x="2.5" y="5" width="15" height="10" rx="2.5"/><path d="M11 12l3-3M11.5 9H14v2.5"/>'),
   esharp:svg('<path d="M4.5 15.5V4.5h11" stroke-dasharray="3 2.6"/><path d="M4.5 8V4.5H8"/>'),
   eround:svg('<path d="M4.5 15.5V8.5a4 4 0 0 1 4-4h7" stroke-dasharray="3 2.6"/><path d="M4.5 8.5a4 4 0 0 1 4-4"/>'),
   astr:svg('<path d="M4 16L15 5M15 5h-5M15 5v5"/>'), acur:svg('<path d="M4 15.5q2-9.5 11.5-10.5M15.5 5l-.8 4.3M15.5 5l-4.2.8"/>'), aelb:svg('<path d="M3 15.5h6.5V6H14M14 6l-3-2.6M14 6l-3 2.6"/>'),
@@ -4751,6 +5065,7 @@ var PANEL=[
   {h:"Vertical align",key:"valign",opts:[["flex-start",I.vt,"Top"],["center",I.vm,"Middle"],["flex-end",I.vb,"Bottom"]],when:function(){ return CFG.minSize; }},
   {h:"Node width",key:"nodew",opts:[["s",I.ws,"Narrow"],["m",I.wm,"Medium"],["l",I.wl,"Wide"]]},
   {h:"Spacing",key:"gap",opts:[["s",I.gs,"Compact"],["m",I.gm,"Normal"],["l",I.gl,"Airy"]]},
+  {h:"Map links",key:"linkStyle",opts:[["stack",I.lstack,"Stacked card"],["dashed",I.ldash,"Dashed"],["arrow",I.larrow,"Arrow badge"]]},
   {h:"Paper",key:"paper",opts:[["graph",I.pgraph,"Graph"],["lines",I.plines,"Ruled"],["dots",I.pdots,"Dots"],["blank",I.pblank,"Blank"]]},
   {h:"Theme",key:"theme",opts:[["light",I.tlight,"Light"],["dark",I.tdark,"Dark"]]},
   {h:"Behaviour",toggles:[["minSize","Uniform node size"],["typeOnCreate","Cursor in new nodes"],["follow","Camera follows"]]}
@@ -4891,6 +5206,10 @@ document.addEventListener("keydown",function(e){
      a pinned map, Option+` the map you were on before. By e.code, so the Mac's
      dead keys do not matter, and never while typing. */
   if(e.altKey && !mod && !editing){
+    if(e.key==="Enter"){ e.preventDefault(); openLink(); return; }
+    if(e.code==="KeyB" && !e.shiftKey){ e.preventDefault(); breakOut(); return; }
+    if(e.code==="KeyK" && !e.shiftKey){ e.preventDefault(); openLinkPicker(); return; }
+    if(e.code==="KeyU" && !e.shiftKey){ e.preventDefault(); linkUp(); return; }
     if(e.code==="KeyM"){ e.preventDefault(); swOpen()?closeSwitcher():openSwitcher(); return; }
     if(e.code==="KeyP" && !e.shiftKey){ e.preventDefault(); save(); togglePin(curDoc); return; }
     if(e.code==="KeyT" && !e.shiftKey){ e.preventDefault(); save(); cycleTag(curDoc); return; }
@@ -5293,6 +5612,8 @@ function save(){
       uid:uid, state:state, selected:selected, focusId:focusId, view:view, cfg:CFG
     })) return;
     /* The index is tiny, but skip rewriting it when nothing in it changed. */
+    var outs=linksIn(state), was=(lib.linksFrom||{})[curDoc]||[];
+    if(outs.join()!==was.join()){ lib.linksFrom=lib.linksFrom||{}; if(outs.length) lib.linksFrom[curDoc]=outs; else delete lib.linksFrom[curDoc]; idxWrite(lib); }
     var m=lib.docs[curDoc];
     if(!m || m.name!==name || m.count!==count || lib.current!==curDoc){
       lib.docs[curDoc]={id:curDoc,name:name,count:count,updated:now};
@@ -5430,6 +5751,13 @@ function notesOnBoot(){
 }
 document.getElementById("brand").onclick=function(){ toggleNotes(true); };
 document.getElementById("pinMark").onclick=function(){ openSwitcher(); };
+document.getElementById("trail").addEventListener("mousedown",function(e){ e.preventDefault(); var b=e.target.closest("[data-up]"); if(b) linkUp(+b.dataset.up); });
+document.getElementById("backlinks").addEventListener("mousedown",function(e){ e.preventDefault(); var to=this.dataset.to; if(to){ linkTrail=[]; switchDoc(to); } });
+elNodes.addEventListener("dblclick",function(e){
+  var el=e.target.closest(".node"); if(!el||!N(el.dataset.id)||!N(el.dataset.id).link||e.shiftKey) return;
+  e.preventDefault(); e.stopPropagation(); openLink(el.dataset.id);
+},true);
+drawTrail();
 drawPinMark();
 document.getElementById("btnCloseNotes").onclick=function(){ toggleNotes(false); };
 document.getElementById("notes").addEventListener("mousedown",function(e){ if(e.target.id==="notes") toggleNotes(false); });

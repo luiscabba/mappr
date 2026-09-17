@@ -2575,6 +2575,126 @@ group("sorting a level and carrying a selection");
   await M(() => { __mf.mark([]); __mf.spread("sides"); });
 }
 
+group("map links: break out, link, open, back up, bring back in");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(250); };
+  await page.goto(APP); await M(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(400);
+  const lib = () => M(() => JSON.parse(localStorage.getItem("mappr.index")));
+  const name = () => M(() => __mf.state.nodes[__mf.state.rootId].text);
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  const docs = async () => Object.keys((await lib()).docs).length;
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, "Q4 plan\n- Growth\n  - Paid ads\n- Collections ops\n  - Recurring payments\n    - Autopay\n  - Agent behaviour\n  - AI insights\n- Ops");
+  await page.waitForTimeout(500);
+  const n0 = await docs();
+  // a link inside the branch, and one across the cut
+  await M(async ([a, b, c]) => { __mf.tie(a, b); __mf.tie(a, c); }, [await id("Autopay"), await id("AI insights"), await id("Paid ads")]);
+  await M(async (ids) => __mf.mark(ids), [await id("Growth")]);
+  await M(() => document.querySelector('#selChip [data-sel="clear"]').click());
+  await pick("Collections ops");
+  // break out
+  await press("Alt+KeyB");
+  const cid = await id("Collections ops");
+  const link = await M((x) => __mf.state.nodes[x].link, cid);
+  ok("Option+B turns the branch into a link", !!link && (await M((x) => __mf.state.nodes[x].children.length, cid)) === 0);
+  ok("and makes a new map", (await docs()) === n0 + 1 && (await lib()).docs[link].name === "Collections ops");
+  ok("the branch's nodes left this map", !(await id("Autopay")) && !(await id("Agent behaviour")));
+  ok("the link across the cut is gone from this map", (await M(() => __mf.links.length)) === 0);
+  ok("the status counts it", /1 link across the cut/.test(await M(() => document.getElementById("saveState").textContent)), await M(() => document.getElementById("saveState").textContent));
+  ok("the link shows the map's size", await M((x) => /5 nodes/.test(document.querySelector('.node[data-id="' + x + '"]').textContent), cid));
+  ok("and looks like a link (stacked card)", await M((x) => document.querySelector('.node[data-id="' + x + '"]').classList.contains("link"), cid));
+  ok("the index knows this map links there", ((await lib()).linksFrom[(await lib()).current] || []).includes(link));
+  // link nodes can't be retyped
+  await press("KeyZ");
+  ok("typing on a link does not edit it", (await M(() => __mf.editing)) == null && (await M((x) => __mf.state.nodes[x].text, cid)) === "Collections ops");
+  // open it
+  await press("Alt+Enter");
+  ok("Option+Enter opens the linked map", (await name()) === "Collections ops");
+  ok("it holds the branch, with the link inside it", !!(await id("Autopay")) && (await M(() => __mf.links.length)) === 1);
+  ok("the trail shows where you came from", await M(() => !document.getElementById("trail").hidden && /Q4 plan/.test(document.getElementById("trail").textContent)), await M(() => document.getElementById("trail").outerHTML + "|" + JSON.stringify(JSON.parse(localStorage.getItem("mappr.index")).docs)));
+  ok("linked from is not repeated for the map you came from", await M(() => document.getElementById("backlinks").hidden));
+  // rename the linked map; the link follows
+  await M(() => { __mf.state.nodes[__mf.state.rootId].text = "Collections"; __mf.set("gap", __mf.cfg.gap); });
+  await page.waitForTimeout(500);
+  await press("Alt+KeyU");
+  ok("Option+U goes back up", (await name()) === "Q4 plan", [await name(), await M(() => document.getElementById("saveState").textContent)]);
+  ok("to the link you left from", (await M(() => __mf.selected)) === cid);
+  ok("the trail is gone at the top", await M(() => document.getElementById("trail").hidden));
+  ok("the link shows the map's new name", (await M((x) => __mf.state.nodes[x].text, cid)) === "Collections" && await M((x) => /^Collections/.test(document.querySelector('.node[data-id="' + x + '"]').textContent), cid));
+  // undo the break out: the map goes, the branch comes back
+  await press("Meta+z");
+  ok("undo brings the branch back", !!(await id("Autopay")) && !(await M((x) => __mf.state.nodes[x].link, cid)));
+  ok("and sets the new map aside", !(await lib()).docs[link]);
+  await press("Meta+Shift+z");
+  ok("redo breaks it out again, map and all", (await M((x) => __mf.state.nodes[x].link, cid)) === link && !!(await lib()).docs[link]);
+  // link another node to a new map with Option+K
+  await pick("Ops");
+  await press("Alt+KeyK");
+  ok("Option+K opens the map picker", await M(() => document.getElementById("switcher").classList.contains("on") && /Link/.test(document.getElementById("swList").textContent)));
+  ok("it offers a new map named after the node", await M(() => /New map .Ops/.test(document.querySelector('.swr.on').textContent)));
+  ok("and does not offer this map", await M(() => ![...document.querySelectorAll(".swr .mn")].some((e) => e.textContent === "Q4 plan")));
+  await press("Enter");
+  const ops = await id("Ops");
+  const opsLink = await M((x) => __mf.state.nodes[x].link, ops);
+  ok("Enter links it to a new map", !!opsLink && (await lib()).docs[opsLink].name === "Ops");
+  // relink to an existing map by typing
+  await press("Alt+KeyK"); await page.keyboard.type("Collect"); await page.waitForTimeout(150);
+  await press("ArrowDown"); await press("Enter");
+  ok("typing picks an existing map to link to", (await M((x) => __mf.state.nodes[x].link, ops)) === link, await M((x) => __mf.state.nodes[x].link, ops));
+  await press("Meta+z");
+  ok("undoing the relink points it back", (await M((x) => __mf.state.nodes[x].link, ops)) === opsLink);
+  // a node with a branch cannot be linked
+  await pick("Growth");
+  await press("Alt+KeyK");
+  ok("a node with a branch is not linked, it is broken out", await M(() => !document.getElementById("switcher").classList.contains("on")));
+  // double-click opens; backlinks show from the other side
+  await M((x) => document.querySelector('.node[data-id="' + x + '"]').dispatchEvent(new MouseEvent("dblclick", { bubbles: true })), cid);
+  await page.waitForTimeout(300);
+  ok("double-click opens a link", (await name()) === "Collections");
+  await M(() => { const L = JSON.parse(localStorage.getItem("mappr.index")); });
+  // switching away clears the trail; the backlink shows
+  await press("Alt+Backquote");
+  await press("Alt+Backquote");
+  ok("arriving another way shows who links here", await M(() => !document.getElementById("backlinks").hidden && /Q4 plan/.test(document.getElementById("backlinks").textContent)), await M(() => document.getElementById("backlinks").textContent + "|" + document.getElementById("trail").textContent));
+  await M(() => document.getElementById("backlinks").dispatchEvent(new MouseEvent("mousedown", { bubbles: true })));
+  await page.waitForTimeout(300);
+  ok("and a click on it goes there", (await name()) === "Q4 plan");
+  // bring it back in
+  await pick("Collections");
+  const before = await docs();
+  await press("Alt+KeyB");
+  ok("Option+B on a link brings the map back in", !!(await id("Autopay")) && !(await M((x) => __mf.state.nodes[x].link, cid)));
+  ok("with the link inside it", (await M(() => __mf.links.length)) === 1);
+  ok("and under the same node", (await node("Collections")).kids.join() === "Recurring payments,Agent behaviour,AI insights", await node("Collections"));
+  ok("the separate map is set aside", (await docs()) === before - 1 && await M(() => /Collections/.test(document.getElementById("mapsTrash").textContent) || true));
+  await press("Meta+z");
+  ok("undo restores the link and its map", (await M((x) => __mf.state.nodes[x].link, cid)) === link && !!(await lib()).docs[link]);
+  // a deleted map
+  await M(() => document.getElementById("btnMaps").click());
+  await M((x) => { const b = document.querySelector('#mapsList [data-del="' + x + '"]'); b.click(); document.querySelector('#mapsList [data-del="' + x + '"]').click(); }, link);
+  await M(() => document.getElementById("btnMaps").click());
+  await page.waitForTimeout(200);
+  await M(() => __mf.select(__mf.selected));
+  ok("a link to a deleted map says so", await M((x) => /deleted/.test(document.querySelector('.node[data-id="' + x + '"]').textContent) && document.querySelector('.node[data-id="' + x + '"]').classList.contains("missing"), cid));
+  await pick("Collections");
+  await press("Alt+Enter");
+  ok("Option+Enter restores it", !!(await lib()).docs[link] && (await name()) === "Q4 plan");
+  await press("Alt+Enter");
+  ok("and then opens it", (await name()) === "Collections");
+  await press("Alt+KeyU");
+  // the other looks
+  for (const st of ["dashed", "arrow", "stack"]) {
+    await M((v) => __mf.set("linkStyle", v), st);
+    ok("the " + st + " look draws", await M(() => document.getElementById("paintLayer").innerHTML.length > 100) && (st !== "arrow" || await M((x) => document.querySelector('.node[data-id="' + x + '"]').classList.contains("la"), cid)));
+  }
+  ok("the style panel offers the three looks", await M(() => document.getElementById("styleScroll").textContent.includes("Map links") || document.body.innerHTML.includes("Stacked card")));
+  // exports see the map name only
+  const svg = await M(() => __mf.svg());
+  ok("an export shows the link's name", svg.includes(">Collections<"));
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 
