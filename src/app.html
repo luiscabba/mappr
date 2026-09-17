@@ -33,6 +33,7 @@
     --sel:#6965db;
     --danger:#c0392b;
     --tie:#c2410c; --tie-soft:#fde3d3;
+    --pin:#e8590c;
     --sel-soft:#e0dfff;
     --panel:#ffffff;
     --panel-line:#e9ecef;
@@ -59,6 +60,7 @@
     --sel:#a5a1ff;
     --danger:#ff8b7a;
     --tie:#ff9f6e; --tie-soft:#4a2a1c;
+    --pin:#ffa94d;
     --sel-soft:#2a2856;
     --panel:#1e1e1e;
     --panel-line:#343434;
@@ -314,6 +316,48 @@
   .jr small{font-size:10.5px;color:var(--muted)}
   #jumpFoot{padding:7px 18px;font-size:10.5px;color:var(--muted);border-top:1px solid var(--panel-line)}
 
+  /* ---------- pins, colour tags, the map switcher ---------- */
+  .pin{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border:0;background:none;padding:0;border-radius:6px;cursor:pointer;color:var(--muted);flex:none}
+  .pin svg{width:15px;height:15px;display:block}
+  .pin .head{fill:none}
+  .pin.p{color:var(--pin)}
+  .pin.p .head{fill:currentColor;fill-opacity:.28}
+  .pin:hover{background:var(--panel-hover);color:var(--ink)}
+  .pin.p:hover{color:var(--pin)}
+  .mrow .pin:not(.p){opacity:0}
+  .mrow:hover .pin,.swr:hover .pin,.swr.on .pin{opacity:1}
+  .tag{width:14px;height:14px;border-radius:50%;border:1.5px dashed var(--panel-line);background:none;padding:0;cursor:pointer;flex:none;opacity:0}
+  .tag.c{border:0;opacity:1}
+  .mrow:hover .tag,.swr:hover .tag,.swr.on .tag{opacity:1}
+  .tag:not(.c):hover{border-color:var(--muted)}
+  .mslot{font-size:10px;color:var(--muted);min-width:30px;text-align:right;white-space:nowrap}
+  #pinMark{display:inline-flex;align-items:center;gap:4px;margin:0 6px 0 -6px;color:var(--pin)}
+  #pinMark[hidden]{display:none}
+  #pinMark svg{width:14px;height:14px}
+  #pinMark .head{fill:currentColor;fill-opacity:.28}
+  #pinMark i{width:8px;height:8px;border-radius:50%;display:inline-block}
+  #switcher{
+    position:fixed;z-index:24;top:16%;left:50%;transform:translateX(-50%);
+    width:min(500px,calc(100vw - 40px));display:none;
+    background:var(--panel);border:1px solid var(--panel-line);
+    border-radius:14px;box-shadow:0 22px 60px rgba(0,0,0,.28);overflow:hidden;
+  }
+  #switcher.on{display:block}
+  #swIn{width:100%;border:0;outline:0;background:transparent;color:var(--ink);font-family:var(--font-sketch);font-size:19px;padding:15px 18px}
+  #swIn::placeholder{color:var(--muted)}
+  #swList{max-height:360px;overflow-y:auto;border-top:1px solid var(--panel-line);padding:4px 6px}
+  .swsec{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);padding:9px 10px 3px}
+  .swr{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;cursor:pointer}
+  .swr.on{background:var(--sel-soft)}
+  .swr .mn{flex:1;font-family:var(--font-sketch);font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .swr .mm{font-size:10px;color:var(--muted)}
+  .swr .here{font-size:10px;color:var(--sel)}
+  #swFoot{padding:7px 18px;font-size:10.5px;color:var(--muted);border-top:1px solid var(--panel-line)}
+  .mswitch{display:flex;width:100%;justify-content:space-between;align-items:center;border:0;background:none;color:var(--ink);font:12.5px var(--font-ui);padding:7px 8px;border-radius:8px;cursor:pointer;margin-bottom:2px}
+  .mswitch span{font-size:11px;color:var(--muted)}
+  .mswitch:hover{background:var(--panel-hover)}
+  .msec{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);padding:6px 8px 3px}
+
   /* ---------- maps ---------- */
   #maps{
     position:fixed;z-index:12;display:none;
@@ -483,7 +527,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v__VERSION__">Mappr</span>
+  <span class="brand" id="brand" title="Mappr v__VERSION__">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -501,7 +545,13 @@
   <span id="saveState">saved</span>
 </div>
 
-<div id="maps"><div id="mapsList"></div><div id="mapsTrash"></div><div id="mapsFoot"><button id="btnNewMap" title="New map (⌥N)">New map</button></div></div>
+<div id="switcher">
+  <input id="swIn" type="text" placeholder="Go to a map…" autocomplete="off" spellcheck="false">
+  <div id="swList"></div>
+  <div id="swFoot">↑↓ move · ⏎ open · ⌥P pin · ⌥T colour · Esc close</div>
+</div>
+
+<div id="maps"><button id="btnSwitch" class="mswitch">Switch map… <span>⌥M</span></button><div id="mapsList"></div><div id="mapsTrash"></div><div id="mapsFoot"><button id="btnNewMap" title="New map (⌥N)">New map</button></div></div>
 
 <div id="jump">
   <input id="jumpIn" type="text" placeholder="Jump to…" autocomplete="off" spellcheck="false">
@@ -639,6 +689,11 @@
       <tr><td>Export ▾</td><td>PNG and SVG of the frame or the whole map, and the full JSON with every setting.</td></tr>
       <tr><td>Maps ▾</td><td>Every map you have made, newest first. A map is named after its centre node, so renaming the centre renames the map. Copy and delete live in the same row.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>N</kbd></td><td>A new map.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>M</kbd></td><td>Switch map: pinned maps first, then recent ones. Type to filter, arrows and <kbd>⏎</kbd> to open. It starts on the map you were on before, so <kbd>⌥</kbd><kbd>M</kbd> <kbd>⏎</kbd> swaps back and forth.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>P</kbd></td><td>Pin or unpin the open map (in the switcher, the highlighted one). Pinned maps sit at the top of the switcher and of Maps ▾, and the pin shows next to the Mappr name.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>⇧</kbd><kbd>1</kbd>…<kbd>9</kbd></td><td>Open a pinned map, in pin order.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>T</kbd></td><td>Give the map a colour tag; press again for the next colour, and past the last one it clears. The dot beside each map in the lists does the same on a click.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>`</kbd></td><td>Back to the map you were on before.</td></tr>
       <tr><td><b>Maps</b></td><td>Every map is stored on its own. Delete asks once before it goes, and the last few deleted maps wait under <em>Recently deleted</em> in the same panel with a Restore button.</td></tr>
       <tr><td><b>Touch</b></td><td>One finger pans, two fingers pinch to zoom, and a tap opens a folded branch. Making a map needs a keyboard, so touch is for reading one you already have.</td></tr>
     </table></section>
@@ -2043,6 +2098,7 @@ function applyCss(){
   s.setProperty("--node-valign",CFG.valign);
   s.setProperty("--node-minw",(CFG.minSize?Math.round(MAXW[CFG.nodew]*.62):0)+"px");
   s.setProperty("--node-minh",(CFG.minSize?Math.round(SIZES[CFG.size]*3.4):0)+"px");
+  if(typeof PIN_SVG!=="undefined") drawPinMark();
 }
 function hardRender(){
   paintReset();
@@ -2479,8 +2535,17 @@ function reconcile(items){
     var diff=[];
     for(i=0;i<n;i++) if(items[i].k!==pKeys[i]) diff.push(i);
     if(!diff.length) return;
-    /* A few shapes moved: swap just those elements in place. */
+    /* A few shapes changed: swap just those elements in place. Only safe when
+       every element going in is new or not currently on screen; a cached
+       element still showing elsewhere would be pulled out of its old slot by
+       replaceChild and then replaced away when that slot's turn came, which
+       lost shapes when a node moved between branches in a big map. */
+    var live=false;
     if(diff.length*8 < n){
+      var inUse=new Set(pEls);
+      for(i=0;i<diff.length && !live;i++){ var ce=pCache[items[diff[i]].k]; if(ce && inUse.has(ce)) live=true; }
+    }
+    if(diff.length*8 < n && !live){
       for(i=0;i<diff.length;i++){
         var at=diff[i], it=items[at], el=pCache[it.k]||shapeNode(it.h);
         pMain.replaceChild(el,pEls[at]);
@@ -4082,6 +4147,153 @@ function trashRestore(id){
   try{ localStorage.removeItem(TRASHP+id); }catch(e){}
   drawMaps(); flashSave("restored "+docName(d.state));
 }
+/* Pins, colour tags and the previous map live in the index next to the list
+   of maps, so they cost nothing to read and never touch a map's own key.
+   pins is an ordered list; its order is what Option+Shift+1 to 9 open. */
+var TAGS=["red","orange","yellow","green","blue","violet"];
+var TAGCOL={light:{red:"#e03131",orange:"#f76707",yellow:"#f59f00",green:"#2f9e44",blue:"#1971c2",violet:"#7048e8"},
+            dark:{red:"#ff8787",orange:"#ffa94d",yellow:"#ffd43b",green:"#69db7c",blue:"#74c0fc",violet:"#b197fc"}};
+function tagColor(t){ return t ? (TAGCOL[dark()?"dark":"light"][t]||null) : null; }
+var PIN_SVG='<svg viewBox="0 0 16 16" aria-hidden="true"><g transform="rotate(35 8 8)" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+
+  '<path class="head" d="M5.4 1.9 Q8 2.5 10.6 1.9 L10.1 6.4 Q12.3 7.4 12.6 9.1 L3.4 9.1 Q3.7 7.4 5.9 6.4 Z"/>'+
+  '<path d="M8 9.3 L8.1 14.6" fill="none"/></g></svg>';
+function libPins(lib){ lib=lib||idxRead()||{docs:{}}; return (lib.pins||[]).filter(function(id){ return lib.docs[id]; }); }
+function isPinned(id,lib){ return libPins(lib).indexOf(id)>=0; }
+function tagOf(id,lib){ lib=lib||idxRead()||{}; return (lib.tags||{})[id]||null; }
+function togglePin(id){
+  var lib=idxRead(); if(!lib||!lib.docs[id]) return;
+  var pins=libPins(lib), i=pins.indexOf(id);
+  if(i>=0) pins.splice(i,1); else pins.push(id);
+  lib.pins=pins; idxWrite(lib);
+  var name=lib.docs[id].name||"Untitled";
+  flashSave(i>=0 ? "unpinned" : ("pinned"+(pins.length<=9?" \u00b7 \u2325\u21e7"+pins.length:"")));
+  drawPinMark(); drawMaps(); drawSwitcher();
+  void name;
+}
+function cycleTag(id){
+  var lib=idxRead(); if(!lib||!lib.docs[id]) return;
+  lib.tags=lib.tags||{};
+  var t=lib.tags[id]||null, j=t?TAGS.indexOf(t)+1:0;
+  if(j>=TAGS.length) delete lib.tags[id]; else lib.tags[id]=TAGS[j];
+  idxWrite(lib);
+  flashSave(lib.tags[id] ? lib.tags[id] : "no colour");
+  drawPinMark(); drawMaps(); drawSwitcher();
+}
+function dropFromLib(lib,id){
+  lib.pins=(lib.pins||[]).filter(function(x){ return x!==id; });
+  if(lib.tags) delete lib.tags[id];
+  if(lib.prev===id) delete lib.prev;
+}
+function openPinned(n){
+  var pins=libPins();
+  var id=pins[n-1];
+  if(!id){ flashSave("nothing pinned at "+n); return; }
+  if(id!==curDoc) switchDoc(id); else flashSave("already open");
+}
+function openPrevious(){
+  var lib=idxRead(); var id=lib&&lib.prev;
+  if(!id||!lib.docs[id]||id===curDoc){ flashSave("no previous map"); return; }
+  switchDoc(id);
+}
+function rememberPrev(from,to){
+  if(!from||from===to) return;
+  var lib=idxRead(); if(!lib) return;
+  lib.prev=from; idxWrite(lib);
+}
+function pinBtn(id,pinned){
+  return '<button class="pin'+(pinned?" p":"")+'" data-pin="'+id+'" title="'+(pinned?"Unpin":"Pin")+' (\u2325P)">'+PIN_SVG+'</button>';
+}
+function tagBtn(id,t){
+  var c=tagColor(t);
+  return '<button class="tag'+(c?" c":"")+'" data-tag="'+id+'" title="Colour (\u2325T)"'+(c?' style="background:'+c+'"':'')+'></button>';
+}
+function drawPinMark(){
+  var el=document.getElementById("pinMark"); if(!el) return;
+  var lib=idxRead(); if(!lib||!curDoc){ el.hidden=true; return; }
+  var p=isPinned(curDoc,lib), c=tagColor(tagOf(curDoc,lib));
+  el.hidden=!(p||c);
+  el.style.color=c||"";
+  el.innerHTML=(p?PIN_SVG:"")+(c&&!p?'<i style="background:'+c+'"></i>':"");
+  el.title=p?"Pinned (\u2325P to unpin)":"Colour tag (\u2325T)";
+}
+
+/* ---------- the map switcher (Option+M) ---------- */
+var elSw=document.getElementById("switcher"), elSwIn=document.getElementById("swIn"), elSwList=document.getElementById("swList");
+var swRows=[], swAt=0;
+function swOpen(){ return elSw.classList.contains("on"); }
+function swList(){
+  var lib=idxRead(); if(!lib) return {pins:[],rest:[]};
+  var q=elSwIn.value.trim();
+  var m=function(id){ return !q || fuzzy(q,lib.docs[id].name||"Untitled")>=0; };
+  var pins=libPins(lib);
+  var rest=Object.keys(lib.docs).filter(function(id){ return pins.indexOf(id)<0; })
+    .sort(function(a,b){ return (lib.docs[b].updated||0)-(lib.docs[a].updated||0); });
+  if(q){
+    var sc=function(id){ return fuzzy(q,lib.docs[id].name||"Untitled"); };
+    rest=rest.filter(m).sort(function(a,b){ return sc(b)-sc(a); });
+  }
+  return {lib:lib, pins:pins.filter(m), rest:rest, allPins:pins};
+}
+function drawSwitcher(){
+  if(!swOpen()) return;
+  var L=swList(), lib=L.lib; if(!lib) return;
+  swRows=L.pins.concat(L.rest);
+  if(swAt>=swRows.length) swAt=Math.max(0,swRows.length-1);
+  var k=0;
+  function row(id){
+    var d=lib.docs[id], slot=L.allPins.indexOf(id)+1, i=k++;
+    return '<div class="swr'+(i===swAt?" on":"")+'" data-sw="'+id+'">'+
+      pinBtn(id,slot>0)+tagBtn(id,tagOf(id,lib))+
+      '<span class="mn">'+esc(d.name||"Untitled")+'</span>'+
+      (id===curDoc?'<span class="here">open</span>':'')+
+      '<span class="mm">'+d.count+'</span>'+
+      '<span class="mslot">'+(slot&&slot<=9?"\u2325\u21e7"+slot:"")+'</span></div>';
+  }
+  var h="";
+  if(L.pins.length) h+='<div class="swsec">Pinned</div>'+L.pins.map(row).join("");
+  if(L.rest.length) h+='<div class="swsec">'+(elSwIn.value.trim()?"Maps":"Recent")+'</div>'+L.rest.map(row).join("");
+  if(!swRows.length) h='<div class="swsec">No map matches</div>';
+  elSwList.innerHTML=h;
+  var on=elSwList.querySelector(".swr.on"); if(on) on.scrollIntoView({block:"nearest"});
+}
+function openSwitcher(){
+  if(editing) commitEdit();
+  if(elJump.classList.contains("on")) closeJump();
+  toggleMaps(false);
+  save();
+  elSw.classList.add("on");
+  elSwIn.value=""; swAt=0;
+  var L=swList(), all=L.pins.concat(L.rest);
+  /* start on the map you were last on, so Enter swaps back and forth */
+  var pv=L.lib&&L.lib.prev, at=all.indexOf(pv);
+  swAt = at>=0 ? at : (all[0]===curDoc && all.length>1 ? 1 : 0);
+  drawSwitcher();
+  elSwIn.focus();
+}
+function closeSwitcher(){ elSw.classList.remove("on"); elSwIn.blur(); }
+function swGo(id){ closeSwitcher(); if(id && id!==curDoc) switchDoc(id); }
+elSwIn.addEventListener("input",function(){ swAt=0; drawSwitcher(); });
+elSwIn.addEventListener("keydown",function(e){
+  e.stopPropagation();
+  var cur=swRows[swAt];
+  if(e.key==="ArrowDown"){ e.preventDefault(); swAt=Math.min(swRows.length-1,swAt+1); drawSwitcher(); }
+  else if(e.key==="ArrowUp"){ e.preventDefault(); swAt=Math.max(0,swAt-1); drawSwitcher(); }
+  else if(e.key==="Enter"){ e.preventDefault(); swGo(cur); }
+  else if(e.key==="Escape"){ e.preventDefault(); closeSwitcher(); }
+  else if(e.altKey && e.code==="KeyM"){ e.preventDefault(); closeSwitcher(); }
+  else if(e.altKey && e.code==="KeyP" && cur){ e.preventDefault(); togglePin(cur); var i=swRows.indexOf(cur); if(i>=0) swAt=i; drawSwitcher(); }
+  else if(e.altKey && e.code==="KeyT" && cur){ e.preventDefault(); cycleTag(cur); }
+  else if(e.altKey && e.shiftKey && /^Digit[1-9]$/.test(e.code)){ e.preventDefault(); closeSwitcher(); openPinned(+e.code.slice(5)); }
+});
+elSw.addEventListener("mousedown",function(e){
+  if(e.target===elSwIn) return;
+  e.preventDefault();
+  var pb=e.target.closest("[data-pin]"); if(pb){ togglePin(pb.dataset.pin); return; }
+  var tb=e.target.closest("[data-tag]"); if(tb){ cycleTag(tb.dataset.tag); return; }
+  var r=e.target.closest(".swr"); if(r) swGo(r.dataset.sw);
+});
+addEventListener("mousedown",function(e){ if(swOpen() && !elSw.contains(e.target) && !e.target.closest("#btnSwitch")) closeSwitcher(); },true);
+document.getElementById("btnSwitch").onclick=function(){ swOpen()?closeSwitcher():openSwitcher(); };
 function nodeCount(st){ return Object.keys(st.nodes).length; }
 function docName(st){ return (st.nodes[st.rootId].text||"Untitled").split("\n")[0]; }
 
@@ -4107,16 +4319,23 @@ function armDelete(id){
 }
 function drawMaps(){
   var lib=idxRead(); if(!lib) return;
+  var pins=libPins(lib);
   var ids=Object.keys(lib.docs).sort(function(a,b){ return (lib.docs[b].updated||0)-(lib.docs[a].updated||0); });
-  elMapsList.innerHTML=ids.map(function(id){
-    var d=lib.docs[id];
+  var rest=ids.filter(function(id){ return pins.indexOf(id)<0; });
+  function row(id){
+    var d=lib.docs[id], slot=pins.indexOf(id)+1;
     return '<div class="mrow'+(id===curDoc?" on":"")+'" data-m="'+id+'">'+
+      pinBtn(id,slot>0)+tagBtn(id,tagOf(id,lib))+
       '<span class="mn">'+esc(d.name||"Untitled")+'</span>'+
       '<span class="mm">'+d.count+'</span>'+
+      (slot&&slot<=9?'<span class="mslot">\u2325\u21e7'+slot+'</span>':'')+
       '<button class="mx" data-dup="'+id+'">Copy</button>'+
       (ids.length>1?'<button class="mx'+(delArm===id?" arm":"")+'" data-del="'+id+'">'+(delArm===id?"Sure?":"Delete")+'</button>':"")+
     '</div>';
-  }).join("");
+  }
+  elMapsList.innerHTML = pins.length
+    ? '<div class="msec">Pinned</div>'+pins.map(row).join("")+(rest.length?'<div class="msec">Everything else</div>'+rest.map(row).join(""):"")
+    : ids.map(row).join("");
   /* The bin is part of the same panel: a map you deleted is one click from
      coming back, and one glance from being seen to still exist. */
   var tl=trashList();
@@ -4142,6 +4361,7 @@ function switchDoc(id){
   save();
   var lib=idxRead(); if(!lib||!lib.docs[id]) return;
   var d=docRead(id); if(!d) return;
+  if(curDoc && curDoc!==id && lib.docs[curDoc]) lib.prev=curDoc;
   curDoc=id; lib.current=id; idxWrite(lib);
   state=d.state; state.frames=state.frames||[];
   uid=d.uid||100000; selected=d.selected; focusId=d.focusId||null;
@@ -4151,8 +4371,8 @@ function switchDoc(id){
   if(d.cfg) CFG=Object.assign({},DEFAULTS,d.cfg);
   migrateSpread();
   editing=null; clearMarks(); clearUndo();
-  applyCss(); drawPanel(); hardRender(); fit(); drawMaps();
-  flashSave("opened");
+  applyCss(); drawPanel(); hardRender(); fit(); drawMaps(); drawPinMark();
+  flashSave("opened \u201c"+trunc(docName(state))+"\u201d");
 }
 function newDoc(st){
   save();
@@ -4161,13 +4381,16 @@ function newDoc(st){
   state=st||freshState(); state.frames=state.frames||[];
   uid=1; selected=state.rootId; focusId=null; editing=null; clearMarks();
   clearUndo();
+  if(curDoc && lib.docs[curDoc]) lib.prev=curDoc;
   curDoc=id; lib.current=id; idxWrite(lib);
-  save(); hardRender(); center(); drawMaps();
+  save(); hardRender(); center(); drawMaps(); drawPinMark();
 }
 document.getElementById("btnMaps").onclick=function(){ toggleMaps(); };
 document.getElementById("btnNewMap").onclick=function(){ newDoc(); toggleMaps(false); flashSave("new map"); };
 elMaps.addEventListener("mousedown",function(e){ e.preventDefault(); });
 elMaps.addEventListener("click",function(e){
+  var pb=e.target.closest("[data-pin]"); if(pb){ disarmDelete(false); togglePin(pb.dataset.pin); return; }
+  var tb=e.target.closest("[data-tag]"); if(tb){ disarmDelete(false); cycleTag(tb.dataset.tag); return; }
   var dup=e.target.closest("[data-dup]"), del=e.target.closest("[data-del]");
   var res=e.target.closest("[data-restore]");
   if(res){ disarmDelete(false); trashRestore(res.dataset.restore); return; }
@@ -4185,7 +4408,7 @@ elMaps.addEventListener("click",function(e){
     if(delArm!==did){ armDelete(did); return; }
     disarmDelete(false);
     var doomed=docRead(did);
-    delete lib2.docs[did]; idxWrite(lib2);
+    delete lib2.docs[did]; dropFromLib(lib2,did); idxWrite(lib2);
     trashPut(did,doomed); docDrop(did);
     if(did===curDoc) switchDoc(Object.keys(lib2.docs)[0]);
     else drawMaps();
@@ -4390,6 +4613,7 @@ document.addEventListener("keydown",function(e){
   if(elJump.classList.contains("on")){
     if(!mod||e.key!=="k") return;                 /* the input owns the keyboard */
   }
+  if(swOpen()) return;                            /* so does the map switcher */
   if(mod&&(e.key==="k"||e.key==="K")){
     e.preventDefault();
     elJump.classList.contains("on")?closeJump():openJump();
@@ -4398,6 +4622,16 @@ document.addEventListener("keydown",function(e){
   /* Option+N: a new map. Browsers keep Cmd+N for a new window, so Option it
      is, matched by e.code so the Mac's dead key does not get in the way. Off
      while typing, where it types. */
+  /* Maps: Option+M switcher, Option+P pin, Option+T colour, Option+Shift+1 to 9
+     a pinned map, Option+` the map you were on before. By e.code, so the Mac's
+     dead keys do not matter, and never while typing. */
+  if(e.altKey && !mod && !editing){
+    if(e.code==="KeyM"){ e.preventDefault(); swOpen()?closeSwitcher():openSwitcher(); return; }
+    if(e.code==="KeyP" && !e.shiftKey){ e.preventDefault(); save(); togglePin(curDoc); return; }
+    if(e.code==="KeyT" && !e.shiftKey){ e.preventDefault(); save(); cycleTag(curDoc); return; }
+    if(e.code==="Backquote"){ e.preventDefault(); openPrevious(); return; }
+    if(e.shiftKey && /^Digit[1-9]$/.test(e.code)){ e.preventDefault(); openPinned(+e.code.slice(5)); return; }
+  }
   if(e.altKey && !mod && !editing && e.code==="KeyN"){
     e.preventDefault();
     if(editing) commitEdit();
@@ -4452,7 +4686,7 @@ document.addEventListener("keydown",function(e){
      digit is how every browser switches tabs and a tab may never hand it to
      the page, and on a Mac Alt changes the character a digit types. The Alt
      twins are off while typing, so a node can still hold a pound sign. */
-  var altDigit = e.altKey && !mod && !editing && /^Digit[1-3]$/.test(e.code||"") ? e.code.slice(5) : null;
+  var altDigit = e.altKey && !mod && !e.shiftKey && !editing && /^Digit[1-3]$/.test(e.code||"") ? e.code.slice(5) : null;
   if((mod&&!e.shiftKey&&e.key==="1") || altDigit==="1"){
     e.preventDefault(); if(editing) commitEdit();
     if(lensActive()){ lensOff(); flashSave("normal view"); }
@@ -4919,6 +5153,8 @@ function notesOnBoot(){
   if(was && was!==VERSION) toggleNotes(true);
 }
 document.getElementById("brand").onclick=function(){ toggleNotes(true); };
+document.getElementById("pinMark").onclick=function(){ openSwitcher(); };
+drawPinMark();
 document.getElementById("btnCloseNotes").onclick=function(){ toggleNotes(false); };
 document.getElementById("notes").addEventListener("mousedown",function(e){ if(e.target.id==="notes") toggleNotes(false); });
 document.getElementById("btnHelp").onclick=function(){ toggleHelp(true); };
@@ -4993,7 +5229,7 @@ window.__mf={
   get cfg(){ return CFG; }, get marked(){ return markedSet(); }, get frames(){ return state.frames; },
   get selFrame(){ return selFrame; }, get editing(){ return editing; },
   set:function(k,v){ CFG[k]=v; applyCss(); drawPanel(); render(true); save(); },
-  undo:undo, redo:redo,
+  undo:undo, redo:redo, cycleTag:cycleTag, togglePin:togglePin,
   branch:doBranch, sibling:doSibling, nextBranch:doNextBranch, child:doChild,
   between:insertBetween, del:doDelete, select:select,
   mark:function(ids){ marked={}; ids.forEach(function(i){ marked[i]=1; }); render(true); },

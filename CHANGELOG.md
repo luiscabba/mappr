@@ -3,6 +3,28 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.30.0] - 2026-09-17
+
+### Added
+- **Pinned maps.** `⌥P` pins the open map, and a pin (Mappr's own, drawn to
+  match) shows next to the name. Pinned maps sit at the top of the Maps menu,
+  each with its number: `⌥⇧1` to `⌥⇧9` open them in pin order.
+- **The map switcher, `⌥M`.** Pinned maps first, then recent ones; type to
+  filter, arrows and `⏎` to open. It starts on the map you were on before, so
+  `⌥M` `⏎` swaps back and forth. `⌥P` and `⌥T` work on the highlighted map.
+  The Maps menu opens it too.
+- **Colour tags.** `⌥T` gives the open map a colour and steps through six;
+  past the last it clears. The dot beside each map in the lists does the same
+  on a click, and the colour shows next to the name.
+- **Back to the last map.** `⌥` plus the backtick key flips between the map
+  you are on and the one before.
+
+### Fixed
+- **Shapes going missing after a move in a big map.** Moving a node between
+  branches could leave boxes undrawn or drawn in the wrong place until the next
+  full repaint. A shortcut in the repaint reused a shape that was still on
+  screen elsewhere; it now only takes that shortcut when it is safe.
+
 ## [0.29.0] - 2026-09-17
 
 ### Added

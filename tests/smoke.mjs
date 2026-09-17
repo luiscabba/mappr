@@ -2244,6 +2244,125 @@ group("new map from the keyboard, and the key log");
   ok("and stays away otherwise", await M(() => !document.getElementById("keylog")));
 }
 
+group("pinned maps, colour tags, the switcher and the previous map");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(200); };
+  await page.goto(APP); await M(() => localStorage.clear()); await page.reload(); await page.waitForTimeout(400);
+  const lib = () => M(() => JSON.parse(localStorage.getItem("mappr.index")));
+  const name = () => M(() => __mf.state.nodes[__mf.state.rootId].text);
+  const mk = async (t) => { await press("Alt+n"); await M((t) => { __mf.state.nodes[__mf.state.rootId].text = t; __mf.set("gap", __mf.cfg.gap); }, t); await page.waitForTimeout(450); };
+  await M(() => { __mf.state.nodes[__mf.state.rootId].text = "Alpha"; __mf.set("gap", __mf.cfg.gap); });
+  await page.waitForTimeout(450);
+  await mk("Bravo"); await mk("Charlie"); await mk("Delta");
+  ok("four maps", Object.keys((await lib()).docs).length === 4);
+
+  // pin with Option+P
+  await press("Alt+p");
+  ok("Option+P pins the open map", (await lib()).pins.length === 1);
+  ok("the pin shows next to the name", await M(() => !document.getElementById("pinMark").hidden && !!document.querySelector("#pinMark svg")));
+  ok("the pin is our own drawing, not an emoji", await M(() => !/[\u{1F4CC}\u{1F4CD}]/u.test(document.body.innerHTML)));
+  await press("Alt+p");
+  ok("Option+P again unpins", (await lib()).pins.length === 0 && await M(() => document.getElementById("pinMark").hidden));
+
+  // switcher
+  await press("Alt+m");
+  ok("Option+M opens the switcher", await M(() => document.getElementById("switcher").classList.contains("on")));
+  ok("it starts on the previous map", await M(() => /Charlie/.test(document.querySelector(".swr.on").textContent)), await M(() => document.querySelector(".swr.on").textContent));
+  await page.keyboard.type("alp");
+  await page.waitForTimeout(150);
+  ok("typing filters", await M(() => document.querySelectorAll(".swr").length === 1 && /Alpha/.test(document.querySelector(".swr").textContent)));
+  await press("Alt+p");
+  ok("Option+P in the switcher pins the highlighted map", (await lib()).pins.length === 1 && await M(() => /Alpha/.test(document.querySelector(".swr .pin.p").closest(".swr").textContent)));
+  await press("Alt+t");
+  ok("Option+T gives it a colour", (await lib()).tags[(await lib()).pins[0]] === "red");
+  ok("no key leaked to the map", (await name()) === "Delta");
+  await press("Enter");
+  ok("Enter opens it", (await name()) === "Alpha" && await M(() => !document.getElementById("switcher").classList.contains("on")));
+  ok("the top bar shows the pin in its colour", await M(() => !document.getElementById("pinMark").hidden && document.getElementById("pinMark").style.color !== ""));
+  // Option+` goes back and forth
+  await press("Alt+Backquote");
+  ok("Option+` goes back to the previous map", (await name()) === "Delta", await name());
+  await press("Alt+Backquote");
+  ok("and forth", (await name()) === "Alpha");
+  // pin more, open by number
+  await M(() => { const L = JSON.parse(localStorage.getItem("mappr.index")); });
+  await press("Alt+m");
+  await page.keyboard.type("char"); await press("Alt+p"); await press("Escape");
+  await press("Alt+Shift+Digit2");
+  ok("Option+Shift+2 opens the second pinned map", (await name()) === "Charlie", await name());
+  await press("Alt+Shift+Digit1");
+  ok("Option+Shift+1 the first", (await name()) === "Alpha");
+  ok("and did not switch view", (await M(() => __mf.lens)) === "off" && !(await M(() => __mf.pres)));
+  await press("Alt+Shift+Digit7");
+  ok("an empty slot says so", /nothing pinned/.test(await M(() => document.getElementById("saveState").textContent)));
+  // switcher lists pinned first
+  await press("Alt+m");
+  const order = await M(() => [...document.querySelectorAll("#swList .swsec, #swList .swr .mn")].map((e) => e.textContent).join("|"));
+  ok("pinned first, then recent", /^Pinned\|Alpha\|Charlie\|Recent\|/.test(order), order);
+  ok("pinned rows show their number", await M(() => /2/.test([...document.querySelectorAll(".swr")][1].querySelector(".mslot").textContent)));
+  await M(() => document.querySelectorAll(".swr")[1].querySelector("[data-tag]").dispatchEvent(new MouseEvent("mousedown", { bubbles: true })));
+  ok("clicking a dot colours that map", (await lib()).tags[(await lib()).pins[1]] === "red");
+  await M(() => document.querySelectorAll(".swr")[3].dispatchEvent(new MouseEvent("mousedown", { bubbles: true })));
+  ok("clicking a row opens it", (await name()) !== "Alpha" && await M(() => !document.getElementById("switcher").classList.contains("on")));
+  // Maps panel
+  await M(() => document.getElementById("btnMaps").click());
+  const panel = await M(() => document.getElementById("mapsList").textContent);
+  ok("the Maps menu has a Pinned section on top", /^Pinned/.test(panel) && /Everything else/.test(panel), panel);
+  await M(() => document.querySelector('#mapsList .mrow:not(.on) [data-pin]:not(.p)').click());
+  ok("its pin buttons pin", (await lib()).pins.length === 3);
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnSwitch").click());
+  ok("the Maps menu opens the switcher too", await M(() => document.getElementById("switcher").classList.contains("on") && !document.getElementById("maps").classList.contains("on")));
+  await press("Escape");
+  // cycling a tag past the end clears it
+  const pid = (await lib()).pins[0];
+  for (let i = 0; i < 6; i++) await M((x) => __mf.cycleTag(x), pid);
+  ok("a colour past the last one clears", !(await lib()).tags[pid], (await lib()).tags);
+  // deleting a pinned map drops its pin
+  await M(() => document.getElementById("btnMaps").click());
+  const target = await M(() => { const L = JSON.parse(localStorage.getItem("mappr.index")); return L.pins.find((x) => x !== L.current); });
+  await M((x) => { const b = document.querySelector('#mapsList [data-del="' + x + '"]'); b.click(); document.querySelector('#mapsList [data-del="' + x + '"]').click(); }, target);
+  ok("deleting a pinned map unpins it", !(await lib()).pins.includes(target) && !(await lib()).docs[target]);
+  await M(() => document.getElementById("btnMaps").click());
+  // not while typing
+  await press("Space"); await page.keyboard.press("Alt+m"); await page.waitForTimeout(150);
+  ok("Option+M does nothing while typing", await M(() => !document.getElementById("switcher").classList.contains("on")));
+  await press("Escape");
+  // survives a reload
+  const pins0 = (await lib()).pins.join();
+  await page.reload(); await page.waitForTimeout(400);
+  ok("pins survive a reload", (await lib()).pins.join() === pins0 && await M(() => document.getElementById("pinMark").hidden === !JSON.parse(localStorage.getItem("mappr.index")).pins.includes(JSON.parse(localStorage.getItem("mappr.index")).current)));
+}
+
+group("repainting after a move in a big map");
+{
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  let big = "Map\n";
+  for (let i = 0; i < 12; i++) { big += `- Branch ${i}\n`; for (let j = 0; j < 4; j++) big += `  - Leaf ${i}.${j}\n    - Deep ${i}.${j}\n`; }
+  big += "- Business Impact\n  - Revenue\n  - Efficiency\n    - QA Audit\n  - Risk\n    - AI Insights\n  - Decision Support\n";
+  await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, big);
+  await page.waitForTimeout(300);
+  const same = async () => {
+    const inc = await M(() => document.getElementById("paintLayer").innerHTML);
+    await M(() => __mf.set("slop", __mf.cfg.slop));
+    const full = await M(() => document.getElementById("paintLayer").innerHTML);
+    return inc === full;
+  };
+  await pick("AI Insights");
+  await page.keyboard.press("Alt+ArrowDown"); await page.waitForTimeout(250);
+  ok("moving a node into the next branch repaints every shape", await same());
+  await page.keyboard.press("Alt+ArrowUp"); await page.waitForTimeout(250);
+  ok("and moving it back does too", await same());
+  await pick("Leaf 3.2");
+  await page.keyboard.press("Alt+ArrowDown"); await page.waitForTimeout(250);
+  await page.keyboard.press("Alt+ArrowDown"); await page.waitForTimeout(250);
+  ok("so does a plain reorder, twice", await same());
+  await M(() => __mf.spread("sides"));
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 
