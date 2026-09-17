@@ -3060,6 +3060,32 @@ group("0.37: the right-click menu, Option+Enter both ways");
   await M(() => __mf.spread("sides"));
 }
 
+group("0.38.1: a branch-tied network keeps its trees apart");
+{
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, "Root\n- Ideas\n  - Context\n    - Setting up a pickleball court warehouse in the city centre\n    - They have a warehouse and it can fit three courts side by side and a lounge\n    - Competition holds typical branding such as:\n      - Dink Smash\n      - Paddle Heroes\n  - Vision\n    - Extended activities\n    - Complex is a flexible name and the brand can be strong in the sports space\n      - Sports Complex\n      - Pickle Complex\n      - Even the name by itself could be a club or a rave\n- Plan\n  - a");
+  await page.waitForTimeout(300);
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  await M(([a, b]) => __mf.branchTie(a, b), [await id("Context"), await id("Vision")]);
+  await M((x) => __mf.setLens("one", x), await id("Vision"));
+  await page.waitForTimeout(400);
+  const r = await M(() => {
+    const P = __mf.pos(), B = __mf.boxes(), ids = Object.keys(P); let n = 0;
+    for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) { const a = ids[i], b = ids[j]; if (Math.abs(P[a].cx - P[b].cx) < (B[a].w + B[b].w) / 2 && Math.abs(P[a].cy - P[b].cy) < (B[a].h + B[b].h) / 2) n++; }
+    return { shown: ids.length, overlaps: n };
+  });
+  ok("the network shows both branches", r.shown >= 12, r);
+  ok("and no two boxes overlap", r.overlaps === 0, r);
+  const shape = await M(([c, k]) => { const P = __mf.pos(); return [P[k].cx - P[c].cx, P[k].cy - P[c].cy].map(Math.round); }, [await id("Context"), await id("Dink Smash")]);
+  await M(() => __mf.setLens("off"));
+  await page.waitForTimeout(200);
+  const shape0 = await M(([c, k]) => { const P = __mf.pos(); return [P[k].cx - P[c].cx, P[k].cy - P[c].cy].map(Math.round); }, [await id("Context"), await id("Dink Smash")]);
+  ok("a tied branch keeps its tidy shape inside the network", shape.join() === shape0.join(), [shape, shape0]);
+  await M(() => __mf.spread("sides"));
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 

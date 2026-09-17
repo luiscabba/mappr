@@ -3,6 +3,16 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.38.1] - 2026-09-17
+
+### Fixed
+- **A network with a branch tie keeps its trees.** Opening a node's network
+  (`⌘/` in connections) arranged every node of a branch-tied subtree as
+  a loose point, so the boxes landed on each other and the tree edges ran
+  through them. Each tied branch now keeps the shape the map gave it and moves
+  as one block; blocks keep clear of each other by their edges, not their
+  centres, so a wide branch is given room.
+
 ## [0.38.0] - 2026-09-17
 
 ### Changed

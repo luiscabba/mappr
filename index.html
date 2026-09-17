@@ -551,7 +551,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v0.38.0">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
+  <span class="brand" id="brand" title="Mappr v0.38.1">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -634,7 +634,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.38.0</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.38.1</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <div id="helpBody">
@@ -749,9 +749,9 @@
      panel cannot drift from the record of what actually shipped. -->
 <div id="notes">
   <div id="notesCard">
-    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.38.0</span></h2>
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.38.1</span></h2>
     <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
-    <div id="notesBody"><h3 class="rel">0.38.0 <span>2026-09-17</span></h3><h4>Changed</h4><ul><li><b>Big maps are quick again.</b> The bench picked the targets: in a 1500-node map, adding a node cost 76ms and a keystroke while typing 22ms, most of it spent redrawing shapes that had only shifted and restyling nodes that had not changed. Now adding a node costs 11ms and a keystroke 6ms; an arrow move is unchanged at 8ms and a full render is 7ms. What changed underneath: a shape is drawn once and moved by a transform when its node shifts; nodes and shapes sit in one group per branch, so a branch that moves as a block moves with one transform; a node&#x27;s class and place are written only when they changed, since writing the same value still makes the browser restyle it; and the selection halos are their own layer, so typing beside a big selection no longer rebuilds them on every keystroke. Exports draw afresh as before. The bench now records the two keys pressed most, a letter and an arrow, in a 600 and a 1500-node map.</li></ul><h3 class="rel">0.37.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Right-click is Mappr&#x27;s own menu.</b> On a node it lists everything that can be done to it, each row with its key beside it, so the menu teaches the keys: focus, fold, tie to the node you had selected, tie the branches, open or break out or link a map, retype, done, flag, duplicate, split, merge, sort, carry, frame, copy as an outline or an image, delete. What does not apply is not shown, and inside a selection the menu acts on the selection. On empty canvas it offers the views, the camera and the maps. In a network it works on the network. <code>Esc</code> closes it, and any other key closes it and still does what it does. Nothing was unbound: every key is still a key. Right-click used to focus into a branch; that is the first row now, and <code>⌘/</code> is unchanged.</li></ul><h4>Changed</h4><ul><li><b><code>⌥⏎</code> crosses a link either way.</b> On a link it opens the map, as before. On any other node it goes back up to the link you came through, at the view you left. <code>⌥U</code> is gone. Double-click on empty canvas goes back up too, the mouse twin of double-clicking a link to go down. The trail in the top bar still jumps straight to any map on the way.</li></ul><h3 class="rel">0.36.0 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Ties inside a focused branch are drawn again.</b> Focus on a branch and a tie between two of its nodes was not drawn at all, and the nodes wore no badge. A tie that leaves the branch still cannot be drawn, but the node now wears a badge that counts it as <em>outside</em>, and a click on the badge steps out of the focus to the other end.</li><li><b>Break out keeps the ties across the cut.</b> They used to be removed. Now the link node stands in for the end that left, drawn hollow the way a folded branch is, and bringing the map back in puts each tie back on its node.</li><li><b>Deleting a node hands its ties to the child that moved up</b>, the way a frame already followed. A branch tie whose ends end up on one line after a move, a carry or a merge becomes a plain tie instead of tying a branch to itself.</li><li><b>Duplicate keeps the ties between the copied nodes</b>, as copy and paste did, and both keep a map link: the copy is a second link to the same map.</li><li><b>A link stands in for a whole map, so nothing can be put under it.</b> <code>⌘</code>+arrow, paste, <code>⌥</code>+arrow, carry and merge all said nothing and did something odd; merging into a link threw the merged text away. Each now says so and leaves the map alone.</li><li><b>A story survives what happens to its nodes.</b> Deleting or moving a node out of an arranged level used to drop everything told after it; the chain is spliced instead. Merging told nodes tells the survivor in their place. Sorting a told level puts that level back to map order and says so, rather than showing one order and telling another.</li><li><b>Presenting.</b> <code>Esc</code> from the overview or the whole story goes back to the talk instead of ending it. Paste does nothing mid-talk. Starting a talk puts a carried node down, closes the maps panel and stashes the selection, which is back when the talk ends. The story menu closes when <code>R</code> is pressed, and a different story picked mid-talk starts from the top. Undo while arranging stays on the story and the focus you are arranging. A link node no longer advertises <code>⌥⏎</code> while presenting, where the key advances the talk.</li><li><b>Switching map leaves the lens, the carry and the talk behind.</b> A dim or a network used to follow you into the next map, and a carry could be dropped in a map that did not contain it.</li><li><b>Maps.</b> An unrelated undo no longer brings back a map you deleted from the panel; only a map set aside by an undo or a bring in comes back with its redo. A map set aside by bringing it in is not evicted from Recently deleted while undo could still want it. Breaking out a branch that holds links records them, so <em>Linked from</em> and delete know about them. A frame trimmed by a break out is counted in the message.</li><li>Smaller: the fold badge inside a network folds again rather than hopping a link; a node whose only ties are hidden says how many rather than <code>∿0</code>; a story cannot take another story&#x27;s name; <code>⌘⇧G</code> with no frame says what it needs; a chord pressed with the sort or copy menu open closes the menu and still does what it does; carrying a branch out of a frame leaves the frame round what stayed.</li></ul><h3 class="rel">0.35.1 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Coming back to a map keeps your view.</b> Going back up from a linked map (<code>⌥U</code> or the trail), <code>⌥</code> plus backtick, or the map switcher used to fit the whole map again. A map you already visited this session now opens at the zoom and place you left it, with the same node selected.</li></ul><h3 class="rel">0.35.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Branch ties.</b> <code>⌘⇧</code>+click ties the selected node to another as a whole branch: one heavier arc with a double tick where it leaves each box, and in connections everything under either node counts as the same network. Dimmed, both branches stay lit; opened as a network, both come up with their tree drawn. The same gesture again removes it, and it turns a plain tie between the same two nodes into a branch tie. From the keyboard, select the two nodes and press <code>⌥⇧T</code>. Copy, paste, merge and break out keep it.</li></ul><h3 class="rel">0.34.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Map links.</b> A link is a node that stands in for a whole map: it shows the map&#x27;s name and size, and its name follows the map. The style panel has three looks under <em>Map links</em>: a stacked card (the default), dashed, or an arrow badge.</li><li><b>Break out, <code>⌥B</code>.</b> A branch becomes a map of its own and a link takes its place. Marks, folds, frames and the links inside the branch go with it; links that crossed the cut are removed and counted. On a link, <code>⌥B</code> brings the map back in as a branch, and the map goes to Recently deleted unless something else still links to it. <code>⌘Z</code> undoes either, map and all.</li><li><b>Link a node, <code>⌥K</code>.</b> Pick a map to link to, or make a new one named after the node.</li><li><b>Follow links.</b> <code>⌥⏎</code> or a double-click opens a linked map. A bar under the top bar keeps the trail of maps you came through; <code>⌥U</code> or a name in it goes back up to the link you left from. <em>Linked from</em> says which other maps link to the one you are on. A link whose map was deleted says so, and <code>⌥⏎</code> restores the map.</li></ul><h4>Changed</h4><ul><li><b>Undo survives switching maps.</b> Each map keeps its own undo history for the session, so going into a linked map and back, or switching away and back, keeps the steps you took.</li></ul></div>
+    <div id="notesBody"><h3 class="rel">0.38.1 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>A network with a branch tie keeps its trees.</b> Opening a node&#x27;s network (<code>⌘/</code> in connections) arranged every node of a branch-tied subtree as a loose point, so the boxes landed on each other and the tree edges ran through them. Each tied branch now keeps the shape the map gave it and moves as one block; blocks keep clear of each other by their edges, not their centres, so a wide branch is given room.</li></ul><h3 class="rel">0.38.0 <span>2026-09-17</span></h3><h4>Changed</h4><ul><li><b>Big maps are quick again.</b> The bench picked the targets: in a 1500-node map, adding a node cost 76ms and a keystroke while typing 22ms, most of it spent redrawing shapes that had only shifted and restyling nodes that had not changed. Now adding a node costs 11ms and a keystroke 6ms; an arrow move is unchanged at 8ms and a full render is 7ms. What changed underneath: a shape is drawn once and moved by a transform when its node shifts; nodes and shapes sit in one group per branch, so a branch that moves as a block moves with one transform; a node&#x27;s class and place are written only when they changed, since writing the same value still makes the browser restyle it; and the selection halos are their own layer, so typing beside a big selection no longer rebuilds them on every keystroke. Exports draw afresh as before. The bench now records the two keys pressed most, a letter and an arrow, in a 600 and a 1500-node map.</li></ul><h3 class="rel">0.37.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Right-click is Mappr&#x27;s own menu.</b> On a node it lists everything that can be done to it, each row with its key beside it, so the menu teaches the keys: focus, fold, tie to the node you had selected, tie the branches, open or break out or link a map, retype, done, flag, duplicate, split, merge, sort, carry, frame, copy as an outline or an image, delete. What does not apply is not shown, and inside a selection the menu acts on the selection. On empty canvas it offers the views, the camera and the maps. In a network it works on the network. <code>Esc</code> closes it, and any other key closes it and still does what it does. Nothing was unbound: every key is still a key. Right-click used to focus into a branch; that is the first row now, and <code>⌘/</code> is unchanged.</li></ul><h4>Changed</h4><ul><li><b><code>⌥⏎</code> crosses a link either way.</b> On a link it opens the map, as before. On any other node it goes back up to the link you came through, at the view you left. <code>⌥U</code> is gone. Double-click on empty canvas goes back up too, the mouse twin of double-clicking a link to go down. The trail in the top bar still jumps straight to any map on the way.</li></ul><h3 class="rel">0.36.0 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Ties inside a focused branch are drawn again.</b> Focus on a branch and a tie between two of its nodes was not drawn at all, and the nodes wore no badge. A tie that leaves the branch still cannot be drawn, but the node now wears a badge that counts it as <em>outside</em>, and a click on the badge steps out of the focus to the other end.</li><li><b>Break out keeps the ties across the cut.</b> They used to be removed. Now the link node stands in for the end that left, drawn hollow the way a folded branch is, and bringing the map back in puts each tie back on its node.</li><li><b>Deleting a node hands its ties to the child that moved up</b>, the way a frame already followed. A branch tie whose ends end up on one line after a move, a carry or a merge becomes a plain tie instead of tying a branch to itself.</li><li><b>Duplicate keeps the ties between the copied nodes</b>, as copy and paste did, and both keep a map link: the copy is a second link to the same map.</li><li><b>A link stands in for a whole map, so nothing can be put under it.</b> <code>⌘</code>+arrow, paste, <code>⌥</code>+arrow, carry and merge all said nothing and did something odd; merging into a link threw the merged text away. Each now says so and leaves the map alone.</li><li><b>A story survives what happens to its nodes.</b> Deleting or moving a node out of an arranged level used to drop everything told after it; the chain is spliced instead. Merging told nodes tells the survivor in their place. Sorting a told level puts that level back to map order and says so, rather than showing one order and telling another.</li><li><b>Presenting.</b> <code>Esc</code> from the overview or the whole story goes back to the talk instead of ending it. Paste does nothing mid-talk. Starting a talk puts a carried node down, closes the maps panel and stashes the selection, which is back when the talk ends. The story menu closes when <code>R</code> is pressed, and a different story picked mid-talk starts from the top. Undo while arranging stays on the story and the focus you are arranging. A link node no longer advertises <code>⌥⏎</code> while presenting, where the key advances the talk.</li><li><b>Switching map leaves the lens, the carry and the talk behind.</b> A dim or a network used to follow you into the next map, and a carry could be dropped in a map that did not contain it.</li><li><b>Maps.</b> An unrelated undo no longer brings back a map you deleted from the panel; only a map set aside by an undo or a bring in comes back with its redo. A map set aside by bringing it in is not evicted from Recently deleted while undo could still want it. Breaking out a branch that holds links records them, so <em>Linked from</em> and delete know about them. A frame trimmed by a break out is counted in the message.</li><li>Smaller: the fold badge inside a network folds again rather than hopping a link; a node whose only ties are hidden says how many rather than <code>∿0</code>; a story cannot take another story&#x27;s name; <code>⌘⇧G</code> with no frame says what it needs; a chord pressed with the sort or copy menu open closes the menu and still does what it does; carrying a branch out of a frame leaves the frame round what stayed.</li></ul><h3 class="rel">0.35.1 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Coming back to a map keeps your view.</b> Going back up from a linked map (<code>⌥U</code> or the trail), <code>⌥</code> plus backtick, or the map switcher used to fit the whole map again. A map you already visited this session now opens at the zoom and place you left it, with the same node selected.</li></ul><h3 class="rel">0.35.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Branch ties.</b> <code>⌘⇧</code>+click ties the selected node to another as a whole branch: one heavier arc with a double tick where it leaves each box, and in connections everything under either node counts as the same network. Dimmed, both branches stay lit; opened as a network, both come up with their tree drawn. The same gesture again removes it, and it turns a plain tie between the same two nodes into a branch tie. From the keyboard, select the two nodes and press <code>⌥⇧T</code>. Copy, paste, merge and break out keep it.</li></ul></div>
     <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
 </div>
@@ -765,7 +765,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="0.38.0";
+var VERSION="0.38.1";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid",
   width:2, dash:"solid", slop:1, edges:"round",
@@ -1199,52 +1199,77 @@ function arrangeByLinks(){
   var rid=VR();
   var live=Object.keys(pos).filter(function(id){ return id!==rid && box[id]; });
   if(live.length<2) return;
+  var liveSet={}; live.forEach(function(i){ liveSet[i]=1; });
+
+  /* A branch tie brings whole subtrees in, drawn with their tree. Those keep
+     the shape the tidy layout gave them and move as one block; arranging
+     their nodes one by one threw the tree away and piled the boxes on each
+     other. Everything else is a block of one. */
+  var tops={};
+  (state.links||[]).forEach(function(l){ if(l.branch){ [l.a,l.b].forEach(function(t){ var e=visibleEnd(t); if(e && liveSet[e.id]) tops[e.id]=1; }); } });
+  Object.keys(tops).forEach(function(t){ if(pathTo(t).slice(0,-1).some(function(a){ return tops[a]; })) delete tops[t]; });
+  var blockOf={}, blocks=[];
+  Object.keys(tops).forEach(function(t){
+    var mem=subtree(t).filter(function(i){ return liveSet[i] && !blockOf[i]; });
+    if(!mem.length) return;
+    var b={id:t, mem:mem}; blocks.push(b); mem.forEach(function(i){ blockOf[i]=b; });
+  });
+  live.forEach(function(id){ if(!blockOf[id]){ var b={id:id, mem:[id]}; blocks.push(b); blockOf[id]=b; } });
+  blocks.forEach(function(b){
+    var x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+    b.mem.forEach(function(i){ var p=pos[i], z=box[i]; x0=Math.min(x0,p.cx-z.w/2); y0=Math.min(y0,p.cy-z.h/2); x1=Math.max(x1,p.cx+z.w/2); y1=Math.max(y1,p.cy+z.h/2); });
+    b.w=x1-x0; b.h=y1-y0; b.x=(x0+x1)/2; b.y=(y0+y1)/2; b.ax=b.x; b.ay=b.y; b.vx=0; b.vy=0;
+    b.off={}; b.mem.forEach(function(i){ b.off[i]=[pos[i].cx-b.x, pos[i].cy-b.y]; });
+  });
+  if(blocks.length<2) return;
+
   var pairs=[];
   linkPairs().forEach(function(pr){
     if(!pos[pr[0]]||!pos[pr[1]]||pr[0]===rid||pr[1]===rid) return;
-    pairs.push(pr);
+    var A=blockOf[pr[0]], B=blockOf[pr[1]];
+    if(!A||!B||A===B) return;
+    pairs.push([A,B]);
   });
   if(!pairs.length) return;
 
-  var S={};
-  live.forEach(function(id){
-    S[id]={ ax:pos[id].cx, ay:pos[id].cy, x:pos[id].cx, y:pos[id].cy, vx:0, vy:0,
-            w:box[id].w, h:box[id].h };
-  });
+  /* rest length between two blocks: enough for both to sit clear of each other */
+  function rest(A,B){ return Math.max(ARR_REST, (A.w+B.w)/2+60, (A.h+B.h)/2+40); }
   for(var it=0; it<ARR_ITER; it++){
     var cool=Math.pow(1-it/ARR_ITER,1.4);
-    live.forEach(function(id){ S[id].vx=0; S[id].vy=0; });
-    for(var i=0;i<live.length;i++) for(var j=i+1;j<live.length;j++){
-      var P=S[live[i]], Q=S[live[j]];
-      var dx=Q.x-P.x, dy=Q.y-P.y, d2=dx*dx+dy*dy;
-      if(d2<1){ dx=Math.random()-.5; dy=Math.random()-.5; d2=1; }
+    blocks.forEach(function(b){ b.vx=0; b.vy=0; });
+    for(var i=0;i<blocks.length;i++) for(var j=i+1;j<blocks.length;j++){
+      var P=blocks[i], Q=blocks[j];
+      var dx=Q.x-P.x, dy=Q.y-P.y;
+      /* measured between the boxes' edges, not their centres, so a wide block repels from its side */
+      var gx=Math.max(0,Math.abs(dx)-(P.w+Q.w)/2), gy=Math.max(0,Math.abs(dy)-(P.h+Q.h)/2);
+      var d2=gx*gx+gy*gy+900;
+      if(dx*dx+dy*dy<1){ dx=Math.random()-.5; dy=Math.random()-.5; }
       if(d2>810000) continue;
-      var d=Math.sqrt(d2), f=ARR_REP/d2, ux=dx/d, uy=dy/d;
+      var d=Math.hypot(dx,dy)||1, f=ARR_REP/d2, ux=dx/d, uy=dy/d;
       P.vx-=ux*f; P.vy-=uy*f; Q.vx+=ux*f; Q.vy+=uy*f;
     }
     pairs.forEach(function(pr){
-      var P=S[pr[0]], Q=S[pr[1]]; if(!P||!Q) return;
+      var P=pr[0], Q=pr[1];
       var dx=Q.x-P.x, dy=Q.y-P.y, d=Math.hypot(dx,dy)||1;
-      var f=(d-ARR_REST)*ARR_SPRING, ux=dx/d, uy=dy/d;
+      var f=(d-rest(P,Q))*ARR_SPRING, ux=dx/d, uy=dy/d;
       P.vx+=ux*f; P.vy+=uy*f; Q.vx-=ux*f; Q.vy-=uy*f;
     });
-    live.forEach(function(id){
-      var n=S[id];
+    blocks.forEach(function(n){
       n.vx+=(n.ax-n.x)*ARR_ANCHOR; n.vy+=(n.ay-n.y)*ARR_ANCHOR;
       var step=Math.hypot(n.vx,n.vy);
       if(step>26){ n.vx=n.vx/step*26; n.vy=n.vy/step*26; }
       n.x+=n.vx*cool; n.y+=n.vy*cool;
     });
   }
-  /* The simulation treats nodes as points; they are boxes. The centre node is
+  /* The simulation treats blocks as points; they are boxes. The centre node is
      in this pass but never moves. */
-  var boxes=live.map(function(id){ return S[id]; });
+  var boxes=blocks.slice();
   if(pos[rid]&&box[rid]) boxes.push({x:pos[rid].cx,y:pos[rid].cy,w:box[rid].w,h:box[rid].h,fixed:true});
-  for(var sp=0; sp<30; sp++){
+  for(var sp=0; sp<40; sp++){
     var moved=false;
     for(var a2=0;a2<boxes.length;a2++) for(var b2=a2+1;b2<boxes.length;b2++){
       var U=boxes[a2], V=boxes[b2];
-      var ox=(U.w+V.w)/2+20-Math.abs(U.x-V.x), oy=(U.h+V.h)/2+12-Math.abs(U.y-V.y);
+      var ox=(U.w+V.w)/2+24-Math.abs(U.x-V.x), oy=(U.h+V.h)/2+16-Math.abs(U.y-V.y);
       if(ox<=0||oy<=0) continue;
       moved=true;
       var uf=U.fixed?0:(V.fixed?1:.5), vf=V.fixed?0:(U.fixed?1:.5);
@@ -1253,7 +1278,7 @@ function arrangeByLinks(){
     }
     if(!moved) break;
   }
-  live.forEach(function(id){ pos[id]={cx:S[id].x, cy:S[id].y}; });
+  blocks.forEach(function(b){ b.mem.forEach(function(i){ pos[i]={cx:b.x+b.off[i][0], cy:b.y+b.off[i][1]}; }); });
 }
 
 /* ---------- presentation ----------

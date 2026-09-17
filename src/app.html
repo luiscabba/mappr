@@ -1199,52 +1199,77 @@ function arrangeByLinks(){
   var rid=VR();
   var live=Object.keys(pos).filter(function(id){ return id!==rid && box[id]; });
   if(live.length<2) return;
+  var liveSet={}; live.forEach(function(i){ liveSet[i]=1; });
+
+  /* A branch tie brings whole subtrees in, drawn with their tree. Those keep
+     the shape the tidy layout gave them and move as one block; arranging
+     their nodes one by one threw the tree away and piled the boxes on each
+     other. Everything else is a block of one. */
+  var tops={};
+  (state.links||[]).forEach(function(l){ if(l.branch){ [l.a,l.b].forEach(function(t){ var e=visibleEnd(t); if(e && liveSet[e.id]) tops[e.id]=1; }); } });
+  Object.keys(tops).forEach(function(t){ if(pathTo(t).slice(0,-1).some(function(a){ return tops[a]; })) delete tops[t]; });
+  var blockOf={}, blocks=[];
+  Object.keys(tops).forEach(function(t){
+    var mem=subtree(t).filter(function(i){ return liveSet[i] && !blockOf[i]; });
+    if(!mem.length) return;
+    var b={id:t, mem:mem}; blocks.push(b); mem.forEach(function(i){ blockOf[i]=b; });
+  });
+  live.forEach(function(id){ if(!blockOf[id]){ var b={id:id, mem:[id]}; blocks.push(b); blockOf[id]=b; } });
+  blocks.forEach(function(b){
+    var x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+    b.mem.forEach(function(i){ var p=pos[i], z=box[i]; x0=Math.min(x0,p.cx-z.w/2); y0=Math.min(y0,p.cy-z.h/2); x1=Math.max(x1,p.cx+z.w/2); y1=Math.max(y1,p.cy+z.h/2); });
+    b.w=x1-x0; b.h=y1-y0; b.x=(x0+x1)/2; b.y=(y0+y1)/2; b.ax=b.x; b.ay=b.y; b.vx=0; b.vy=0;
+    b.off={}; b.mem.forEach(function(i){ b.off[i]=[pos[i].cx-b.x, pos[i].cy-b.y]; });
+  });
+  if(blocks.length<2) return;
+
   var pairs=[];
   linkPairs().forEach(function(pr){
     if(!pos[pr[0]]||!pos[pr[1]]||pr[0]===rid||pr[1]===rid) return;
-    pairs.push(pr);
+    var A=blockOf[pr[0]], B=blockOf[pr[1]];
+    if(!A||!B||A===B) return;
+    pairs.push([A,B]);
   });
   if(!pairs.length) return;
 
-  var S={};
-  live.forEach(function(id){
-    S[id]={ ax:pos[id].cx, ay:pos[id].cy, x:pos[id].cx, y:pos[id].cy, vx:0, vy:0,
-            w:box[id].w, h:box[id].h };
-  });
+  /* rest length between two blocks: enough for both to sit clear of each other */
+  function rest(A,B){ return Math.max(ARR_REST, (A.w+B.w)/2+60, (A.h+B.h)/2+40); }
   for(var it=0; it<ARR_ITER; it++){
     var cool=Math.pow(1-it/ARR_ITER,1.4);
-    live.forEach(function(id){ S[id].vx=0; S[id].vy=0; });
-    for(var i=0;i<live.length;i++) for(var j=i+1;j<live.length;j++){
-      var P=S[live[i]], Q=S[live[j]];
-      var dx=Q.x-P.x, dy=Q.y-P.y, d2=dx*dx+dy*dy;
-      if(d2<1){ dx=Math.random()-.5; dy=Math.random()-.5; d2=1; }
+    blocks.forEach(function(b){ b.vx=0; b.vy=0; });
+    for(var i=0;i<blocks.length;i++) for(var j=i+1;j<blocks.length;j++){
+      var P=blocks[i], Q=blocks[j];
+      var dx=Q.x-P.x, dy=Q.y-P.y;
+      /* measured between the boxes' edges, not their centres, so a wide block repels from its side */
+      var gx=Math.max(0,Math.abs(dx)-(P.w+Q.w)/2), gy=Math.max(0,Math.abs(dy)-(P.h+Q.h)/2);
+      var d2=gx*gx+gy*gy+900;
+      if(dx*dx+dy*dy<1){ dx=Math.random()-.5; dy=Math.random()-.5; }
       if(d2>810000) continue;
-      var d=Math.sqrt(d2), f=ARR_REP/d2, ux=dx/d, uy=dy/d;
+      var d=Math.hypot(dx,dy)||1, f=ARR_REP/d2, ux=dx/d, uy=dy/d;
       P.vx-=ux*f; P.vy-=uy*f; Q.vx+=ux*f; Q.vy+=uy*f;
     }
     pairs.forEach(function(pr){
-      var P=S[pr[0]], Q=S[pr[1]]; if(!P||!Q) return;
+      var P=pr[0], Q=pr[1];
       var dx=Q.x-P.x, dy=Q.y-P.y, d=Math.hypot(dx,dy)||1;
-      var f=(d-ARR_REST)*ARR_SPRING, ux=dx/d, uy=dy/d;
+      var f=(d-rest(P,Q))*ARR_SPRING, ux=dx/d, uy=dy/d;
       P.vx+=ux*f; P.vy+=uy*f; Q.vx-=ux*f; Q.vy-=uy*f;
     });
-    live.forEach(function(id){
-      var n=S[id];
+    blocks.forEach(function(n){
       n.vx+=(n.ax-n.x)*ARR_ANCHOR; n.vy+=(n.ay-n.y)*ARR_ANCHOR;
       var step=Math.hypot(n.vx,n.vy);
       if(step>26){ n.vx=n.vx/step*26; n.vy=n.vy/step*26; }
       n.x+=n.vx*cool; n.y+=n.vy*cool;
     });
   }
-  /* The simulation treats nodes as points; they are boxes. The centre node is
+  /* The simulation treats blocks as points; they are boxes. The centre node is
      in this pass but never moves. */
-  var boxes=live.map(function(id){ return S[id]; });
+  var boxes=blocks.slice();
   if(pos[rid]&&box[rid]) boxes.push({x:pos[rid].cx,y:pos[rid].cy,w:box[rid].w,h:box[rid].h,fixed:true});
-  for(var sp=0; sp<30; sp++){
+  for(var sp=0; sp<40; sp++){
     var moved=false;
     for(var a2=0;a2<boxes.length;a2++) for(var b2=a2+1;b2<boxes.length;b2++){
       var U=boxes[a2], V=boxes[b2];
-      var ox=(U.w+V.w)/2+20-Math.abs(U.x-V.x), oy=(U.h+V.h)/2+12-Math.abs(U.y-V.y);
+      var ox=(U.w+V.w)/2+24-Math.abs(U.x-V.x), oy=(U.h+V.h)/2+16-Math.abs(U.y-V.y);
       if(ox<=0||oy<=0) continue;
       moved=true;
       var uf=U.fixed?0:(V.fixed?1:.5), vf=V.fixed?0:(U.fixed?1:.5);
@@ -1253,7 +1278,7 @@ function arrangeByLinks(){
     }
     if(!moved) break;
   }
-  live.forEach(function(id){ pos[id]={cx:S[id].x, cy:S[id].y}; });
+  blocks.forEach(function(b){ b.mem.forEach(function(i){ pos[i]={cx:b.x+b.off[i][0], cy:b.y+b.off[i][1]}; }); });
 }
 
 /* ---------- presentation ----------
