@@ -436,6 +436,8 @@
   #modebar{top:14px;right:14px;display:flex;gap:2px;padding:4px;z-index:6}
   #modebar button{border:0;background:none;color:var(--muted);font:600 12px var(--font-ui);padding:5px 10px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:6px}
   #modebar button.empty{opacity:.45}
+  /* the keyboard sink: off screen, never seen, always focused on an iPad */
+  #sink{position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;overflow:hidden;outline:none;caret-color:transparent}
   #modebar button:hover{background:var(--panel-hover);color:var(--ink)}
   #modebar button.on{background:var(--sel-soft);color:var(--sel)}
   #modebar kbd{font:10px var(--font-ui);opacity:.6}
@@ -543,6 +545,7 @@
 </head>
 <body>
 
+<div id="sink" contenteditable="true" inputmode="none" aria-hidden="true" tabindex="-1"></div>
 <div id="stage">
   <div id="world">
     <svg id="paint" xmlns="http://www.w3.org/2000/svg">
@@ -573,7 +576,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v1.0.1">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
+  <span class="brand" id="brand" title="Mappr v1.0.2">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -657,7 +660,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.0.1</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.0.2</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <div id="helpBody">
@@ -774,9 +777,9 @@
      panel cannot drift from the record of what actually shipped. -->
 <div id="notes">
   <div id="notesCard">
-    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.0.1</span></h2>
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.0.2</span></h2>
     <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
-    <div id="notesBody"><h3 class="rel">1.0.1 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Keys the browser keeps.</b> Firefox and Zen hold <code>⌘⇧D</code>, <code>⌘⇧F</code>, <code>⌘⇧G</code> and <code>⌘⇧C</code> for themselves, so done, flag, ungroup and copy as an image never reached Mappr there. Each now has an Option twin by physical key: <code>⌥D</code>, <code>⌥F</code>, <code>⌥G</code>, <code>⌥C</code>. The menu shows the twin on those browsers. <code>⌃</code> has always stood in for <code>⌘</code>, which is the key to use on an iPad, where Safari keeps <code>⌘</code> with the arrows and the number row.</li><li><b>The Flags view is always on the mode bar</b>, muted until the map has a flag, with a hint saying how to make one. It used to be hidden, which read as missing.</li><li><b>Long press opens the menu.</b> On a node or the canvas, a touch held for half a second opens the same menu as a right-click, so every action is reachable on a tablet with no chord at all.</li></ul><h3 class="rel">1.0.0 <span>2026-09-17</span></h3><h4>Changed</h4><ul><li><b>Maps live under their root map.</b> A map that a link opens is kept under the map that links to it, up to a root that nothing links to. The Maps menu and the switcher list each root with the maps under it, indented, and a root row says how many. Copy on a root copies the whole tree with the links pointed at the copies; Delete on a root takes the tree to <em>Recently deleted</em>, each map on its own so any one can come back; the bin holds twelve now. Export as JSON bundles the maps under the one you export, and Import rebuilds them with fresh ids. A map is listed once, under the first map found linking to it.</li><li><b>Detach.</b> A map under another can be made its own again from the Maps menu: every link to it, in any map, becomes a plain node carrying its name, and it moves up to the roots. The part in the open map is one undo step.</li><li><b>A reload keeps your place.</b> Every map opens at the zoom and place you left it, whether you switch to it or reopen the app; only a map never opened is fitted. The last few undo steps are kept with the map (as many of the most recent as fit a small budget, since each is a whole snapshot), so <code>⌘Z</code> works after a reload too.</li></ul><h4>Fixed</h4><ul><li>Deleting the map you were on wrote it straight back into the library on the way out. It stays deleted.</li><li>Closing a tab, switching apps on a phone and a tab going to the background all flush the map and its undo steps now; before, only a full close did.</li><li>Two tabs of Mappr on the same store: the listings in each refresh when the other writes. A map open in both is still last writer wins.</li></ul><h3 class="rel">0.39.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>The maps rail.</b> Top left, every map under the root map as a tree, with the one you are on lit and each map&#x27;s size beside it. Click a name to open it, <code>⌥[</code> and <code>⌥]</code> walk them, a twist folds a branch of maps. A map linked from two places is listed under the first and marked under the second. <code>⌥⇧M</code> folds the rail to one line that says where you are, root to here, with the count; the choice is remembered. It replaces the trail bar and <em>Linked from</em>: the lit row is the trail, and a map that something links to hangs under it. Nothing shows until the map has a link.</li><li><b>Flags, drawn by hand.</b> The flag is a pennant on a pole in the same hand as the boxes, seeded on its node so it is the same every render, and it exports. The Style panel offers a ribbon, a ring and an asterisk instead.</li><li><b>Flags you can find.</b> <code>⌘4</code> (or <code>⌥4</code>) is a view on the number row, offered while the map has a flag: everything without one drops to a ghost, <code>Tab</code> and the arrows step flag to flag, <code>Esc</code> puts you back. In <code>⌘K</code>, <code>!</code> first lists only flagged nodes. Sort has <em>Flagged first</em>. A copied outline writes <code>!</code> before a flagged line, and a pasted <code>!</code> line comes in flagged. The end of a story counts the flags in it.</li></ul><h3 class="rel">0.38.1 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>A network with a branch tie keeps its trees.</b> Opening a node&#x27;s network (<code>⌘/</code> in connections) arranged every node of a branch-tied subtree as a loose point, so the boxes landed on each other and the tree edges ran through them. Each tied branch now keeps the shape the map gave it and moves as one block; blocks keep clear of each other by their edges, not their centres, so a wide branch is given room.</li></ul><h3 class="rel">0.38.0 <span>2026-09-17</span></h3><h4>Changed</h4><ul><li><b>Big maps are quick again.</b> The bench picked the targets: in a 1500-node map, adding a node cost 76ms and a keystroke while typing 22ms, most of it spent redrawing shapes that had only shifted and restyling nodes that had not changed. Now adding a node costs 11ms and a keystroke 6ms; an arrow move is unchanged at 8ms and a full render is 7ms. What changed underneath: a shape is drawn once and moved by a transform when its node shifts; nodes and shapes sit in one group per branch, so a branch that moves as a block moves with one transform; a node&#x27;s class and place are written only when they changed, since writing the same value still makes the browser restyle it; and the selection halos are their own layer, so typing beside a big selection no longer rebuilds them on every keystroke. Exports draw afresh as before. The bench now records the two keys pressed most, a letter and an arrow, in a 600 and a 1500-node map.</li></ul><h3 class="rel">0.37.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Right-click is Mappr&#x27;s own menu.</b> On a node it lists everything that can be done to it, each row with its key beside it, so the menu teaches the keys: focus, fold, tie to the node you had selected, tie the branches, open or break out or link a map, retype, done, flag, duplicate, split, merge, sort, carry, frame, copy as an outline or an image, delete. What does not apply is not shown, and inside a selection the menu acts on the selection. On empty canvas it offers the views, the camera and the maps. In a network it works on the network. <code>Esc</code> closes it, and any other key closes it and still does what it does. Nothing was unbound: every key is still a key. Right-click used to focus into a branch; that is the first row now, and <code>⌘/</code> is unchanged.</li></ul><h4>Changed</h4><ul><li><b><code>⌥⏎</code> crosses a link either way.</b> On a link it opens the map, as before. On any other node it goes back up to the link you came through, at the view you left. <code>⌥U</code> is gone. Double-click on empty canvas goes back up too, the mouse twin of double-clicking a link to go down. The trail in the top bar still jumps straight to any map on the way.</li></ul></div>
+    <div id="notesBody"><h3 class="rel">1.0.2 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Keys on an iPad.</b> iPadOS hands hardware-keyboard events and paste to a page only while something editable has the cursor; with nothing focused, Safari keeps the keys for itself. That is why every shortcut and <code>⌘V</code> only worked after tapping into a node. Mappr now keeps an invisible editable focused whenever no node, frame title or box has the keyboard, so the keys always have somewhere to land: arrows, <code>⌘</code>/<code>⌃</code> chords, <code>⏎</code>, typing and paste work straight away, and the on-screen keyboard stays out of the way. On for iPads and iPhones, and for anyone who adds <code>#sink</code> to the address.</li></ul><h3 class="rel">1.0.1 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Keys the browser keeps.</b> Firefox and Zen hold <code>⌘⇧D</code>, <code>⌘⇧F</code>, <code>⌘⇧G</code> and <code>⌘⇧C</code> for themselves, so done, flag, ungroup and copy as an image never reached Mappr there. Each now has an Option twin by physical key: <code>⌥D</code>, <code>⌥F</code>, <code>⌥G</code>, <code>⌥C</code>. The menu shows the twin on those browsers. <code>⌃</code> has always stood in for <code>⌘</code>, which is the key to use on an iPad, where Safari keeps <code>⌘</code> with the arrows and the number row.</li><li><b>The Flags view is always on the mode bar</b>, muted until the map has a flag, with a hint saying how to make one. It used to be hidden, which read as missing.</li><li><b>Long press opens the menu.</b> On a node or the canvas, a touch held for half a second opens the same menu as a right-click, so every action is reachable on a tablet with no chord at all.</li></ul><h3 class="rel">1.0.0 <span>2026-09-17</span></h3><h4>Changed</h4><ul><li><b>Maps live under their root map.</b> A map that a link opens is kept under the map that links to it, up to a root that nothing links to. The Maps menu and the switcher list each root with the maps under it, indented, and a root row says how many. Copy on a root copies the whole tree with the links pointed at the copies; Delete on a root takes the tree to <em>Recently deleted</em>, each map on its own so any one can come back; the bin holds twelve now. Export as JSON bundles the maps under the one you export, and Import rebuilds them with fresh ids. A map is listed once, under the first map found linking to it.</li><li><b>Detach.</b> A map under another can be made its own again from the Maps menu: every link to it, in any map, becomes a plain node carrying its name, and it moves up to the roots. The part in the open map is one undo step.</li><li><b>A reload keeps your place.</b> Every map opens at the zoom and place you left it, whether you switch to it or reopen the app; only a map never opened is fitted. The last few undo steps are kept with the map (as many of the most recent as fit a small budget, since each is a whole snapshot), so <code>⌘Z</code> works after a reload too.</li></ul><h4>Fixed</h4><ul><li>Deleting the map you were on wrote it straight back into the library on the way out. It stays deleted.</li><li>Closing a tab, switching apps on a phone and a tab going to the background all flush the map and its undo steps now; before, only a full close did.</li><li>Two tabs of Mappr on the same store: the listings in each refresh when the other writes. A map open in both is still last writer wins.</li></ul><h3 class="rel">0.39.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>The maps rail.</b> Top left, every map under the root map as a tree, with the one you are on lit and each map&#x27;s size beside it. Click a name to open it, <code>⌥[</code> and <code>⌥]</code> walk them, a twist folds a branch of maps. A map linked from two places is listed under the first and marked under the second. <code>⌥⇧M</code> folds the rail to one line that says where you are, root to here, with the count; the choice is remembered. It replaces the trail bar and <em>Linked from</em>: the lit row is the trail, and a map that something links to hangs under it. Nothing shows until the map has a link.</li><li><b>Flags, drawn by hand.</b> The flag is a pennant on a pole in the same hand as the boxes, seeded on its node so it is the same every render, and it exports. The Style panel offers a ribbon, a ring and an asterisk instead.</li><li><b>Flags you can find.</b> <code>⌘4</code> (or <code>⌥4</code>) is a view on the number row, offered while the map has a flag: everything without one drops to a ghost, <code>Tab</code> and the arrows step flag to flag, <code>Esc</code> puts you back. In <code>⌘K</code>, <code>!</code> first lists only flagged nodes. Sort has <em>Flagged first</em>. A copied outline writes <code>!</code> before a flagged line, and a pasted <code>!</code> line comes in flagged. The end of a story counts the flags in it.</li></ul><h3 class="rel">0.38.1 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>A network with a branch tie keeps its trees.</b> Opening a node&#x27;s network (<code>⌘/</code> in connections) arranged every node of a branch-tied subtree as a loose point, so the boxes landed on each other and the tree edges ran through them. Each tied branch now keeps the shape the map gave it and moves as one block; blocks keep clear of each other by their edges, not their centres, so a wide branch is given room.</li></ul><h3 class="rel">0.38.0 <span>2026-09-17</span></h3><h4>Changed</h4><ul><li><b>Big maps are quick again.</b> The bench picked the targets: in a 1500-node map, adding a node cost 76ms and a keystroke while typing 22ms, most of it spent redrawing shapes that had only shifted and restyling nodes that had not changed. Now adding a node costs 11ms and a keystroke 6ms; an arrow move is unchanged at 8ms and a full render is 7ms. What changed underneath: a shape is drawn once and moved by a transform when its node shifts; nodes and shapes sit in one group per branch, so a branch that moves as a block moves with one transform; a node&#x27;s class and place are written only when they changed, since writing the same value still makes the browser restyle it; and the selection halos are their own layer, so typing beside a big selection no longer rebuilds them on every keystroke. Exports draw afresh as before. The bench now records the two keys pressed most, a letter and an arrow, in a 600 and a 1500-node map.</li></ul></div>
     <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
 </div>
@@ -790,7 +793,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="1.0.1";
+var VERSION="1.0.2";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid", flagStyle:"pennant",
   width:2, dash:"solid", slop:1, edges:"round",
@@ -3452,6 +3455,33 @@ function commitEdit(){
     el.contentEditable="false";
   }
   editOld=null; editing=null; saveSoon();
+  sinkFocus();
+}
+/* ---------- the keyboard sink ----------
+   iPadOS only hands hardware-keyboard events and paste to the page while
+   something editable has focus; with nothing focused, Safari keeps the keys
+   (arrows scroll, Cmd+arrows navigate, Cmd+V goes nowhere). On a Mac the body
+   receives keys, so this never showed. The sink is an invisible editable that
+   is focused whenever no node, frame title or input has the keyboard, so the
+   keys always have somewhere to land. inputmode=none keeps the on-screen
+   keyboard away, so touch-only use is unchanged. It is on for touch-capable
+   Apple devices, and for anyone with #sink in the address. */
+var IS_IPAD=/iPad|iPhone|iPod/.test(navigator.userAgent||"") || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1) || /#sink/.test(location.hash);
+var elSink=document.getElementById("sink");
+function sinkFocus(){
+  if(!IS_IPAD||!elSink) return;
+  if(editing||editFrame) return;
+  var a=document.activeElement;
+  if(a && a!==document.body && a!==elSink && (a.tagName==="INPUT"||a.tagName==="TEXTAREA"||a.isContentEditable)) return;
+  if(elSink.textContent) elSink.textContent="";
+  if(a===elSink) return;
+  try{ elSink.focus({preventScroll:true}); }catch(e){ elSink.focus(); }
+}
+if(elSink){
+  /* anything that reaches the sink as text was a key nobody handled: drop it */
+  elSink.addEventListener("input",function(){ elSink.textContent=""; });
+  elSink.addEventListener("blur",function(){ setTimeout(function(){ if(document.activeElement===document.body) sinkFocus(); },0); });
+  addEventListener("focus",function(){ sinkFocus(); });
 }
 /* A new node is simply selected, not opened for typing: any letter starts
    typing into it anyway, so there is no cursor blinking in an empty box. The
@@ -3493,6 +3523,7 @@ function commitFrameEdit(){
   var el=ftEls[editFrame], f=frameById(editFrame);
   if(el&&f){ f.title=el.innerText.replace(/\n/g," ").trim()||"Frame"; el.contentEditable="false"; }
   editFrame=null; render(true); saveSoon();
+  sinkFocus();
 }
 function frameById(id){ return state.frames.filter(function(f){ return f.id===id; })[0]; }
 
@@ -4915,7 +4946,7 @@ function openJump(){
   elJumpIn.value=""; jumpRows=jumpSearch(""); jumpAt=0; drawJump();
   elJumpIn.focus();
 }
-function closeJump(){ elJump.classList.remove("on"); elJumpIn.blur(); }
+function closeJump(){ elJump.classList.remove("on"); elJumpIn.blur(); sinkFocus(); }
 function jumpTo(id){
   closeJump();
   if(!N(id)) return;
@@ -5583,7 +5614,7 @@ function openSwitcher(){
   drawSwitcher();
   elSwIn.focus();
 }
-function closeSwitcher(){ elSw.classList.remove("on"); elSwIn.blur(); swPick=null; }
+function closeSwitcher(){ elSw.classList.remove("on"); elSwIn.blur(); swPick=null; sinkFocus(); }
 function swGo(id){
   if(swPick){ var nid0=swPick, nm=newMapName(); closeSwitcher(); linkNodeTo(nid0,id,nm); return; }
   closeSwitcher(); if(id && id!==curDoc) switchDoc(id);
@@ -6417,7 +6448,7 @@ elStage.addEventListener("touchmove",function(e){
     applyView();
   }
 },{passive:false});
-function endTouch(){ tpan=null; tpinch=null; pressEnd(); }
+function endTouch(){ tpan=null; tpinch=null; pressEnd(); setTimeout(sinkFocus,0); }
 elStage.addEventListener("touchend",endTouch);
 elStage.addEventListener("touchcancel",endTouch);
 function zoomBy(f,ox,oy){
@@ -6668,7 +6699,7 @@ var restored=load();
 if(!restored){ state=freshState(); selected=state.rootId; uid=1; }
 if(restored && curDoc) undoLoadSaved(curDoc);
 localizeKeys(); applyCss(); drawPanel(); notesOnBoot();
-function boot(){ render(true); restored?applyView():center(); }
+function boot(){ render(true); restored?applyView():center(); sinkFocus(); }
 if(document.fonts&&document.fonts.load) document.fonts.load('17px "Excalifont"').then(boot,boot);
 else boot();
 

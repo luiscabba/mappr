@@ -436,6 +436,8 @@
   #modebar{top:14px;right:14px;display:flex;gap:2px;padding:4px;z-index:6}
   #modebar button{border:0;background:none;color:var(--muted);font:600 12px var(--font-ui);padding:5px 10px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:6px}
   #modebar button.empty{opacity:.45}
+  /* the keyboard sink: off screen, never seen, always focused on an iPad */
+  #sink{position:fixed;left:-9999px;top:0;width:1px;height:1px;opacity:0;overflow:hidden;outline:none;caret-color:transparent}
   #modebar button:hover{background:var(--panel-hover);color:var(--ink)}
   #modebar button.on{background:var(--sel-soft);color:var(--sel)}
   #modebar kbd{font:10px var(--font-ui);opacity:.6}
@@ -543,6 +545,7 @@
 </head>
 <body>
 
+<div id="sink" contenteditable="true" inputmode="none" aria-hidden="true" tabindex="-1"></div>
 <div id="stage">
   <div id="world">
     <svg id="paint" xmlns="http://www.w3.org/2000/svg">
@@ -3452,6 +3455,33 @@ function commitEdit(){
     el.contentEditable="false";
   }
   editOld=null; editing=null; saveSoon();
+  sinkFocus();
+}
+/* ---------- the keyboard sink ----------
+   iPadOS only hands hardware-keyboard events and paste to the page while
+   something editable has focus; with nothing focused, Safari keeps the keys
+   (arrows scroll, Cmd+arrows navigate, Cmd+V goes nowhere). On a Mac the body
+   receives keys, so this never showed. The sink is an invisible editable that
+   is focused whenever no node, frame title or input has the keyboard, so the
+   keys always have somewhere to land. inputmode=none keeps the on-screen
+   keyboard away, so touch-only use is unchanged. It is on for touch-capable
+   Apple devices, and for anyone with #sink in the address. */
+var IS_IPAD=/iPad|iPhone|iPod/.test(navigator.userAgent||"") || (navigator.platform==="MacIntel" && navigator.maxTouchPoints>1) || /#sink/.test(location.hash);
+var elSink=document.getElementById("sink");
+function sinkFocus(){
+  if(!IS_IPAD||!elSink) return;
+  if(editing||editFrame) return;
+  var a=document.activeElement;
+  if(a && a!==document.body && a!==elSink && (a.tagName==="INPUT"||a.tagName==="TEXTAREA"||a.isContentEditable)) return;
+  if(elSink.textContent) elSink.textContent="";
+  if(a===elSink) return;
+  try{ elSink.focus({preventScroll:true}); }catch(e){ elSink.focus(); }
+}
+if(elSink){
+  /* anything that reaches the sink as text was a key nobody handled: drop it */
+  elSink.addEventListener("input",function(){ elSink.textContent=""; });
+  elSink.addEventListener("blur",function(){ setTimeout(function(){ if(document.activeElement===document.body) sinkFocus(); },0); });
+  addEventListener("focus",function(){ sinkFocus(); });
 }
 /* A new node is simply selected, not opened for typing: any letter starts
    typing into it anyway, so there is no cursor blinking in an empty box. The
@@ -3493,6 +3523,7 @@ function commitFrameEdit(){
   var el=ftEls[editFrame], f=frameById(editFrame);
   if(el&&f){ f.title=el.innerText.replace(/\n/g," ").trim()||"Frame"; el.contentEditable="false"; }
   editFrame=null; render(true); saveSoon();
+  sinkFocus();
 }
 function frameById(id){ return state.frames.filter(function(f){ return f.id===id; })[0]; }
 
@@ -4915,7 +4946,7 @@ function openJump(){
   elJumpIn.value=""; jumpRows=jumpSearch(""); jumpAt=0; drawJump();
   elJumpIn.focus();
 }
-function closeJump(){ elJump.classList.remove("on"); elJumpIn.blur(); }
+function closeJump(){ elJump.classList.remove("on"); elJumpIn.blur(); sinkFocus(); }
 function jumpTo(id){
   closeJump();
   if(!N(id)) return;
@@ -5583,7 +5614,7 @@ function openSwitcher(){
   drawSwitcher();
   elSwIn.focus();
 }
-function closeSwitcher(){ elSw.classList.remove("on"); elSwIn.blur(); swPick=null; }
+function closeSwitcher(){ elSw.classList.remove("on"); elSwIn.blur(); swPick=null; sinkFocus(); }
 function swGo(id){
   if(swPick){ var nid0=swPick, nm=newMapName(); closeSwitcher(); linkNodeTo(nid0,id,nm); return; }
   closeSwitcher(); if(id && id!==curDoc) switchDoc(id);
@@ -6417,7 +6448,7 @@ elStage.addEventListener("touchmove",function(e){
     applyView();
   }
 },{passive:false});
-function endTouch(){ tpan=null; tpinch=null; pressEnd(); }
+function endTouch(){ tpan=null; tpinch=null; pressEnd(); setTimeout(sinkFocus,0); }
 elStage.addEventListener("touchend",endTouch);
 elStage.addEventListener("touchcancel",endTouch);
 function zoomBy(f,ox,oy){
@@ -6668,7 +6699,7 @@ var restored=load();
 if(!restored){ state=freshState(); selected=state.rootId; uid=1; }
 if(restored && curDoc) undoLoadSaved(curDoc);
 localizeKeys(); applyCss(); drawPanel(); notesOnBoot();
-function boot(){ render(true); restored?applyView():center(); }
+function boot(){ render(true); restored?applyView():center(); sinkFocus(); }
 if(document.fonts&&document.fonts.load) document.fonts.load('17px "Excalifont"').then(boot,boot);
 else boot();
 

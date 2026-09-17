@@ -3315,6 +3315,38 @@ group("1.0.1: keys the browser keeps, and a long press");
   await M(() => __mf.spread("sides"));
 }
 
+group("1.0.2: the keyboard sink (iPad keys need a focused editable)");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(250); };
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  const active = () => M(() => { const a = document.activeElement; return a ? (a.id || a.tagName.toLowerCase() + (a.className ? "." + String(a.className).split(" ")[0] : "")) : "none"; });
+  await page.goto(APP + "#sink"); await page.reload(); await page.waitForTimeout(400);   /* a hash alone does not reload */
+  ok("with #sink the sink has focus at boot", (await active()) === "sink", await active());
+  await M(() => { __mf.spread("right"); __mf.paste("Root\n- One\n- Two"); __mf.mark([]); });
+  await page.waitForTimeout(250);
+  await M((x) => __mf.select(x), await id("One"));
+  await press("Meta+ArrowRight"); await page.keyboard.type("Kid"); 
+  ok("typing goes to the node, not the sink", (await active()).startsWith("div.node") && (await M(() => __mf.editing)) !== null && (await M(() => document.getElementById("sink").textContent)) === "");
+  await press("Escape");
+  ok("Escape hands the keys back to the sink", (await active()) === "sink" && !!(await id("Kid")), [await active(), await M(() => __mf.editing), await M(() => document.getElementById("notes").classList.contains("open"))]);
+  await press("ArrowLeft");
+  ok("arrows still walk the map from the sink", (await M(() => __mf.selected)) === (await id("One")));
+  await press("Enter"); await page.keyboard.type("Sib"); await press("Escape");
+  ok("Enter makes a sibling and the sink gets nothing", !!(await id("Sib")) && (await M(() => document.getElementById("sink").textContent)) === "");
+  await M((t) => { const dt = new DataTransfer(); dt.setData("text/plain", t); document.activeElement.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true })); }, "Pasted\n- under");
+  await page.waitForTimeout(250);
+  ok("a paste aimed at the sink lands in the map", !!(await id("Pasted")) && !!(await id("under")));
+  await press("Meta+k");
+  ok("the jump box takes the keys when open", (await active()) === "jumpIn");
+  await press("Escape");
+  ok("and the sink has them back after", (await active()) === "sink", await active());
+  await page.mouse.click(600, 500); await page.waitForTimeout(200);
+  ok("a click on the canvas leaves the sink focused", (await active()) === "sink", await active());
+  ok("no runtime errors", errors.length === 0, errors);
+  await page.goto(APP); await page.reload(); await page.waitForTimeout(400);
+  await M(() => __mf.spread("sides"));
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 

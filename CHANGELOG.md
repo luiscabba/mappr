@@ -3,6 +3,19 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.0.2] - 2026-09-17
+
+### Fixed
+- **Keys on an iPad.** iPadOS hands hardware-keyboard events and paste to a
+  page only while something editable has the cursor; with nothing focused,
+  Safari keeps the keys for itself. That is why every shortcut and `⌘V`
+  only worked after tapping into a node. Mappr now keeps an invisible
+  editable focused whenever no node, frame title or box has the keyboard, so
+  the keys always have somewhere to land: arrows, `⌘`/`⌃` chords,
+  `⏎`, typing and paste work straight away, and the on-screen keyboard
+  stays out of the way. On for iPads and iPhones, and for anyone who adds
+  `#sink` to the address.
+
 ## [1.0.1] - 2026-09-17
 
 ### Fixed
