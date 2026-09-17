@@ -2363,6 +2363,43 @@ group("repainting after a move in a big map");
   await M(() => __mf.spread("sides"));
 }
 
+group("grouping a selection under a new parent");
+{
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, "Hub\n- A\n  - a1\n  - a2\n  - a3\n  - a4\n- B\n  - b1");
+  await page.waitForTimeout(250);
+  const id = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const tabArrow = async (k) => { await page.keyboard.down("Tab"); await page.keyboard.press(k); await page.keyboard.up("Tab"); await page.waitForTimeout(220); };
+  await pick("a2");
+  await M(async (ids) => __mf.mark(ids), [await id("a2"), await id("a3")]);
+  await tabArrow("ArrowLeft");
+  const mid = await M(() => __mf.selected);
+  ok("Tab + back groups the selection under a new parent", await M((m) => __mf.state.nodes[m].children.map((c) => __mf.state.nodes[c].text).join() === "a2,a3", mid));
+  ok("the new parent takes the first one's place", (await node("A")).kids.join() === "a1,,a4", await node("A"));
+  ok("it is selected, ready for a name", (await M(() => __mf.state.nodes[__mf.selected].text)) === "" && (await M(() => __mf.rawMarked.length)) === 0);
+  await page.keyboard.type("Middle"); await page.keyboard.press("Escape"); await page.waitForTimeout(150);
+  ok("typing names it", (await node("Middle")).kids.join() === "a2,a3");
+  await page.keyboard.press("Meta+z"); await page.waitForTimeout(150);
+  ok("one undo takes the group back out, name and all", (await node("A")).kids.join() === "a1,a2,a3,a4", await node("A"));
+  // from different branches
+  await M(async (ids) => __mf.mark(ids), [await id("b1"), await id("a4")]);
+  await pick("a4"); await M(async (ids) => __mf.mark(ids), [await id("b1"), await id("a4")]);
+  await tabArrow("ArrowLeft");
+  ok("a selection across branches is gathered in, in map order", await M(() => __mf.state.nodes[__mf.selected].children.map((c) => __mf.state.nodes[c].text).join() === "a4,b1"));
+  ok("under the first one's parent", (await node("B")).kids.length === 0 && (await node("A")).kids.length === 4);
+  await page.keyboard.press("Escape"); await page.waitForTimeout(150);
+  ok("a group left unnamed keeps its children", (await M(() => Object.values(__mf.state.nodes).some((n) => n.text === "b1" && __mf.state.nodes[n.parent].text === ""))));
+  await page.keyboard.press("Meta+z"); await page.waitForTimeout(150);
+  // outward with a selection does nothing
+  await M(async (ids) => __mf.mark(ids), [await id("a1")]);
+  const n0 = await M(() => Object.keys(__mf.state.nodes).length);
+  await tabArrow("ArrowRight");
+  ok("Tab + outward with a selection changes nothing", (await M(() => Object.keys(__mf.state.nodes).length)) === n0);
+  await M(() => { __mf.mark([]); __mf.spread("sides"); });
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 

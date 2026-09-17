@@ -3,6 +3,16 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.31.0] - 2026-09-17
+
+### Added
+- **Group a selection under a new parent.** With nodes selected, hold `Tab`
+  and press the arrow back toward the centre: a new parent slides in where
+  the first of them was, and every selected branch becomes its child, in map
+  order, even ones from elsewhere in the map. Type to name it; one undo takes
+  the whole group back out. A frame that wrapped one of them wraps the new
+  parent instead.
+
 ## [0.30.0] - 2026-09-17
 
 ### Added

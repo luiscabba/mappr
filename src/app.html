@@ -620,7 +620,7 @@
       <tr><td><kbd>⇧</kbd><kbd>⏎</kbd></td><td>A new node at the same level but in the <em>next branch along</em>, so you can fill a level across the whole map without walking back to each parent. It goes in the order you see: top to bottom on a sideways branch, left to right on an up or down one, and wraps round on the same side.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⏎</kbd></td><td>A child, one level deeper.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>←↑→↓</kbd></td><td>From the centre: start a branch that way. On a branch: the same direction again goes deeper, a sideways direction adds a sibling on that side.</td></tr>
-      <tr><td>hold <kbd>Tab</kbd> + <kbd>←↑→↓</kbd></td><td>Insert a node <em>in between</em>. Point back toward the centre and the new node becomes this one's parent. Point outward and it slides in above this node's children, adopting them. This is how you backtrack and add a layer you did not plan for.</td></tr>
+      <tr><td>hold <kbd>Tab</kbd> + <kbd>←↑→↓</kbd></td><td>With a selection up, the arrow back toward the centre <b>groups</b> it: a new parent slides in above every selected branch, wherever they were, and they all become its children, in map order. Type its name. Otherwise: insert a node <em>in between</em>. Point back toward the centre and the new node becomes this one's parent. Point outward and it slides in above this node's children, adopting them. This is how you backtrack and add a layer you did not plan for.</td></tr>
     </table></section>
     <section class="hpane" data-tab="move"><h3>Move</h3>
     <table class="keys">
@@ -3169,6 +3169,37 @@ function doNextBranch(){
   startNew(made.id); saveSoon();
 }
 function doChild(){ var n=N(selected); doBranch(isRoot(n)?"R":dirOf(n.id)); }
+/* Hold Tab + the arrow back toward the centre with a selection up: a new
+   parent slides in above the selected branches and they all become its
+   children, in map order. It takes the place of the first of them, under that
+   one's parent, and waits for a name the way any new node does. Selected
+   branches from elsewhere in the map are gathered in too. */
+function groupUnder(dir){
+  var tree=[]; (function w(id){ tree.push(id); N(id).children.forEach(w); })(state.rootId);
+  var roots=markedRoots().filter(function(i){ var n=N(i); return !isRoot(n) && !isVR(n) && visible(i); });
+  roots.sort(function(a,b){ return tree.indexOf(a)-tree.indexOf(b); });
+  if(!roots.length){ flash(selected); return; }
+  var first=N(roots[0]), d=dirOf(first.id);
+  if(dir!==OPP[d]){ flash(selected); flashSave("with a selection, Tab + the arrow back toward the centre groups it"); return; }
+  snap();
+  var p=N(first.parent), at=p.children.indexOf(first.id);
+  var mid=addNode(p.id,d,at);
+  roots.forEach(function(r){
+    var n=N(r), op=N(n.parent);
+    op.children.splice(op.children.indexOf(r),1);
+    n.parent=mid.id; mid.children.push(r);
+    setDirDeep(r,d);
+  });
+  /* a frame that wrapped one of them now wraps the new parent */
+  state.frames.forEach(function(f){
+    var hit=false;
+    f.roots=f.roots.filter(function(r){ if(roots.indexOf(r)>=0){ hit=true; return false; } return true; });
+    if(hit) f.roots.push(mid.id);
+  });
+  clearMarks(); selected=mid.id; render(false,dir);
+  flashSave("grouped "+roots.length+" \u00b7 type a name");
+  startNew(mid.id); saveSoon();
+}
 /* hold Tab + arrow: slide a node in between */
 function insertBetween(dir){
   var n=N(selected);
@@ -4655,6 +4686,7 @@ document.addEventListener("keydown",function(e){
     e.preventDefault(); tabUsed=true;
     /* restructuring the tree while it is hidden would be done blind */
     if(lensOne){ flash(selected); flashSave("tree edits are off in a network"); return; }
+    if(Object.keys(marked).length){ groupUnder(KEYDIR[e.key]); return; }
     insertBetween(KEYDIR[e.key]);
     return;
   }
