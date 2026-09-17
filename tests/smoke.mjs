@@ -2472,6 +2472,109 @@ group("merging and splitting nodes");
   await M(() => __mf.spread("sides"));
 }
 
+group("sorting a level and carrying a selection");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(200); };
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, "Hub\n- Growth\n  - Referrals\n  - paid ads\n    - Meta\n  - Webinars\n  - Content\n    - Blog\n    - Video\n  - item 10\n  - item 9\n- Ops\n  - Hiring\n  - Budget\n- Inbox\n  - Pricing");
+  await page.waitForTimeout(250);
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  const kids = async (t) => (await node(t)).kids.join();
+  const menuOpen = () => M(() => { const m = document.getElementById("storyMenu"); return !!m && m.dataset.kind === "sort"; });
+  // sort children of the selected node
+  await pick("Growth");
+  await press("Alt+KeyO");
+  ok("Option+O opens the sort menu", await menuOpen());
+  ok("it has six ways", await M(() => document.querySelectorAll('#storyMenu [data-sort]').length === 6));
+  await press("Digit1");
+  ok("1 sorts A to Z, ignoring case, numbers in number order", (await kids("Growth")) === "Content,item 9,item 10,paid ads,Referrals,Webinars", await kids("Growth"));
+  ok("and closes", !(await menuOpen()));
+  await press("Alt+KeyO"); await press("Digit2");
+  ok("2 sorts Z to A", (await kids("Growth")).startsWith("Webinars,Referrals"));
+  await press("Alt+KeyO"); await press("Digit4");
+  ok("4 puts the biggest branch first", (await kids("Growth")).startsWith("Content,paid ads"), await kids("Growth"));
+  await M(async (x) => { __mf.state.nodes[x].mark = "done"; }, await id("Content"));
+  await press("Alt+KeyO"); await press("Digit5");
+  ok("5 puts done last", (await kids("Growth")).endsWith("Content"), await kids("Growth"));
+  await press("Alt+KeyO"); await press("Digit6");
+  ok("6 goes back to how it was", (await kids("Growth")) === "Referrals,paid ads,Webinars,Content,item 10,item 9", await kids("Growth"));
+  await press("Alt+KeyO"); await press("Digit1");
+  await press("Meta+z");
+  ok("a sort is one undo step", (await kids("Growth")) === "Referrals,paid ads,Webinars,Content,item 10,item 9");
+  // selected siblings only move among their own places
+  await M(async (ids) => __mf.mark(ids), [await id("Webinars"), await id("Referrals"), await id("item 9")]);
+  await press("Alt+KeyO"); await press("Digit3");
+  ok("a selection is sorted among the places it holds", (await kids("Growth")) === "item 9,paid ads,Webinars,Content,item 10,Referrals", await kids("Growth"));
+  ok("and stays selected", (await M(() => __mf.rawMarked.length)) === 3);
+  await press("Meta+z");
+  await M(async (ids) => __mf.mark(ids), [await id("Hiring"), await id("Referrals")]);
+  await press("Alt+KeyO");
+  ok("non-siblings are refused", !(await menuOpen()));
+  await M(() => __mf.mark([]));
+  // the centre keeps its sides
+  await M(() => __mf.spread("sides"));
+  await page.waitForTimeout(150);
+  const sides0 = await M(() => Object.fromEntries(__mf.state.nodes[__mf.state.rootId].children.map((c) => [__mf.state.nodes[c].text, __mf.dir(c)])));
+  await M(() => __mf.select(__mf.state.rootId));
+  await press("Alt+KeyO"); await press("Digit2");
+  const sides1 = await M(() => Object.fromEntries(__mf.state.nodes[__mf.state.rootId].children.map((c) => [__mf.state.nodes[c].text, __mf.dir(c)])));
+  ok("on the centre no branch changes side", Object.keys(sides0).every((k) => sides0[k] === sides1[k]), [sides0, sides1]);
+  ok("sorting the centre keeps each side's count", (await M(() => __mf.state.nodes[__mf.state.rootId].children.map((c) => __mf.dir(c)).filter((d) => d === "R").length)) === Object.values(sides0).filter((d) => d === "R").length);
+  await press("Meta+z");
+  await M(() => __mf.spread("right"));
+  // any other key closes the menu without sorting
+  await pick("Ops");
+  await press("Alt+KeyO"); await press("KeyQ");
+  ok("any other key just closes the menu", !(await menuOpen()) && (await kids("Ops")) === "Hiring,Budget");
+
+  // carry
+  await M(async (ids) => __mf.mark(ids), [await id("Webinars"), await id("Referrals")]);
+  await press("Alt+KeyX");
+  ok("Option+X picks the selection up", await M(() => document.querySelectorAll(".node.carried").length === 2));
+  ok("nothing has moved yet", (await kids("Growth")).includes("Referrals"));
+  ok("the target starts on their parent", (await M(() => __mf.state.nodes[__mf.selected].text)) === "Growth");
+  ok("the key bar says so", await M(() => /Carrying/.test(document.getElementById("hint").textContent)));
+  await press("ArrowDown");
+  ok("arrows move the target", (await M(() => __mf.state.nodes[__mf.selected].text)) === "Ops");
+  await press("KeyA");
+  ok("other keys do nothing while carrying", (await M(() => __mf.editing)) == null && (await node("Ops")).kids.length === 2);
+  await press("Enter");
+  ok("Enter drops it inside, in map order", (await kids("Ops")) === "Hiring,Budget,Referrals,Webinars", await kids("Ops"));
+  ok("the dropped nodes stay selected", (await M(() => __mf.rawMarked.length)) === 2 && !(await M(() => document.querySelector(".node.carried"))));
+  await press("Meta+z");
+  ok("one undo puts them back", (await kids("Growth")).startsWith("Referrals,paid ads,Webinars"));
+  // drop after, and Esc
+  await pick("Pricing");
+  await press("Alt+KeyX");
+  await press("ArrowUp");
+  const tgt = await M(() => __mf.state.nodes[__mf.selected].text);
+  await press("Escape");
+  ok("Esc puts it back and restores the selection", (await kids("Inbox")) === "Pricing" && (await M(() => __mf.state.nodes[__mf.selected].text)) === "Pricing", tgt);
+  await press("Alt+KeyX");
+  await M(async (x) => { const el = document.querySelector('.node[data-id="' + x + '"]'); el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 })); }, await id("Hiring"));
+  ok("a click chooses the target", (await M(() => __mf.state.nodes[__mf.selected].text)) === "Hiring");
+  await page.keyboard.down("Shift"); await page.keyboard.press("Enter"); await page.keyboard.up("Shift"); await page.waitForTimeout(200);
+  ok("Shift+Enter drops it right after the target", (await kids("Ops")) === "Hiring,Pricing,Budget" && (await kids("Inbox")) === "", [await kids("Ops"), await kids("Inbox")]);
+  ok("and it points the way its new siblings do", await M(() => { const p = Object.values(__mf.state.nodes).find((n) => n.text === "Pricing"); const h = Object.values(__mf.state.nodes).find((n) => n.text === "Hiring"); return __mf.dir(p.id) === __mf.dir(h.id); }));
+  // cannot drop into itself
+  await pick("Content");
+  await press("Alt+KeyX");
+  await M(async (x) => { const el = document.querySelector('.node[data-id="' + x + '"]'); el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 })); }, await id("Blog"));
+  ok("its own children cannot be the target", (await M(() => __mf.state.nodes[__mf.selected].text)) === "Growth");
+  await press("Escape");
+  // the centre
+  await pick("Budget");
+  await press("Alt+KeyX");
+  await M(() => __mf.select(__mf.state.rootId));
+  await page.keyboard.down("Shift"); await page.keyboard.press("Enter"); await page.keyboard.up("Shift"); await page.waitForTimeout(200);
+  ok("nothing drops after the centre", (await kids("Ops")).includes("Budget"));
+  await press("Enter");
+  ok("but Enter drops onto it as a new branch", (await node("Budget")).parent === "Hub");
+  await M(() => { __mf.mark([]); __mf.spread("sides"); });
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 

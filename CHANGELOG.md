@@ -3,6 +3,20 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.33.0] - 2026-09-17
+
+### Added
+- **Sort, `⌥O`.** A small menu next to the selection, where a number picks:
+  A to Z, Z to A, reverse, biggest branch first, done last, or back to how it
+  was. Selected siblings trade places only among the spots they already hold;
+  with one node selected, its children are sorted. Names sort the way people
+  read them, so "item 9" comes before "item 10", and on the centre each side
+  is sorted on its own so nothing changes sides.
+- **Carry, `⌥X`.** Picks up the selection, or the selected node. It fades
+  where it is while the arrows, or a click, move a ring to where it should go;
+  `⏎` drops it inside, `⇧⏎` right after, `Esc` puts it back. Nothing moves
+  until the drop, the dropped nodes stay selected, and one undo reverses it.
+
 ## [0.32.0] - 2026-09-17
 
 ### Added

@@ -129,6 +129,7 @@
   .node.lenshide{display:none}
   /* already covered in a presentation: still there, stepped back */
   .node.past{opacity:.38;transition:opacity .35s}
+  .node.carried{opacity:.4}
   /* not reached yet: invisible but still measured, so the layout is the real one */
   .node.preshide{visibility:hidden}
   .node.skipped{opacity:.3;text-decoration:line-through;text-decoration-thickness:1px}
@@ -356,6 +357,7 @@
   .mswitch{display:flex;width:100%;justify-content:space-between;align-items:center;border:0;background:none;color:var(--ink);font:12.5px var(--font-ui);padding:7px 8px;border-radius:8px;cursor:pointer;margin-bottom:2px}
   .mswitch span{font-size:11px;color:var(--muted)}
   .mswitch:hover{background:var(--panel-hover)}
+  #storyMenu .smhead{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);padding:6px 9px 3px}
   .msec{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);padding:6px 8px 3px}
 
   /* ---------- maps ---------- */
@@ -527,7 +529,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v0.32.0">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
+  <span class="brand" id="brand" title="Mappr v0.33.0">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -608,7 +610,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.32.0</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.33.0</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <div id="helpBody">
@@ -646,6 +648,8 @@
       <tr><td><kbd>⌘</kbd><kbd>E</kbd></td><td>Fold or unfold a branch. A folded node wears a badge with the number hidden underneath; click the badge to open it. With a selection up it folds every selected node at once, so a whole level goes away in one press.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>J</kbd></td><td><b>Merge</b> the selected nodes into one. The first in map order keeps its place; its text becomes all of theirs, one per line, and it takes every child they had. Links and frames follow it. Also on the selection bar.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>S</kbd> / <kbd>⌥</kbd><kbd>⇧</kbd><kbd>S</kbd></td><td><b>Split</b> a node with several lines into one node per line: as siblings right after it, or with <kbd>⇧</kbd> as its children. It keeps the first line and its own children, and leading bullets or numbers are dropped. Works on every selected node at once.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>O</kbd></td><td><b>Sort.</b> A small menu, a number picks: A to Z, Z to A, reverse, biggest branch first, done last, or back to how it was. It sorts the selected siblings among the places they already hold, or with one node selected, that node's children. On the centre each side is sorted on its own.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>X</kbd></td><td><b>Carry.</b> Picks up the selection (or the selected node): it goes faint where it is, and the arrows, or a click, choose where it goes. <kbd>⏎</kbd> drops it inside the ringed node, <kbd>⇧</kbd><kbd>⏎</kbd> right after it, <kbd>Esc</kbd> puts it back. Nothing changes until the drop, and one <kbd>⌘</kbd><kbd>Z</kbd> undoes it.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself. With a selection up, every selected branch is duplicated and the copies come out selected.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag (a small pennant).</td></tr>
     </table></section>
@@ -716,9 +720,9 @@
      panel cannot drift from the record of what actually shipped. -->
 <div id="notes">
   <div id="notesCard">
-    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.32.0</span></h2>
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.33.0</span></h2>
     <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
-    <div id="notesBody"><h3 class="rel">0.32.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Merge nodes, <code>⌥J</code>.</b> The selected nodes become one: the first in map order keeps its place, its text becomes all of theirs, one per line, and it takes every child they had. Links and frames follow it. The selection bar has a Merge button too.</li><li><b>Split a node, <code>⌥S</code>.</b> A node with several lines becomes one node per line, as siblings right after it; <code>⌥⇧S</code> makes the extra lines its children instead. It keeps the first line and its own children, and bullets or numbers a pasted line carried are dropped. Works on a whole selection.</li></ul><h3 class="rel">0.31.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Group a selection under a new parent.</b> With nodes selected, hold <code>Tab</code> and press the arrow back toward the centre: a new parent slides in where the first of them was, and every selected branch becomes its child, in map order, even ones from elsewhere in the map. Type to name it; one undo takes the whole group back out. A frame that wrapped one of them wraps the new parent instead.</li></ul><h3 class="rel">0.30.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Pinned maps.</b> <code>⌥P</code> pins the open map, and a pin (Mappr&#x27;s own, drawn to match) shows next to the name. Pinned maps sit at the top of the Maps menu, each with its number: <code>⌥⇧1</code> to <code>⌥⇧9</code> open them in pin order.</li><li><b>The map switcher, <code>⌥M</code>.</b> Pinned maps first, then recent ones; type to filter, arrows and <code>⏎</code> to open. It starts on the map you were on before, so <code>⌥M</code> <code>⏎</code> swaps back and forth. <code>⌥P</code> and <code>⌥T</code> work on the highlighted map. The Maps menu opens it too.</li><li><b>Colour tags.</b> <code>⌥T</code> gives the open map a colour and steps through six; past the last it clears. The dot beside each map in the lists does the same on a click, and the colour shows next to the name.</li><li><b>Back to the last map.</b> <code>⌥</code> plus the backtick key flips between the map you are on and the one before.</li></ul><h4>Fixed</h4><ul><li><b>Shapes going missing after a move in a big map.</b> Moving a node between branches could leave boxes undrawn or drawn in the wrong place until the next full repaint. A shortcut in the repaint reused a shape that was still on screen elsewhere; it now only takes that shortcut when it is safe.</li></ul><h3 class="rel">0.29.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b><code>⌥N</code> makes a new map</b>, from anywhere but the middle of typing.</li><li><b>A key log for troubleshooting.</b> Open Mappr with <code>#keys</code> at the end of the address and a small box lists every key the page receives and whether Mappr acted on it, so a browser keeping a shortcut for itself is easy to spot.</li></ul><h3 class="rel">0.28.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b><code>⌥</code>+arrow carries on past the edge.</b> Moving a node past the last of its siblings takes it into the next branch along, the way a plain arrow walks there: going down it becomes that branch&#x27;s first child, going up the last child of the branch before. A folded branch opens to take it. It stays on its side of the map and does not wrap, and a top-level branch stays put. A selection hops over together, in order, and one undo puts it all back.</li></ul><h3 class="rel">0.27.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b><code>⌘A</code> selects a level.</b> The selected node&#x27;s whole level, across the map; press it again for everything on screen.</li><li><b><code>⌘D</code> duplicates a selection.</b> Every selected branch is copied right below itself, and the copies come out selected.</li><li><b>A selection chip in the top bar</b> shows how many nodes are selected, with Copy, Duplicate and Delete buttons, and an <code>×</code> to clear.</li><li><b>Paste into a blank node.</b> Make a node, then paste: the pasted nodes take its place instead of hanging off an empty box, and one undo takes both back.</li><li><b>Deleting shows where the children went.</b> They flash in their new place.</li></ul><h4>Fixed</h4><ul><li><b>Branches no longer overlap in the corners.</b> When a map branches both sideways and up or down, a wide up or down branch used to run into a tall sideways one. It now steps just far enough away to clear.</li><li><b><code>⇧⏎</code> goes to the next parent you can see.</b> It used to follow the order the branches were made in, which often meant the top of the map. It now goes top to bottom on a sideways branch and left to right on an up or down one, and wraps round without leaving that side.</li><li><b><code>⌘A</code> selects every node again</b>, not just the top level, now that a selection shows exactly what is selected.</li></ul></div>
+    <div id="notesBody"><h3 class="rel">0.33.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Sort, <code>⌥O</code>.</b> A small menu next to the selection, where a number picks: A to Z, Z to A, reverse, biggest branch first, done last, or back to how it was. Selected siblings trade places only among the spots they already hold; with one node selected, its children are sorted. Names sort the way people read them, so &quot;item 9&quot; comes before &quot;item 10&quot;, and on the centre each side is sorted on its own so nothing changes sides.</li><li><b>Carry, <code>⌥X</code>.</b> Picks up the selection, or the selected node. It fades where it is while the arrows, or a click, move a ring to where it should go; <code>⏎</code> drops it inside, <code>⇧⏎</code> right after, <code>Esc</code> puts it back. Nothing moves until the drop, the dropped nodes stay selected, and one undo reverses it.</li></ul><h3 class="rel">0.32.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Merge nodes, <code>⌥J</code>.</b> The selected nodes become one: the first in map order keeps its place, its text becomes all of theirs, one per line, and it takes every child they had. Links and frames follow it. The selection bar has a Merge button too.</li><li><b>Split a node, <code>⌥S</code>.</b> A node with several lines becomes one node per line, as siblings right after it; <code>⌥⇧S</code> makes the extra lines its children instead. It keeps the first line and its own children, and bullets or numbers a pasted line carried are dropped. Works on a whole selection.</li></ul><h3 class="rel">0.31.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Group a selection under a new parent.</b> With nodes selected, hold <code>Tab</code> and press the arrow back toward the centre: a new parent slides in where the first of them was, and every selected branch becomes its child, in map order, even ones from elsewhere in the map. Type to name it; one undo takes the whole group back out. A frame that wrapped one of them wraps the new parent instead.</li></ul><h3 class="rel">0.30.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Pinned maps.</b> <code>⌥P</code> pins the open map, and a pin (Mappr&#x27;s own, drawn to match) shows next to the name. Pinned maps sit at the top of the Maps menu, each with its number: <code>⌥⇧1</code> to <code>⌥⇧9</code> open them in pin order.</li><li><b>The map switcher, <code>⌥M</code>.</b> Pinned maps first, then recent ones; type to filter, arrows and <code>⏎</code> to open. It starts on the map you were on before, so <code>⌥M</code> <code>⏎</code> swaps back and forth. <code>⌥P</code> and <code>⌥T</code> work on the highlighted map. The Maps menu opens it too.</li><li><b>Colour tags.</b> <code>⌥T</code> gives the open map a colour and steps through six; past the last it clears. The dot beside each map in the lists does the same on a click, and the colour shows next to the name.</li><li><b>Back to the last map.</b> <code>⌥</code> plus the backtick key flips between the map you are on and the one before.</li></ul><h4>Fixed</h4><ul><li><b>Shapes going missing after a move in a big map.</b> Moving a node between branches could leave boxes undrawn or drawn in the wrong place until the next full repaint. A shortcut in the repaint reused a shape that was still on screen elsewhere; it now only takes that shortcut when it is safe.</li></ul><h3 class="rel">0.29.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b><code>⌥N</code> makes a new map</b>, from anywhere but the middle of typing.</li><li><b>A key log for troubleshooting.</b> Open Mappr with <code>#keys</code> at the end of the address and a small box lists every key the page receives and whether Mappr acted on it, so a browser keeping a shortcut for itself is easy to spot.</li></ul><h3 class="rel">0.28.0 <span>2026-09-16</span></h3><h4>Added</h4><ul><li><b><code>⌥</code>+arrow carries on past the edge.</b> Moving a node past the last of its siblings takes it into the next branch along, the way a plain arrow walks there: going down it becomes that branch&#x27;s first child, going up the last child of the branch before. A folded branch opens to take it. It stays on its side of the map and does not wrap, and a top-level branch stays put. A selection hops over together, in order, and one undo puts it all back.</li></ul></div>
     <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
 </div>
@@ -732,7 +736,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="0.32.0";
+var VERSION="0.33.0";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid",
   width:2, dash:"solid", slop:1, edges:"round",
@@ -2166,7 +2170,8 @@ function render(keepView,lead){
       (solo && !solo[id] ? " lenshide" : "")+
       (pres && !presVisible(id) ? " preshide" : "")+
       (presDim(id) ? " past" : "")+
-      (presSkip(id) ? " skipped" : "");
+      (presSkip(id) ? " skipped" : "")+
+      (carry && carry.set[id] ? " carried" : "");
   });
   Object.keys(els).forEach(function(id){ if(!showing[id]){ els[id].remove(); delete els[id]; } });
 
@@ -2429,7 +2434,7 @@ function shapes(ids, opt){
      those is that the tree is out of the way. Never in an export: an exported
      map is the map, not whatever lens you happened to have up. */
   var lensQuiet = !opt.exporting && lens && !lensSolo();
-  function presFade(id){ return !opt.exporting && (presDim(id) || presSkip(id)); }
+  function presFade(id){ return !opt.exporting && (presDim(id) || presSkip(id) || !!(carry && carry.set[id])); }
   var lensHideTree = !opt.exporting && lensSolo();
   var lensGhosts = lensQuiet ? lensParts() : {};
   ids.forEach(function(id){
@@ -2629,6 +2634,11 @@ function paint(){
         '" stroke-width="2" stroke-dasharray="5 5" class="ants"/>');
     }
   }
+  /* while carrying, the drop target gets a heavy ring; the key bar says what to do */
+  if(carry && pos[selected]){
+    var tb=box[selected], tp=pos[selected], tm=11;
+    top.push('<path d="'+smoothRect(tp.cx-tb.w/2-tm,tp.cy-tb.h/2-tm,tb.w+tm*2,tb.h+tm*2,18)+'" fill="none" stroke="'+accent+'" stroke-width="3" opacity=".9"/>');
+  }
   if(pos[selected] && !selFrame){
     var b2=box[selected], p2=pos[selected], m2=6;
     var sr=rngFrom(seedOf(selected+"sel"));
@@ -2757,7 +2767,9 @@ var HINTS={
   focus:[["Next branch","Tab"],["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Fold","⌘","E"],["Out","Esc"]],
   dim:[["Tie","⌘","+click"],["Next network","Tab"],["Open it","⌘","/"],["Clear links","⇧","+double-click"],["Fit","⌘","0"],["Map","⌘","1"]],
   net:[["Move","←↑→↓"],["Walk","Tab"],["Fold beyond","⌘","E"],["New linked node","⏎"],["Back","Esc"]],
-  sel:[["Grow","⇧","←↑→↓"],["Branches","⌘","⇧","←↑→↓"],["Move","⌥","←↑→↓"],["Merge","⌥","J"],["Copy","⌘","C"],["Cut","⌘","X"],["Delete","⌫"],["Frame","⌘","G"],["Clear","Esc"]],
+  carry:[["Choose where","←↑→↓"],["Drop inside","⏎"],["Drop after","⇧","⏎"],["Put back","Esc"]],
+  sort:[],
+  sel:[["Grow","⇧","←↑→↓"],["Branches","⌘","⇧","←↑→↓"],["Move","⌥","←↑→↓"],["Carry","⌥","X"],["Sort","⌥","O"],["Merge","⌥","J"],["Copy","⌘","C"],["Cut","⌘","X"],["Delete","⌫"],["Frame","⌘","G"],["Clear","Esc"]],
   arrange:[["Pick next","⌘","+click"],["Pick up / drop","Space"],["Unpick","⌫"],["Story","[","]"],["Present","R"]]
 };
 var hintMin=false, hintSig="";
@@ -2771,11 +2783,11 @@ function drawSelChip(){
 function drawHint(){
   drawSelChip();
   var el=document.getElementById("hint"); if(!el) return;
-  var mode = pres ? (pres.arrange?"arrange":null) : (Object.keys(marked).length?"sel":(lensOne?"net":(lens?"dim":(focusId?"focus":"map"))));
+  var mode = pres ? (pres.arrange?"arrange":null) : carry ? "carry" : (Object.keys(marked).length?"sel":(lensOne?"net":(lens?"dim":(focusId?"focus":"map"))));
   var sig=(mode||"")+"|"+hintMin;
   if(sig===hintSig) return; hintSig=sig;
   if(!mode){ el.innerHTML=""; return; }
-  var names={map:"Map",focus:"Focus",dim:"Connections",net:"Network",arrange:"Story",sel:"Selection"};
+  var names={map:"Map",focus:"Focus",dim:"Connections",net:"Network",arrange:"Story",sel:"Selection",carry:"Carrying"};
   var h;
   if(hintMin){
     h='<span class="hm">'+names[mode]+'</span><span><b>Keys</b> <kbd>?</kbd></span><button class="hx" data-hint="1" title="Show key hints">\u25b4</button>';
@@ -3202,6 +3214,151 @@ function groupUnder(dir){
   flashSave("grouped "+roots.length+" \u00b7 type a name");
   startNew(mid.id); saveSoon();
 }
+/* ---------- sort (Option+O) ----------
+   The menu sorts the selected siblings among the places they already hold, so
+   nothing else on that level moves; with one node (or none) selected it sorts
+   that node's children. On the centre, each side is sorted on its own, so no
+   branch changes sides. "Back to how it was" returns the order the level had
+   the first time it was sorted in this session. */
+var sortOrig={};
+var SORTS=[["az","A to Z"],["za","Z to A"],["rev","Reverse"],["big","Biggest branch first"],["done","Done last"],["orig","Back to how it was"]];
+function sortTarget(){
+  var ids=Object.keys(marked).filter(function(i){ return N(i); });
+  if(ids.length<2){
+    var host=N(ids[0]||selected);
+    if(!host.children.length) return null;
+    return {parent:host.id, pick:null, n:host.children.length};
+  }
+  var p=N(ids[0]).parent;
+  if(!ids.every(function(i){ return N(i).parent===p; })) return {bad:true};
+  return {parent:p, pick:ids, n:ids.length};
+}
+function sortLevel(kind){
+  var t=sortTarget();
+  if(!t){ flash(selected); flashSave("nothing to sort here"); return; }
+  if(t.bad){ flash(selected); flashSave("select siblings to sort them"); return; }
+  var p=N(t.parent);
+  if(!sortOrig[p.id]) sortOrig[p.id]=p.children.slice();
+  var want=t.pick ? t.pick.reduce(function(o,i){ o[i]=1; return o; },{}) : null;
+  var groups={};
+  p.children.forEach(function(c,i){
+    if(want && !want[c]) return;
+    var g=isVR(p)?dirOf(c):"*";
+    (groups[g]=groups[g]||{slots:[],items:[]});
+    groups[g].slots.push(i); groups[g].items.push(c);
+  });
+  var name=function(i){ return (N(i).text||"").toLowerCase(); };
+  var cmp=function(a,b){ return name(a).localeCompare(name(b),undefined,{numeric:true,sensitivity:"base"}); };
+  var next=p.children.slice(), changed=false;
+  Object.keys(groups).forEach(function(g){
+    var G=groups[g], it=G.items.slice();
+    if(kind==="az") it.sort(cmp);
+    else if(kind==="za") it.sort(function(a,b){ return cmp(b,a); });
+    else if(kind==="rev") it.reverse();
+    else if(kind==="big") it=stableSort(it,function(a,b){ return descCount(b)-descCount(a); });
+    else if(kind==="done") it=stableSort(it,function(a,b){ return (N(a).mark==="done"?1:0)-(N(b).mark==="done"?1:0); });
+    else if(kind==="orig"){ var o=sortOrig[p.id]; it.sort(function(a,b){ return o.indexOf(a)-o.indexOf(b); }); }
+    G.slots.forEach(function(s2,k){ if(next[s2]!==it[k]) changed=true; next[s2]=it[k]; });
+  });
+  var label=SORTS.filter(function(x){ return x[0]===kind; })[0][1];
+  if(!changed){ flash(selected); flashSave("already "+label.toLowerCase()); return; }
+  snap();
+  p.children=next;
+  render(true); saveSoon();
+  flashSave(label+" \u00b7 "+t.n+" nodes");
+}
+function stableSort(arr,f){ return arr.map(function(x,i){ return [x,i]; }).sort(function(a,b){ return f(a[0],b[0])||a[1]-b[1]; }).map(function(x){ return x[0]; }); }
+function sortMenu(){
+  if(elSMenu){ var was=elSMenu.dataset.kind; storyMenuClose(); if(was==="sort") return; }
+  if(editing) commitEdit();
+  var t=sortTarget();
+  if(!t){ flash(selected); flashSave("nothing to sort here"); return; }
+  if(t.bad){ flash(selected); flashSave("select siblings to sort them"); return; }
+  var m=document.createElement("div"); m.id="storyMenu"; m.className="bar"; m.dataset.kind="sort";
+  var el=els[selected], r=el?el.getBoundingClientRect():{right:innerWidth/2,top:innerHeight/2};
+  m.style.left=Math.max(12,Math.min(innerWidth-250,r.right+14))+"px";
+  m.style.top=Math.max(60,Math.min(innerHeight-260,r.top-10))+"px";
+  m.innerHTML='<div class="smhead">Sort '+(t.pick?t.n+" selected":"children of \u201c"+esc(trunc(N(t.parent).text||"\u2026"))+"\u201d")+'</div>'+
+    SORTS.map(function(x,i){ return (x[0]==="orig"?'<div class="sep"></div>':'')+'<button class="mi" data-sort="'+x[0]+'"><span class="tick">'+(i+1)+'</span>'+x[1]+'</button>'; }).join("");
+  m.addEventListener("mousedown",function(e){ e.preventDefault(); e.stopPropagation(); });
+  m.addEventListener("click",function(e){ var b=e.target.closest("[data-sort]"); if(!b) return; storyMenuClose(); sortLevel(b.dataset.sort); });
+  document.body.appendChild(m); elSMenu=m;
+}
+function sortMenuKey(e){
+  if(!elSMenu || elSMenu.dataset.kind!=="sort") return false;
+  e.preventDefault();
+  var mod=e.metaKey||e.ctrlKey;
+  if(!mod && /^[1-9]$/.test(e.key) && +e.key<=SORTS.length){ storyMenuClose(); sortLevel(SORTS[+e.key-1][0]); return true; }
+  storyMenuClose();
+  return true;
+}
+
+/* ---------- carry (Option+X) ----------
+   Pick the selection up: it goes faint where it is, the arrows walk a drop
+   target round the map, Enter drops it inside the target, Shift+Enter right
+   after it, Esc puts it back. Nothing changes until the drop, and the drop is
+   one undo step. */
+var carry=null;
+function carryStart(){
+  if(pres || lensOne){ flash(selected); flashSave("carry works on the map view"); return; }
+  if(editing) commitEdit();
+  var tree=[]; (function w(id){ tree.push(id); N(id).children.forEach(w); })(state.rootId);
+  var roots=Object.keys(marked).length ? markedRoots() : [selected];
+  roots=roots.filter(function(i){ var n=N(i); return n && !isRoot(n) && !isVR(n) && visible(i); });
+  roots.sort(function(a,b){ return tree.indexOf(a)-tree.indexOf(b); });
+  if(!roots.length){ flash(selected); flashSave("nothing to carry"); return; }
+  var set={}; roots.forEach(function(r){ subtree(r).forEach(function(x){ set[x]=1; }); });
+  carry={ids:roots, set:set, from:selected, marks:Object.assign({},marked)};
+  selected=N(roots[0]).parent;
+  clearMarks(); render();
+  flashSave("carrying "+roots.length+" \u00b7 arrows to choose where");
+}
+function carryEnd(){ var c=carry; carry=null; return c; }
+function carryKey(e){
+  if(!carry) return false;
+  var mod=e.metaKey||e.ctrlKey;
+  if(mod && !/^(z|Z)$/.test(e.key)) return false;       /* browser chords pass */
+  e.preventDefault();
+  if(KEYDIR[e.key]){
+    var at=selected, d=KEYDIR[e.key], to=null;
+    for(var i=0;i<60;i++){
+      var nx=navigate(N(at),d); if(!nx) break;
+      if(!carry.set[nx]){ to=nx; break; }
+      at=nx;
+    }
+    if(to){ selected=to; render(); } else flash(selected);
+    return true;
+  }
+  if(e.key==="Enter"){ carryDrop(selected,e.shiftKey); return true; }
+  if(e.key==="Escape"){
+    var c=carryEnd(); marked=c.marks; selected=N(c.from)?c.from:c.ids[0];
+    render(); flashSave("put back"); return true;
+  }
+  return true;                                            /* everything else waits */
+}
+function carryDrop(target,after){
+  var c=carry; if(!c||!N(target)) return false;
+  if(c.set[target]){ flash(target); flashSave("can't drop it inside itself"); return false; }
+  var T=N(target);
+  if(after && (isVR(T)||isRoot(T))){ flash(target); flashSave("the centre has no siblings \u00b7 \u23ce drops inside"); return false; }
+  carryEnd();
+  snap();
+  var host=after?N(T.parent):T, at=after?host.children.indexOf(T.id)+1:host.children.length;
+  var d=after?dirOf(T.id):(isVR(T)?null:dirOf(T.id));
+  c.ids.forEach(function(id){
+    var n=N(id), op=N(n.parent), idx=op.children.indexOf(id);
+    op.children.splice(idx,1);
+    if(op===host && idx<at) at--;
+    n.parent=host.id; host.children.splice(at++,0,id);
+    setDirDeep(id, d||dirOf(id)||"R");
+  });
+  host.collapsed=false;
+  c.ids.forEach(function(i){ marked[i]=1; });
+  selected=c.ids[0]; render(); saveSoon();
+  flashSave("moved "+c.ids.length+(after?" after \u201c":" into \u201c")+trunc(T.text||"\u2026")+"\u201d");
+  return true;
+}
+
 /* Option+J: merge the selected nodes into one. The first in map order
    survives; its text becomes every selected node's text, one per line, in
    map order, and it takes every child the others had. Links, frames and story
@@ -4715,6 +4872,8 @@ document.addEventListener("keydown",function(e){
   }
   if(helpOpen()){ helpKey(e); return; }
   if(copyMenuKey(e)) return;
+  if(sortMenuKey(e)) return;
+  if(carryKey(e)) return;
 
   if(elJump.classList.contains("on")){
     if(!mod||e.key!=="k") return;                 /* the input owns the keyboard */
@@ -4738,6 +4897,8 @@ document.addEventListener("keydown",function(e){
     if(e.code==="Backquote"){ e.preventDefault(); openPrevious(); return; }
     if(e.shiftKey && /^Digit[1-9]$/.test(e.code)){ e.preventDefault(); openPinned(+e.code.slice(5)); return; }
   }
+  if(e.altKey && !mod && !editing && e.code==="KeyO"){ e.preventDefault(); sortMenu(); return; }
+  if(e.altKey && !mod && !editing && e.code==="KeyX"){ e.preventDefault(); carryStart(); return; }
   if(e.altKey && !mod && !editing && e.code==="KeyJ"){ e.preventDefault(); mergeMarked(); return; }
   if(e.altKey && !mod && !editing && e.code==="KeyS"){ e.preventDefault(); splitNode(e.shiftKey); return; }
   if(e.altKey && !mod && !editing && e.code==="KeyN"){
@@ -4925,6 +5086,11 @@ elNodes.addEventListener("mousedown",function(e){
     if(e.button===0 && (e.metaKey||e.ctrlKey) && selected && selected!==el.dataset.id) presTie(selected,el.dataset.id);
     else { selected=el.dataset.id; render(true); }
     return;
+  }
+  if(carry){
+    e.preventDefault(); e.stopPropagation();
+    if(carry.set[el.dataset.id]){ flash(el.dataset.id); return; }
+    selected=el.dataset.id; render(true); return;
   }
   if(editing===el.dataset.id) return;
   e.stopPropagation();
