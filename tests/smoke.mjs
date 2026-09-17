@@ -2492,7 +2492,7 @@ group("sorting a level and carrying a selection");
   await pick("Growth");
   await press("Alt+KeyO");
   ok("Option+O opens the sort menu", await menuOpen());
-  ok("it has six ways", await M(() => document.querySelectorAll('#storyMenu [data-sort]').length === 6));
+  ok("it has seven ways", await M(() => document.querySelectorAll('#storyMenu [data-sort]').length === 7));
   await press("Digit1");
   ok("1 sorts A to Z, ignoring case, numbers in number order", (await kids("Growth")) === "Content,item 9,item 10,paid ads,Referrals,Webinars", await kids("Growth"));
   ok("and closes", !(await menuOpen()));
@@ -2501,10 +2501,14 @@ group("sorting a level and carrying a selection");
   await press("Alt+KeyO"); await press("Digit4");
   ok("4 puts the biggest branch first", (await kids("Growth")).startsWith("Content,paid ads"), await kids("Growth"));
   await M(async (x) => { __mf.state.nodes[x].mark = "done"; }, await id("Content"));
+  await M(async (x) => { __mf.state.nodes[x].mark = "flag"; }, await id("item 9"));
   await press("Alt+KeyO"); await press("Digit5");
-  ok("5 puts done last", (await kids("Growth")).endsWith("Content"), await kids("Growth"));
+  ok("5 puts flagged first", (await kids("Growth")).startsWith("item 9"), await kids("Growth"));
   await press("Alt+KeyO"); await press("Digit6");
-  ok("6 goes back to how it was", (await kids("Growth")) === "Referrals,paid ads,Webinars,Content,item 10,item 9", await kids("Growth"));
+  ok("6 puts done last", (await kids("Growth")).endsWith("Content"), await kids("Growth"));
+  await press("Alt+KeyO"); await press("Digit7");
+  ok("7 goes back to how it was", (await kids("Growth")) === "Referrals,paid ads,Webinars,Content,item 10,item 9", await kids("Growth"));
+  await M(async (x) => { __mf.state.nodes[x].mark = null; }, await id("item 9"));
   await press("Alt+KeyO"); await press("Digit1");
   await press("Meta+z");
   ok("a sort is one undo step", (await kids("Growth")) === "Referrals,paid ads,Webinars,Content,item 10,item 9");
@@ -2623,8 +2627,8 @@ group("map links: break out, link, open, back up, bring back in");
   await press("Alt+Enter");
   ok("Option+Enter opens the linked map", (await name()) === "Collections ops");
   ok("it holds the branch, with the link inside it", !!(await id("Autopay")) && (await M(() => __mf.links.length)) === 1);
-  ok("the trail shows where you came from", await M(() => !document.getElementById("trail").hidden && /Q4 plan/.test(document.getElementById("trail").textContent)), await M(() => document.getElementById("trail").outerHTML + "|" + JSON.stringify(JSON.parse(localStorage.getItem("mappr.index")).docs)));
-  ok("linked from is not repeated for the map you came from", await M(() => document.getElementById("backlinks").hidden));
+  ok("the rail shows the root map and lights this one", await M(() => !document.getElementById("mapbar").hidden && /Q4 plan/.test(document.getElementById("rail").textContent) && /Collections ops/.test(document.querySelector("#rail .rr.on").textContent)), await M(() => document.getElementById("rail").textContent));
+  ok("this map appears once in the rail", await M(() => [...document.querySelectorAll("#rail .rr")].filter((r) => /Collections ops/.test(r.textContent)).length === 1));
   // rename the linked map; the link follows
   await M(() => { __mf.state.nodes[__mf.state.rootId].text = "Collections"; __mf.set("gap", __mf.cfg.gap); });
   await page.waitForTimeout(500);
@@ -2632,7 +2636,7 @@ group("map links: break out, link, open, back up, bring back in");
   ok("Option+Enter on a plain node comes back at the same zoom and view", (await M(() => JSON.stringify(__mf.cam()))) === camBefore, [await M(() => JSON.stringify(__mf.cam())), camBefore]);
   ok("Option+Enter goes back up", (await name()) === "Q4 plan", [await name(), await M(() => document.getElementById("saveState").textContent)]);
   ok("to the link you left from", (await M(() => __mf.selected)) === cid);
-  ok("the trail is gone at the top", await M(() => document.getElementById("trail").hidden));
+  ok("at the top the rail lights the root", await M(() => /Q4 plan/.test(document.querySelector("#rail .rr.on").textContent)));
   ok("the link shows the map's new name", (await M((x) => __mf.state.nodes[x].text, cid)) === "Collections" && await M((x) => /^Collections/.test(document.querySelector('.node[data-id="' + x + '"]').textContent), cid));
   // undo the break out: the map goes, the branch comes back
   await press("Meta+z");
@@ -2668,8 +2672,8 @@ group("map links: break out, link, open, back up, bring back in");
   // switching away clears the trail; the backlink shows
   await press("Alt+Backquote");
   await press("Alt+Backquote");
-  ok("arriving another way shows who links here", await M(() => !document.getElementById("backlinks").hidden && /Q4 plan/.test(document.getElementById("backlinks").textContent)), await M(() => document.getElementById("backlinks").textContent + "|" + document.getElementById("trail").textContent));
-  await M(() => document.getElementById("backlinks").dispatchEvent(new MouseEvent("mousedown", { bubbles: true })));
+  ok("arriving another way still shows the root it hangs from", await M(() => !document.getElementById("mapbar").hidden && /Q4 plan/.test(document.querySelector("#rail .rr").textContent)), await M(() => document.getElementById("rail").textContent));
+  await M(() => document.querySelector('#rail [data-open]').dispatchEvent(new MouseEvent("mousedown", { bubbles: true })));
   await page.waitForTimeout(300);
   ok("and a click on it goes there", (await name()) === "Q4 plan");
   // bring it back in
@@ -3083,6 +3087,93 @@ group("0.38.1: a branch-tied network keeps its trees apart");
   await page.waitForTimeout(200);
   const shape0 = await M(([c, k]) => { const P = __mf.pos(); return [P[k].cx - P[c].cx, P[k].cy - P[c].cy].map(Math.round); }, [await id("Context"), await id("Dink Smash")]);
   ok("a tied branch keeps its tidy shape inside the network", shape.join() === shape0.join(), [shape, shape0]);
+  await M(() => __mf.spread("sides"));
+}
+
+group("0.39: flags you can find, and the maps rail");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(250); };
+  const status = () => M(() => document.getElementById("saveState").textContent);
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  const newMap = async (t) => {
+    await M(() => document.getElementById("btnMaps").click());
+    await M(() => document.getElementById("btnNewMap").click());
+    await page.waitForTimeout(220);
+    await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, t);
+    await page.waitForTimeout(300);
+  };
+  await newMap("Launch\n- Marketing\n  - Paid ads\n  - Press kit\n- Legal\n  - Terms review\n- Product");
+  const flagsTab = () => M(() => document.querySelector('#modebar [data-mode="4"]').hidden);
+  ok("the Flags view is not offered on a map with no flag", await flagsTab());
+  await press("Meta+4");
+  ok("Cmd+4 with no flag says so", /nothing is flagged/.test(await status()) && (await M(() => __mf.lens)) === "off", await status());
+  for (const t of ["Marketing", "Press kit", "Terms review"]) { await M((x) => __mf.select(x), await id(t)); await press("Meta+Shift+f"); }
+  ok("Cmd+Shift+F flags", (await M((x) => __mf.state.nodes[x].mark, await id("Press kit"))) === "flag");
+  ok("the flag is drawn by hand in the paint layer", (await M(() => document.querySelectorAll('#paintLayer path[stroke="#c0392b"], #paintLayer path[stroke="#ff7b6b"]').length)) >= 3);
+  ok("and the Flags view appears", !(await flagsTab()));
+  const g0 = await M(() => document.getElementById("paintLayer").innerHTML.length);
+  await M(() => __mf.set("flagStyle", "ribbon"));
+  ok("the Style panel changes the mark", (await M(() => document.getElementById("paintLayer").innerHTML.length)) !== g0 && (await M(() => __mf.cfg.flagStyle)) === "ribbon");
+  await M(() => __mf.set("flagStyle", "pennant"));
+  // the flag lens
+  await M((x) => __mf.select(x), await id("Launch"));
+  await press("Meta+4");
+  ok("Cmd+4 dims to the flags", (await M(() => __mf.lens)) === "dim" && (await M(() => __mf.lensKind)) === "flags");
+  ok("unflagged nodes are ghosts, flagged ones are not", (await M(() => __mf.ghosts)) === 3 && !(await M((x) => document.querySelector('.node[data-id="' + x + '"]').classList.contains("ghost"), await id("Press kit"))), await M(() => __mf.ghosts));
+  ok("it lands on the first flag", (await M(() => __mf.selected)) === (await id("Marketing")));
+  await press("Tab");
+  ok("Tab steps to the next flag", (await M(() => __mf.selected)) === (await id("Press kit")));
+  await press("Tab"); await press("Tab");
+  ok("and wraps", (await M(() => __mf.selected)) === (await id("Marketing")));
+  await press("Meta+2");
+  ok("Cmd+2 from the flags goes to connections, or says nothing is tied", (await M(() => __mf.lensKind)) !== "flags" || /nothing is tied/.test(await status()));
+  await press("Escape");
+  await press("Meta+4"); await press("Meta+Shift+f"); await press("Tab"); await press("Meta+Shift+f"); await press("Tab"); await press("Meta+Shift+f");
+  ok("unflagging the last flag ends the lens", (await M(() => __mf.lens)) === "off" && /no flags left/.test(await status()), await status());
+  for (const t of ["Marketing", "Press kit"]) { await M((x) => __mf.select(x), await id(t)); await press("Meta+Shift+f"); }
+  // Jump
+  await press("Meta+k"); await page.keyboard.type("!"); await page.waitForTimeout(150);
+  ok("! in Jump lists only flagged nodes", (await M(() => [...document.querySelectorAll("#jumpList .jr")].length)) === 2);
+  await page.keyboard.type("press"); await page.waitForTimeout(150);
+  ok("and narrows as you type", (await M(() => [...document.querySelectorAll("#jumpList .jr b")].map((b) => b.textContent))).join() === "! Press kit");
+  await press("Escape");
+  // outline both ways
+  const txt = await M(() => __mf.outline());
+  ok("the outline writes ! before a flagged line", /- ! Marketing/.test(txt) && /- ! Press kit/.test(txt) && !/! Paid/.test(txt), txt);
+  await newMap("Other");
+  await M((t) => __mf.paste(t), txt);
+  ok("pasting it back flags the same nodes", (await M((x) => __mf.state.nodes[x].mark, await id("Press kit"))) === "flag" && !(await M((x) => __mf.state.nodes[x].mark, await id("Paid ads"))));
+  ok("and the ! is not in the text", (await M((x) => __mf.state.nodes[x].text, await id("Press kit"))) === "Press kit");
+  // story finale counts them
+  await press("Meta+3");
+  for (let i = 0; i < 12; i++) await press("ArrowRight");
+  ok("the finale counts the flags", /2 flagged/.test(await status()), await status());
+  await press("Escape");
+  // the rail
+  await newMap("Q4 plan\n- Growth\n  - Paid ads\n- Collections ops\n  - Recurring payments\n    - Autopay\n  - Agent behaviour\n    - Scripts");
+  ok("no rail on a map with no links", await M(() => document.getElementById("mapbar").hidden));
+  await M((x) => __mf.select(x), await id("Collections ops")); await press("Alt+KeyB"); await press("Alt+Enter");
+  await M((x) => __mf.select(x), await id("Agent behaviour")); await press("Alt+KeyB");
+  const rows = () => M(() => [...document.querySelectorAll("#rail .rr")].map((r) => r.querySelector(".nm").textContent + (r.classList.contains("on") ? "*" : "")));
+  ok("the rail lists the root, this map and the map under it, lighting this one", (await rows()).join() === "Q4 plan,Collections ops*,Agent behaviour", await rows());
+  await press("Alt+BracketRight");
+  ok("Option+] opens the next map down the rail", (await M(() => __mf.state.nodes[__mf.state.rootId].text)) === "Agent behaviour" && (await rows()).join() === "Q4 plan,Collections ops,Agent behaviour*");
+  await press("Alt+Enter");
+  ok("Option+Enter still goes back up the path the rail set", (await M(() => __mf.state.nodes[__mf.state.rootId].text)) === "Collections ops");
+  await M(() => document.querySelector('#rail [data-open]').dispatchEvent(new MouseEvent("mousedown", { bubbles: true })));
+  await page.waitForTimeout(250);
+  ok("a click on a rail row opens that map", (await M(() => __mf.state.nodes[__mf.state.rootId].text)) === "Q4 plan");
+  await M(() => document.querySelector('#rail [data-fold]').dispatchEvent(new MouseEvent("mousedown", { bubbles: true })));
+  await page.waitForTimeout(150);
+  ok("the twist folds a branch of maps", (await rows()).length === 1);
+  await M(() => document.querySelector('#rail [data-fold]').dispatchEvent(new MouseEvent("mousedown", { bubbles: true })));
+  await press("Alt+Shift+KeyM");
+  ok("Option+Shift+M folds the rail to the pill", await M(() => document.getElementById("rail").hidden && !document.getElementById("pill").hidden && /3 maps/.test(document.getElementById("pill").textContent)), await M(() => document.getElementById("pill").textContent));
+  await press("Alt+BracketRight"); await press("Alt+BracketRight");
+  ok("the pill shows the path to where you are", await M(() => [...document.querySelectorAll("#pill button[data-open]")].map((b) => b.textContent).join() === "Q4 plan,Collections ops,Agent behaviour"), await M(() => document.getElementById("pill").textContent));
+  await press("Alt+Shift+KeyM");
+  ok("and back", await M(() => !document.getElementById("rail").hidden));
+  ok("no runtime errors", errors.length === 0, errors);
   await M(() => __mf.spread("sides"));
 }
 

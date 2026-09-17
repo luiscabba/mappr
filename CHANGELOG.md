@@ -3,6 +3,27 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.39.0] - 2026-09-17
+
+### Added
+- **The maps rail.** Top left, every map under the root map as a tree, with
+  the one you are on lit and each map's size beside it. Click a name to open
+  it, `⌥[` and `⌥]` walk them, a twist folds a branch of maps. A
+  map linked from two places is listed under the first and marked under the
+  second. `⌥⇧M` folds the rail to one line that says where you are,
+  root to here, with the count; the choice is remembered. It replaces the
+  trail bar and *Linked from*: the lit row is the trail, and a map that
+  something links to hangs under it. Nothing shows until the map has a link.
+- **Flags, drawn by hand.** The flag is a pennant on a pole in the same hand
+  as the boxes, seeded on its node so it is the same every render, and it
+  exports. The Style panel offers a ribbon, a ring and an asterisk instead.
+- **Flags you can find.** `⌘4` (or `⌥4`) is a view on the number
+  row, offered while the map has a flag: everything without one drops to a
+  ghost, `Tab` and the arrows step flag to flag, `Esc` puts you back. In
+  `⌘K`, `!` first lists only flagged nodes. Sort has *Flagged first*.
+  A copied outline writes `!` before a flagged line, and a pasted `!` line
+  comes in flagged. The end of a story counts the flags in it.
+
 ## [0.38.1] - 2026-09-17
 
 ### Fixed
