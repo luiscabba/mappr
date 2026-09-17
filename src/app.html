@@ -692,6 +692,7 @@
     <section class="hpane" data-tab="links"><h3>Links</h3>
     <table class="keys">
       <tr><td><kbd>⌘</kbd> + click</td><td>Tie the selected node to the one you click, anywhere on the map. A faint arc joins them. The same pair again unties. A link says these two relate; it does not change who owns whom, so nothing moves.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>⇧</kbd> + click</td><td><b>Tie two branches.</b> Ties the selected node to the one you click as a <em>branch tie</em>: one heavier arc with a bracket at each end, and in connections everything under either node counts as the same network, so a whole branch relates to a whole branch without a tie per node. The same again removes it. From the keyboard, select the two nodes and press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>T</kbd>.</td></tr>
       <tr><td>The <b>∿</b> badge</td><td>How many links land on this node. Click it to walk to the other end, which is usually off screen; clicking again cycles through the rest. A folded branch carries the badge for everything tied up inside it, and walking there opens it.</td></tr>
       <tr><td>A hollow end</td><td>The node you actually tied is folded away inside the one the arc reaches. Better than a line running into nothing.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>1</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>1</kbd></td><td><b>Normal view.</b> The number keys are views, and 1 is the plain map. From any other view it puts you back where you were, focus and all. The <kbd>⌥</kbd> versions are there because a browser tab may keep <kbd>⌘</kbd> plus a number for itself.</td></tr>
@@ -855,6 +856,58 @@ function toggleLink(a,b){
   state.links.push({a:a,b:b});
   return "tied";
 }
+/* A branch tie is one link with branch:true. It is drawn as one arc between
+   the two top nodes, and the connections view counts everything under either
+   end as part of the same network, so a whole branch relates to a whole
+   branch without a tie per node. */
+function branchTieReport(r,at){
+  if(!r){ flash(at); return; }
+  if(r==="same"){ flash(at); flashSave("one of these is inside the other"); return; }
+  clearMarks(); hardRender(); saveSoon();
+  flashSave(r==="tied" ? "branches tied \u00b7 \u23182 shows them as one network" : "branch tie removed");
+}
+function branchTieKey(){
+  var ids=Object.keys(marked).filter(function(i){ return N(i); });
+  if(ids.length!==2){ flash(selected); flashSave("select the two branch nodes to tie (\u21e7+click or \u21e7+arrows)"); return; }
+  branchTieReport(toggleBranchTie(ids[0],ids[1]), ids[1]);
+}
+function toggleBranchTie(a,b){
+  if(!a||!b||a===b||!N(a)||!N(b)) return null;
+  if(pathTo(a).indexOf(b)>=0 || pathTo(b).indexOf(a)>=0) return "same";
+  state.links=state.links||[];
+  var i=linkIndex(a,b);
+  snap();
+  if(i>=0 && state.links[i].branch){ state.links.splice(i,1); return "cut"; }
+  if(i>=0){ state.links[i].branch=true; return "tied"; }
+  state.links.push({a:a,b:b,branch:true});
+  return "tied";
+}
+/* Every pair the connections view should treat as joined, at the nodes that
+   currently stand for each end: plain ties as they are, and for a branch tie
+   also each end's visible descendants joined to that end. */
+function linkPairs(){
+  var out=[];
+  (state.links||[]).forEach(function(l){
+    var a=visibleEnd(l.a), b=visibleEnd(l.b);
+    if(!a||!b||a.id===b.id) return;
+    out.push([a.id,b.id]);
+    if(!l.branch) return;
+    [a.id,b.id].forEach(function(top){
+      (function w(id){
+        kids(N(id)).forEach(function(c){ if(visible(c)){ out.push([top,c]); w(c); } });
+      })(top);
+    });
+  });
+  return out;
+}
+function branchTieSet(){
+  var set={};
+  (state.links||[]).forEach(function(l){
+    if(!l.branch) return;
+    [l.a,l.b].forEach(function(t){ if(N(t)) subtree(t).forEach(function(x){ set[x]=1; }); });
+  });
+  return set;
+}
 /* A link is only drawable if you can see both ends. When one end is folded
    away, the nearest visible ancestor stands in for it and is drawn hollow: a
    line running into nothing is worse than an honest stand-in. */
@@ -924,11 +977,9 @@ function lensSolo(){ return !!lensOne; }
    Returns the visible set, and for each folded node how many it is hiding. */
 function lensReach(origin){
   var adj={};
-  (state.links||[]).forEach(function(l){
-    var a=visibleEnd(l.a), b=visibleEnd(l.b);
-    if(!a||!b||a.id===b.id) return;
-    (adj[a.id]=adj[a.id]||[]).push(b.id);
-    (adj[b.id]=adj[b.id]||[]).push(a.id);
+  linkPairs().forEach(function(pr){
+    (adj[pr[0]]=adj[pr[0]]||[]).push(pr[1]);
+    (adj[pr[1]]=adj[pr[1]]||[]).push(pr[0]);
   });
   var from={}, order=[origin], seen={}; seen[origin]=1;
   for(var i=0;i<order.length;i++){
@@ -993,11 +1044,7 @@ function netHiddenLinks(id,set){
 function lensParts(){
   var set={};
   if(lensOne) return lensReach(lensOne).set;
-  (state.links||[]).forEach(function(l){
-    var a=visibleEnd(l.a), b=visibleEnd(l.b);
-    if(!a||!b||a.id===b.id) return;
-    set[a.id]=1; set[b.id]=1;
-  });
+  linkPairs().forEach(function(pr){ set[pr[0]]=1; set[pr[1]]=1; });
   return set;
 }
 function lensClear(){
@@ -1043,11 +1090,9 @@ var lensMoved=false;
    themselves in the order their first node appears in the tree. */
 function lensNetworks(){
   var adj={};
-  (state.links||[]).forEach(function(l){
-    var a=visibleEnd(l.a), b=visibleEnd(l.b);
-    if(!a||!b||a.id===b.id) return;
-    (adj[a.id]=adj[a.id]||[]).push(b.id);
-    (adj[b.id]=adj[b.id]||[]).push(a.id);
+  linkPairs().forEach(function(pr){
+    (adj[pr[0]]=adj[pr[0]]||[]).push(pr[1]);
+    (adj[pr[1]]=adj[pr[1]]||[]).push(pr[0]);
   });
   var tree=[]; (function w(id){ tree.push(id); kids(N(id)).forEach(w); })(VR());
   var rank={}; tree.forEach(function(id,i){ rank[id]=i; });
@@ -1123,11 +1168,9 @@ function arrangeByLinks(){
   var live=Object.keys(pos).filter(function(id){ return id!==rid && box[id]; });
   if(live.length<2) return;
   var pairs=[];
-  (state.links||[]).forEach(function(l){
-    var a=visibleEnd(l.a), b=visibleEnd(l.b);
-    if(!a||!b||a.id===b.id) return;
-    if(!pos[a.id]||!pos[b.id]||a.id===rid||b.id===rid) return;
-    pairs.push([a.id,b.id]);
+  linkPairs().forEach(function(pr){
+    if(!pos[pr[0]]||!pos[pr[1]]||pr[0]===rid||pr[1]===rid) return;
+    pairs.push(pr);
   });
   if(!pairs.length) return;
 
@@ -2447,7 +2490,7 @@ function shapes(ids, opt){
       if(pres && !opt.exporting && (pres.arrange || !presVisible(ea.id) || !presVisible(eb.id))) return;
       var on=!opt.exporting && (lensActive() || selected===ea.id || selected===eb.id);
       var lkey="lk"+l.a+"_"+l.b+"|"+SC.gen+"|"+geo(ea.id)+"|"+geo(eb.id)+"|"+
-               (ea.proxy?1:0)+(eb.proxy?1:0)+"|"+(on?1:0)+"|"+lensSig();
+               (ea.proxy?1:0)+(eb.proxy?1:0)+"|"+(on?1:0)+"|"+lensSig()+"|"+(l.branch?"B":"");
       if(cache){
         var lhit=SC.edge[lkey];
         if(lhit!==undefined){ nEdge[lkey]=lhit; emit(lkey,lhit); return; }
@@ -2461,9 +2504,25 @@ function shapes(ids, opt){
         pts.push([u*u*A.cx+2*u*t*mx+t*t*B.cx, u*u*A.cy+2*u*t*my+t*t*B.cy]);
       }
       var lr=rngFrom(seedOf(l.a+l.b+"lk"));
-      var lout='<path class="lk" d="'+roughPoly(pts,lr,amp*.7)+'" fill="none" stroke="'+lcol+
-        '" stroke-width="'+(on?2.1:1.5)+'" stroke-linecap="round" stroke-linejoin="round"'+
-        ' stroke-dasharray="7 6" opacity="'+(on?.9:.34)+'"/>';
+      var bt=!!l.branch;
+      var lout='<path class="lk'+(bt?' bt':'')+'" d="'+roughPoly(pts,lr,amp*.7)+'" fill="none" stroke="'+lcol+
+        '" stroke-width="'+(bt?(on?3.4:2.8):(on?2.1:1.5))+'" stroke-linecap="round" stroke-linejoin="round"'+
+        ' stroke-dasharray="'+(bt?'16 5 3 5':'7 6')+'" opacity="'+(on?.9:(bt?.6:.34))+'"/>';
+      /* a branch tie wears a double tick where it leaves each box: this whole branch */
+      if(bt){
+        var outside=function(pt,id){ var bx=box[id], c=pos[id]; return Math.abs(pt[0]-c.cx)>bx.w/2+6 || Math.abs(pt[1]-c.cy)>bx.h/2+6; };
+        var capAt=function(k,dirK){
+          var p0=pts[k], p1=pts[Math.max(0,Math.min(pts.length-1,k+dirK))];
+          var ang=Math.atan2(p1[1]-p0[1],p1[0]-p0[0]), nx=-Math.sin(ang), ny=Math.cos(ang), h=6.5;
+          [0,5].forEach(function(o){
+            var cx=p0[0]+Math.cos(ang)*o, cy=p0[1]+Math.sin(ang)*o;
+            lout+='<path d="M'+(cx-nx*h)+','+(cy-ny*h)+' L'+(cx+nx*h)+','+(cy+ny*h)+'" stroke="'+lcol+'" stroke-width="2.2" stroke-linecap="round" opacity="'+(on?.95:.7)+'"/>';
+          });
+        };
+        var ka=0; while(ka<pts.length-1 && !outside(pts[ka],ea.id)) ka++;
+        var kb=pts.length-1; while(kb>0 && !outside(pts[kb],eb.id)) kb--;
+        capAt(ka,1); capAt(kb,-1);
+      }
       /* hollow end = the node you actually tied is folded inside this one */
       [[A,ea],[B,eb]].forEach(function(pr){
         lout += pr[1].proxy
@@ -2484,11 +2543,13 @@ function shapes(ids, opt){
   var lensQuiet = !opt.exporting && lens && !lensSolo();
   function presFade(id){ return !opt.exporting && (presDim(id) || presSkip(id) || !!(carry && carry.set[id])); }
   var lensHideTree = !opt.exporting && lensSolo();
+  var btSet = lensHideTree ? branchTieSet() : null;
   var lensGhosts = lensQuiet ? lensParts() : {};
   ids.forEach(function(id){
-    if(lensHideTree) return;
+    if(lensHideTree && !btSet[id]) return;
     N(id).children.forEach(function(cid){
       if(!pos[cid] || !inSet[cid]) return;
+      if(lensHideTree && !btSet[cid]) return;
       var d=dirOf(cid), col=N(cid).link?(dark()?"#66d9e8":"#0c8599"):paletteFor(N(cid)).line, key=null;
       if(cache){
         key=cid+"|"+SC.gen+"|"+geo(id)+"|"+geo(cid)+"|"+d+"|"+col+"|"+(lensQuiet?1:0)+"|"+(presFade(cid)?1:0);
@@ -3464,7 +3525,7 @@ function mergeMarked(){
   if(take.length) keep.collapsed=false;
   ids.slice(1).forEach(function(i){ delete state.nodes[i]; });
   var seen={};
-  state.links=(state.links||[]).map(function(l){ return {a:gone[l.a]?keep.id:l.a, b:gone[l.b]?keep.id:l.b}; })
+  state.links=(state.links||[]).map(function(l){ var o={a:gone[l.a]?keep.id:l.a, b:gone[l.b]?keep.id:l.b}; if(l.branch) o.branch=true; return o; })
     .filter(function(l){ var k=[l.a,l.b].sort().join("|"); if(l.a===l.b||seen[k]) return false; seen[k]=1; return true; });
   state.frames=(state.frames||[]).filter(function(f){
     var r2=[]; f.roots.forEach(function(r){ var x=gone[r]?keep.id:r; if(r2.indexOf(x)<0) r2.push(x); });
@@ -4012,7 +4073,7 @@ function insertOutline(items,opt){
   });
   (opt.links||[]).forEach(function(l){
     var a=madeIds[l[0]], b=madeIds[l[1]];
-    if(a&&b){ state.links=state.links||[]; state.links.push({a:a,b:b}); }
+    if(a&&b){ state.links=state.links||[]; state.links.push(l[2]?{a:a,b:b,branch:true}:{a:a,b:b}); }
   });
   editing=null; clearMarks();
   /* what landed stays selected, so it can be moved or deleted straight away */
@@ -4118,7 +4179,7 @@ function selectionCopy(){
   })(tops);
   void open;
   var links=[];
-  (state.links||[]).forEach(function(l){ if(has[l.a]&&has[l.b]) links.push([idx[l.a],idx[l.b]]); });
+  (state.links||[]).forEach(function(l){ if(has[l.a]&&has[l.b]) links.push(l.branch?[idx[l.a],idx[l.b],1]:[idx[l.a],idx[l.b]]); });
   return { ids:order, txt:lines.join("\n"), html:html, items:items, links:links };
 }
 var pasteSibling=false;
@@ -4673,7 +4734,7 @@ function breakOut(){
   var keepLinks=[], cut=0;
   (state.links||[]).forEach(function(l){
     var a=inside[l.a]&&l.a!==n.id, b=inside[l.b]&&l.b!==n.id;
-    if(inside[l.a]&&inside[l.b]) keepLinks.push({a:l.a,b:l.b});
+    if(inside[l.a]&&inside[l.b]) keepLinks.push(l.branch?{a:l.a,b:l.b,branch:true}:{a:l.a,b:l.b});
     else if(a||b) cut++;
   });
   var frames=(state.frames||[]).filter(function(f){ return f.roots.every(function(r){ return inside[r] && r!==n.id; }); });
@@ -4718,7 +4779,7 @@ function bringIn(){
   n.text=r.text; delete n.link;
   if(r.mark && !n.mark) n.mark=r.mark;
   state.links=state.links||[];
-  (src.links||[]).forEach(function(l){ if(map[l.a]&&map[l.b]) state.links.push({a:map[l.a],b:map[l.b]}); });
+  (src.links||[]).forEach(function(l){ if(map[l.a]&&map[l.b]) state.links.push(l.branch?{a:map[l.a],b:map[l.b],branch:true}:{a:map[l.a],b:map[l.b]}); });
   (src.frames||[]).forEach(function(f){
     var roots=f.roots.map(function(x){ return map[x]; }).filter(Boolean);
     if(roots.length) state.frames.push({id:"f"+Date.now().toString(36)+Math.random().toString(36).slice(2,5), title:f.title, roots:roots});
@@ -5213,6 +5274,7 @@ document.addEventListener("keydown",function(e){
     if(e.code==="KeyM"){ e.preventDefault(); swOpen()?closeSwitcher():openSwitcher(); return; }
     if(e.code==="KeyP" && !e.shiftKey){ e.preventDefault(); save(); togglePin(curDoc); return; }
     if(e.code==="KeyT" && !e.shiftKey){ e.preventDefault(); save(); cycleTag(curDoc); return; }
+    if(e.code==="KeyT" && e.shiftKey){ e.preventDefault(); branchTieKey(); return; }
     if(e.code==="Backquote"){ e.preventDefault(); openPrevious(); return; }
     if(e.shiftKey && /^Digit[1-9]$/.test(e.code)){ e.preventDefault(); openPinned(+e.code.slice(5)); return; }
   }
@@ -5419,6 +5481,13 @@ elNodes.addEventListener("mousedown",function(e){
      button is the one gesture a page cannot have, since Chrome and Firefox both
      read shift + right-click as "show me the real menu" and hand it to the
      browser before the page ever sees it. */
+  if(e.button===0 && e.shiftKey && (e.metaKey||e.ctrlKey)){
+    e.preventDefault();
+    var bt=el.dataset.id;
+    if(!selected||selected===bt){ select(bt); return; }
+    branchTieReport(toggleBranchTie(selected,bt), bt);
+    return;
+  }
   if(e.button===0 && e.shiftKey){ e.preventDefault(); markSiblings(el.dataset.id); return; }
   /* Cmd (or Ctrl) + click ties the selected node to this one, and the same pair
      again unties. Nothing else was using this chord on a node. */
@@ -5838,7 +5907,8 @@ window.__mf={
   between:insertBetween, del:doDelete, select:select,
   mark:function(ids){ marked={}; ids.forEach(function(i){ marked[i]=1; }); render(true); },
   markSibs:markSiblings, fold:toggleCollapse,
-  get links(){ return (state.links||[]).map(function(l){ return {a:l.a,b:l.b}; }); },
+  get links(){ return (state.links||[]).map(function(l){ return l.branch?{a:l.a,b:l.b,branch:true}:{a:l.a,b:l.b}; }); },
+  branchTie:function(a,b){ var r=toggleBranchTie(a,b); if(r&&r!=="same"){ hardRender(); save(); } return r; },
   tie:function(a,b){ var r=toggleLink(a,b); if(r){ hardRender(); save(); } return r; },
   linksAt:linksAt, hop:hopLink,
   get lens(){ return lensOne?"one":(lens?"dim":"off"); },

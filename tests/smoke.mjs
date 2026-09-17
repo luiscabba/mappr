@@ -2695,6 +2695,74 @@ group("map links: break out, link, open, back up, bring back in");
   ok("an export shows the link's name", svg.includes(">Collections<"));
 }
 
+group("branch ties");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(250); };
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, "Plans\n- 2025\n  - Q1\n    - Hiring\n  - Q2\n- 2026\n  - Q1\n  - Q3\n- Other\n  - Loose");
+  await page.waitForTimeout(300);
+  const id = (t) => M((t) => Object.values(__mf.state.nodes).filter((n) => n.text === t).map((n) => n.id)[0], t);
+  const a = await id("2025"), b = await id("2026");
+  const clickNode = async (x, mods) => {
+    const r = await M((x) => { const e = document.querySelector('.node[data-id="' + x + '"]').getBoundingClientRect(); return { x: e.left + e.width / 2, y: e.top + e.height / 2 }; }, x);
+    for (const m of mods) await page.keyboard.down(m);
+    await page.mouse.click(r.x, r.y);
+    for (const m of mods.reverse()) await page.keyboard.up(m);
+    await page.waitForTimeout(250);
+  };
+  await M((x) => __mf.select(x), a);
+  await page.waitForTimeout(300);
+  await clickNode(b, ["Meta", "Shift"]);
+  const L = await M(() => __mf.links);
+  ok("Cmd+Shift+click makes one branch tie", L.length === 1 && L[0].branch === true, L);
+  ok("it is drawn as a heavier arc", await M(() => document.querySelectorAll("#paintLayer path.lk.bt").length === 1));
+  ok("nothing was marked by the shift", (await M(() => __mf.rawMarked.length)) === 0);
+  // connections: the whole branches are one network
+  await M(() => __mf.setLens("dim")); await page.waitForTimeout(250);
+  ok("dimmed, both whole branches stay lit", await M(() => { const g = [...document.querySelectorAll(".node.ghost")].map((e) => e.textContent); return g.includes("Other") && g.includes("Loose") && !g.includes("Hiring") && !g.includes("Q3"); }), await M(() => [...document.querySelectorAll(".node.ghost")].map((e) => e.textContent)));
+  await M((x) => __mf.setLens("one", x), a); await page.waitForTimeout(300);
+  ok("the network holds both branches (and the centre)", (await M(() => __mf.shown)) === 8, await M(() => __mf.shown));
+  ok("and draws the tree inside them", await M(() => document.querySelectorAll("#paintLayer path").length > 8));
+  await M(() => __mf.setLens("off")); await page.waitForTimeout(250);
+  // the same gesture again removes it
+  await M((x) => __mf.select(x), a);
+  await clickNode(b, ["Meta", "Shift"]);
+  ok("the same gesture again removes it", (await M(() => __mf.links)).length === 0);
+  await press("Meta+z");
+  ok("undo brings it back", (await M(() => __mf.links)).length === 1);
+  // a plain tie turns into a branch tie, and Cmd+click on a branch tie removes it
+  await M((x) => __mf.select(x), a);
+  await clickNode(b, ["Meta"]);
+  ok("a plain Cmd+click on a branch tie unties it", (await M(() => __mf.links)).length === 0);
+  await clickNode(b, ["Meta"]);
+  ok("a plain tie", (await M(() => __mf.links))[0].branch !== true);
+  await clickNode(b, ["Meta", "Shift"]);
+  ok("Cmd+Shift+click turns a plain tie into a branch tie", (await M(() => __mf.links)).length === 1 && (await M(() => __mf.links))[0].branch === true);
+  // keyboard
+  await clickNode(b, ["Meta", "Shift"]);
+  await M(async (ids) => __mf.mark(ids), [a, await id("Other")]);
+  await press("Alt+Shift+KeyT");
+  ok("Option+Shift+T ties the two selected branches", (await M(() => __mf.links)).some((l) => l.branch && (l.a === a || l.b === a)));
+  await M(async (ids) => __mf.mark(ids), [a]);
+  const n0 = (await M(() => __mf.links)).length;
+  await press("Alt+Shift+KeyT");
+  ok("with one selected it says what it needs", (await M(() => __mf.links)).length === n0 && /select the two/.test(await M(() => document.getElementById("saveState").textContent)));
+  // a node and its own child cannot be branch-tied
+  const r = await M(async ([x, y]) => __mf.branchTie(x, y), [a, await id("Hiring")]);
+  ok("a branch cannot be tied to something inside it", r === "same");
+  // copying keeps it
+  await M(async (ids) => __mf.mark(ids), [a, await id("Other"), await id("Loose")]);
+  const txt = await M(() => { const dt = new DataTransfer(); document.dispatchEvent(new ClipboardEvent("copy", { clipboardData: dt, bubbles: true, cancelable: true })); return dt.getData("text/plain"); });
+  await M(() => __mf.mark([]));
+  await M((x) => __mf.select(x), b);
+  await M((t) => { const dt = new DataTransfer(); dt.setData("text/plain", t); document.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true })); }, txt);
+  await page.waitForTimeout(250);
+  ok("copy and paste keep a branch tie inside the copy", (await M(() => __mf.links)).filter((l) => l.branch).length === 2, await M(() => __mf.links));
+  await M(() => { __mf.mark([]); __mf.spread("sides"); });
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 

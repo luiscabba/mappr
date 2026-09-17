@@ -3,6 +3,17 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.35.0] - 2026-09-17
+
+### Added
+- **Branch ties.** `⌘⇧`+click ties the selected node to another as a whole
+  branch: one heavier arc with a double tick where it leaves each box, and in
+  connections everything under either node counts as the same network. Dimmed,
+  both branches stay lit; opened as a network, both come up with their tree
+  drawn. The same gesture again removes it, and it turns a plain tie between
+  the same two nodes into a branch tie. From the keyboard, select the two
+  nodes and press `⌥⇧T`. Copy, paste, merge and break out keep it.
+
 ## [0.34.0] - 2026-09-17
 
 ### Added
