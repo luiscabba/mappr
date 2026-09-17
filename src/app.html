@@ -1767,7 +1767,7 @@ function clearUndo(){ undoStack.length=0; redoStack.length=0; undoBytes=0; }
 /* Each map keeps its own undo history for the session, so going into a linked
    map and back (or switching away and back) does not throw away the steps you
    took there. Only the few most recent maps are kept, to bound memory. */
-var undoByDoc={}, UNDO_KEEP_MAPS=4;
+var undoByDoc={}, UNDO_KEEP_MAPS=4, viewByDoc={};
 function stashUndo(doc){
   if(!doc) return;
   undoByDoc[doc]={u:undoStack.slice(), r:redoStack.slice(), b:undoBytes, t:Date.now()};
@@ -4667,7 +4667,7 @@ function linkUp(i){
   var lib=idxRead();
   if(!lib.docs[t.doc]){ drawTrail(); flashSave("that map is gone"); return; }
   linkSwitch=true; switchDoc(t.doc); linkSwitch=false;
-  if(N(t.sel)){ selected=t.sel; render(); }
+  if(N(t.sel)){ selected=t.sel; render(true); }
   drawTrail();
 }
 function drawTrail(){
@@ -4994,7 +4994,7 @@ function switchDoc(id){
     var ti=-1; linkTrail.forEach(function(t,i){ if(t.doc===id) ti=i; });
     linkTrail = ti>=0 ? linkTrail.slice(0,ti) : [];
   }
-  if(curDoc!==id) stashUndo(curDoc);
+  if(curDoc!==id){ stashUndo(curDoc); if(curDoc) viewByDoc[curDoc]=camNow(); }
   var sameDoc=(curDoc===id);
   curDoc=id; lib.current=id; idxWrite(lib);
   state=d.state; state.frames=state.frames||[];
@@ -5005,7 +5005,10 @@ function switchDoc(id){
   if(d.cfg) CFG=Object.assign({},DEFAULTS,d.cfg);
   migrateSpread();
   editing=null; clearMarks(); if(!sameDoc) loadUndo(id);
-  applyCss(); drawPanel(); hardRender(); fit(); drawMaps(); drawPinMark(); drawTrail();
+  applyCss(); drawPanel(); hardRender();
+  /* a map you already visited this session opens exactly as you left it */
+  if(viewByDoc[id] && !sameDoc) camRestore(viewByDoc[id]); else fit();
+  drawMaps(); drawPinMark(); drawTrail();
   flashSave("opened \u201c"+trunc(docName(state))+"\u201d");
 }
 function newDoc(st){
@@ -5014,7 +5017,7 @@ function newDoc(st){
   var id=docId();
   state=st||freshState(); state.frames=state.frames||[];
   uid=1; selected=state.rootId; focusId=null; editing=null; clearMarks();
-  stashUndo(curDoc); clearUndo();
+  stashUndo(curDoc); if(curDoc) viewByDoc[curDoc]=camNow(); clearUndo();
   if(curDoc && lib.docs[curDoc]) lib.prev=curDoc;
   curDoc=id; lib.current=id; idxWrite(lib);
   if(!st) linkTrail=[];

@@ -547,7 +547,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v0.35.0">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
+  <span class="brand" id="brand" title="Mappr v0.35.1">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -630,7 +630,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.35.0</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.35.1</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <div id="helpBody">
@@ -744,9 +744,9 @@
      panel cannot drift from the record of what actually shipped. -->
 <div id="notes">
   <div id="notesCard">
-    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.35.0</span></h2>
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v0.35.1</span></h2>
     <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
-    <div id="notesBody"><h3 class="rel">0.35.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Branch ties.</b> <code>⌘⇧</code>+click ties the selected node to another as a whole branch: one heavier arc with a double tick where it leaves each box, and in connections everything under either node counts as the same network. Dimmed, both branches stay lit; opened as a network, both come up with their tree drawn. The same gesture again removes it, and it turns a plain tie between the same two nodes into a branch tie. From the keyboard, select the two nodes and press <code>⌥⇧T</code>. Copy, paste, merge and break out keep it.</li></ul><h3 class="rel">0.34.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Map links.</b> A link is a node that stands in for a whole map: it shows the map&#x27;s name and size, and its name follows the map. The style panel has three looks under <em>Map links</em>: a stacked card (the default), dashed, or an arrow badge.</li><li><b>Break out, <code>⌥B</code>.</b> A branch becomes a map of its own and a link takes its place. Marks, folds, frames and the links inside the branch go with it; links that crossed the cut are removed and counted. On a link, <code>⌥B</code> brings the map back in as a branch, and the map goes to Recently deleted unless something else still links to it. <code>⌘Z</code> undoes either, map and all.</li><li><b>Link a node, <code>⌥K</code>.</b> Pick a map to link to, or make a new one named after the node.</li><li><b>Follow links.</b> <code>⌥⏎</code> or a double-click opens a linked map. A bar under the top bar keeps the trail of maps you came through; <code>⌥U</code> or a name in it goes back up to the link you left from. <em>Linked from</em> says which other maps link to the one you are on. A link whose map was deleted says so, and <code>⌥⏎</code> restores the map.</li></ul><h4>Changed</h4><ul><li><b>Undo survives switching maps.</b> Each map keeps its own undo history for the session, so going into a linked map and back, or switching away and back, keeps the steps you took.</li></ul><h3 class="rel">0.33.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Sort, <code>⌥O</code>.</b> A small menu next to the selection, where a number picks: A to Z, Z to A, reverse, biggest branch first, done last, or back to how it was. Selected siblings trade places only among the spots they already hold; with one node selected, its children are sorted. Names sort the way people read them, so &quot;item 9&quot; comes before &quot;item 10&quot;, and on the centre each side is sorted on its own so nothing changes sides.</li><li><b>Carry, <code>⌥X</code>.</b> Picks up the selection, or the selected node. It fades where it is while the arrows, or a click, move a ring to where it should go; <code>⏎</code> drops it inside, <code>⇧⏎</code> right after, <code>Esc</code> puts it back. Nothing moves until the drop, the dropped nodes stay selected, and one undo reverses it.</li></ul><h3 class="rel">0.32.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Merge nodes, <code>⌥J</code>.</b> The selected nodes become one: the first in map order keeps its place, its text becomes all of theirs, one per line, and it takes every child they had. Links and frames follow it. The selection bar has a Merge button too.</li><li><b>Split a node, <code>⌥S</code>.</b> A node with several lines becomes one node per line, as siblings right after it; <code>⌥⇧S</code> makes the extra lines its children instead. It keeps the first line and its own children, and bullets or numbers a pasted line carried are dropped. Works on a whole selection.</li></ul><h3 class="rel">0.31.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Group a selection under a new parent.</b> With nodes selected, hold <code>Tab</code> and press the arrow back toward the centre: a new parent slides in where the first of them was, and every selected branch becomes its child, in map order, even ones from elsewhere in the map. Type to name it; one undo takes the whole group back out. A frame that wrapped one of them wraps the new parent instead.</li></ul><h3 class="rel">0.30.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Pinned maps.</b> <code>⌥P</code> pins the open map, and a pin (Mappr&#x27;s own, drawn to match) shows next to the name. Pinned maps sit at the top of the Maps menu, each with its number: <code>⌥⇧1</code> to <code>⌥⇧9</code> open them in pin order.</li><li><b>The map switcher, <code>⌥M</code>.</b> Pinned maps first, then recent ones; type to filter, arrows and <code>⏎</code> to open. It starts on the map you were on before, so <code>⌥M</code> <code>⏎</code> swaps back and forth. <code>⌥P</code> and <code>⌥T</code> work on the highlighted map. The Maps menu opens it too.</li><li><b>Colour tags.</b> <code>⌥T</code> gives the open map a colour and steps through six; past the last it clears. The dot beside each map in the lists does the same on a click, and the colour shows next to the name.</li><li><b>Back to the last map.</b> <code>⌥</code> plus the backtick key flips between the map you are on and the one before.</li></ul><h4>Fixed</h4><ul><li><b>Shapes going missing after a move in a big map.</b> Moving a node between branches could leave boxes undrawn or drawn in the wrong place until the next full repaint. A shortcut in the repaint reused a shape that was still on screen elsewhere; it now only takes that shortcut when it is safe.</li></ul></div>
+    <div id="notesBody"><h3 class="rel">0.35.1 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Coming back to a map keeps your view.</b> Going back up from a linked map (<code>⌥U</code> or the trail), <code>⌥</code> plus backtick, or the map switcher used to fit the whole map again. A map you already visited this session now opens at the zoom and place you left it, with the same node selected.</li></ul><h3 class="rel">0.35.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Branch ties.</b> <code>⌘⇧</code>+click ties the selected node to another as a whole branch: one heavier arc with a double tick where it leaves each box, and in connections everything under either node counts as the same network. Dimmed, both branches stay lit; opened as a network, both come up with their tree drawn. The same gesture again removes it, and it turns a plain tie between the same two nodes into a branch tie. From the keyboard, select the two nodes and press <code>⌥⇧T</code>. Copy, paste, merge and break out keep it.</li></ul><h3 class="rel">0.34.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Map links.</b> A link is a node that stands in for a whole map: it shows the map&#x27;s name and size, and its name follows the map. The style panel has three looks under <em>Map links</em>: a stacked card (the default), dashed, or an arrow badge.</li><li><b>Break out, <code>⌥B</code>.</b> A branch becomes a map of its own and a link takes its place. Marks, folds, frames and the links inside the branch go with it; links that crossed the cut are removed and counted. On a link, <code>⌥B</code> brings the map back in as a branch, and the map goes to Recently deleted unless something else still links to it. <code>⌘Z</code> undoes either, map and all.</li><li><b>Link a node, <code>⌥K</code>.</b> Pick a map to link to, or make a new one named after the node.</li><li><b>Follow links.</b> <code>⌥⏎</code> or a double-click opens a linked map. A bar under the top bar keeps the trail of maps you came through; <code>⌥U</code> or a name in it goes back up to the link you left from. <em>Linked from</em> says which other maps link to the one you are on. A link whose map was deleted says so, and <code>⌥⏎</code> restores the map.</li></ul><h4>Changed</h4><ul><li><b>Undo survives switching maps.</b> Each map keeps its own undo history for the session, so going into a linked map and back, or switching away and back, keeps the steps you took.</li></ul><h3 class="rel">0.33.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Sort, <code>⌥O</code>.</b> A small menu next to the selection, where a number picks: A to Z, Z to A, reverse, biggest branch first, done last, or back to how it was. Selected siblings trade places only among the spots they already hold; with one node selected, its children are sorted. Names sort the way people read them, so &quot;item 9&quot; comes before &quot;item 10&quot;, and on the centre each side is sorted on its own so nothing changes sides.</li><li><b>Carry, <code>⌥X</code>.</b> Picks up the selection, or the selected node. It fades where it is while the arrows, or a click, move a ring to where it should go; <code>⏎</code> drops it inside, <code>⇧⏎</code> right after, <code>Esc</code> puts it back. Nothing moves until the drop, the dropped nodes stay selected, and one undo reverses it.</li></ul><h3 class="rel">0.32.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Merge nodes, <code>⌥J</code>.</b> The selected nodes become one: the first in map order keeps its place, its text becomes all of theirs, one per line, and it takes every child they had. Links and frames follow it. The selection bar has a Merge button too.</li><li><b>Split a node, <code>⌥S</code>.</b> A node with several lines becomes one node per line, as siblings right after it; <code>⌥⇧S</code> makes the extra lines its children instead. It keeps the first line and its own children, and bullets or numbers a pasted line carried are dropped. Works on a whole selection.</li></ul><h3 class="rel">0.31.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>Group a selection under a new parent.</b> With nodes selected, hold <code>Tab</code> and press the arrow back toward the centre: a new parent slides in where the first of them was, and every selected branch becomes its child, in map order, even ones from elsewhere in the map. Type to name it; one undo takes the whole group back out. A frame that wrapped one of them wraps the new parent instead.</li></ul></div>
     <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
 </div>
@@ -760,7 +760,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="0.35.0";
+var VERSION="0.35.1";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid",
   width:2, dash:"solid", slop:1, edges:"round",
@@ -1767,7 +1767,7 @@ function clearUndo(){ undoStack.length=0; redoStack.length=0; undoBytes=0; }
 /* Each map keeps its own undo history for the session, so going into a linked
    map and back (or switching away and back) does not throw away the steps you
    took there. Only the few most recent maps are kept, to bound memory. */
-var undoByDoc={}, UNDO_KEEP_MAPS=4;
+var undoByDoc={}, UNDO_KEEP_MAPS=4, viewByDoc={};
 function stashUndo(doc){
   if(!doc) return;
   undoByDoc[doc]={u:undoStack.slice(), r:redoStack.slice(), b:undoBytes, t:Date.now()};
@@ -4667,7 +4667,7 @@ function linkUp(i){
   var lib=idxRead();
   if(!lib.docs[t.doc]){ drawTrail(); flashSave("that map is gone"); return; }
   linkSwitch=true; switchDoc(t.doc); linkSwitch=false;
-  if(N(t.sel)){ selected=t.sel; render(); }
+  if(N(t.sel)){ selected=t.sel; render(true); }
   drawTrail();
 }
 function drawTrail(){
@@ -4994,7 +4994,7 @@ function switchDoc(id){
     var ti=-1; linkTrail.forEach(function(t,i){ if(t.doc===id) ti=i; });
     linkTrail = ti>=0 ? linkTrail.slice(0,ti) : [];
   }
-  if(curDoc!==id) stashUndo(curDoc);
+  if(curDoc!==id){ stashUndo(curDoc); if(curDoc) viewByDoc[curDoc]=camNow(); }
   var sameDoc=(curDoc===id);
   curDoc=id; lib.current=id; idxWrite(lib);
   state=d.state; state.frames=state.frames||[];
@@ -5005,7 +5005,10 @@ function switchDoc(id){
   if(d.cfg) CFG=Object.assign({},DEFAULTS,d.cfg);
   migrateSpread();
   editing=null; clearMarks(); if(!sameDoc) loadUndo(id);
-  applyCss(); drawPanel(); hardRender(); fit(); drawMaps(); drawPinMark(); drawTrail();
+  applyCss(); drawPanel(); hardRender();
+  /* a map you already visited this session opens exactly as you left it */
+  if(viewByDoc[id] && !sameDoc) camRestore(viewByDoc[id]); else fit();
+  drawMaps(); drawPinMark(); drawTrail();
   flashSave("opened \u201c"+trunc(docName(state))+"\u201d");
 }
 function newDoc(st){
@@ -5014,7 +5017,7 @@ function newDoc(st){
   var id=docId();
   state=st||freshState(); state.frames=state.frames||[];
   uid=1; selected=state.rootId; focusId=null; editing=null; clearMarks();
-  stashUndo(curDoc); clearUndo();
+  stashUndo(curDoc); if(curDoc) viewByDoc[curDoc]=camNow(); clearUndo();
   if(curDoc && lib.docs[curDoc]) lib.prev=curDoc;
   curDoc=id; lib.current=id; idxWrite(lib);
   if(!st) linkTrail=[];

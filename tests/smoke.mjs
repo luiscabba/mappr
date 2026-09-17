@@ -2609,7 +2609,10 @@ group("map links: break out, link, open, back up, bring back in");
   // link nodes can't be retyped
   await press("KeyZ");
   ok("typing on a link does not edit it", (await M(() => __mf.editing)) == null && (await M((x) => __mf.state.nodes[x].text, cid)) === "Collections ops");
-  // open it
+  // open it, from a zoom of our own
+  await M(() => { __mf.setCam && 0; });
+  await press("Meta+Equal"); await press("Meta+Equal");
+  const camBefore = await M(() => JSON.stringify(__mf.cam()));
   await press("Alt+Enter");
   ok("Option+Enter opens the linked map", (await name()) === "Collections ops");
   ok("it holds the branch, with the link inside it", !!(await id("Autopay")) && (await M(() => __mf.links.length)) === 1);
@@ -2619,6 +2622,7 @@ group("map links: break out, link, open, back up, bring back in");
   await M(() => { __mf.state.nodes[__mf.state.rootId].text = "Collections"; __mf.set("gap", __mf.cfg.gap); });
   await page.waitForTimeout(500);
   await press("Alt+KeyU");
+  ok("Option+U comes back at the same zoom and view", (await M(() => JSON.stringify(__mf.cam()))) === camBefore, [await M(() => JSON.stringify(__mf.cam())), camBefore]);
   ok("Option+U goes back up", (await name()) === "Q4 plan", [await name(), await M(() => document.getElementById("saveState").textContent)]);
   ok("to the link you left from", (await M(() => __mf.selected)) === cid);
   ok("the trail is gone at the top", await M(() => document.getElementById("trail").hidden));

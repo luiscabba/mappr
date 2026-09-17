@@ -3,6 +3,14 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [0.35.1] - 2026-09-17
+
+### Fixed
+- **Coming back to a map keeps your view.** Going back up from a linked map
+  (`⌥U` or the trail), `⌥` plus backtick, or the map switcher used to fit the
+  whole map again. A map you already visited this session now opens at the
+  zoom and place you left it, with the same node selected.
+
 ## [0.35.0] - 2026-09-17
 
 ### Added
