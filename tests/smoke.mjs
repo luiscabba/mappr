@@ -3151,7 +3151,7 @@ group("0.39: flags you can find, and the maps rail");
   await press("Escape");
   // the rail
   await newMap("Q4 plan\n- Growth\n  - Paid ads\n- Collections ops\n  - Recurring payments\n    - Autopay\n  - Agent behaviour\n    - Scripts");
-  ok("no rail on a map with no links", await M(() => document.getElementById("mapbar").hidden));
+  ok("no rail on a map with no links", await M(() => document.getElementById("rail").hidden && document.getElementById("pill").hidden));
   await M((x) => __mf.select(x), await id("Collections ops")); await press("Alt+KeyB"); await press("Alt+Enter");
   await M((x) => __mf.select(x), await id("Agent behaviour")); await press("Alt+KeyB");
   const rows = () => M(() => [...document.querySelectorAll("#rail .rr")].map((r) => r.querySelector(".nm").textContent + (r.classList.contains("on") ? "*" : "")));
@@ -3414,6 +3414,86 @@ group("1.1: numbers, like a list in Docs");
   await page.waitForTimeout(200);
   ok("the right-click menu has the row, with its key", (await M(() => [...document.querySelectorAll("#storyMenu .mi")].map((b) => b.textContent))).some((t) => /Unnumber this row.*7/.test(t)), await M(() => [...document.querySelectorAll("#storyMenu .mi")].map((b) => b.textContent).filter((t) => /umber/.test(t))));
   await press("Escape");
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
+group("1.2: where you are");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(250); };
+  const status = () => M(() => document.getElementById("saveState").textContent);
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  const sel = async (t) => M((x) => __mf.select(x), await id(t));
+  const rows = () => M(() => [...document.querySelectorAll("#here .rr")].map((r) => (r.classList.contains("anc") ? "^" : r.classList.contains("on") ? "*" : r.classList.contains("more") ? "…" : "") + r.querySelector(".nm").textContent + (r.querySelector(".n") ? " [" + r.querySelector(".n").textContent + "]" : "")));
+  const shown = () => M(() => __mf.hereShown);
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  ok("an untouched map has no rail", !(await shown()));
+  await M(() => { __mf.spread("right"); __mf.paste("Launch\n- Marketing\n  - Paid ads\n    - Search\n      - Brand terms\n      - Generic\n        - Long tail\n        - Misspellings\n    - Social\n  - ! Email\n- Product\n  - Onboarding\n- Legal"); __mf.mark([]); });
+  await page.waitForTimeout(300);
+  await sel("Social");
+  ok("the rail shows the way up and the row, nothing below", (await rows()).join("|") === "^Launch|^Marketing|^Paid ads [2 under]|Search [▸ 2]|*Social", await rows());
+  ok("nothing below is listed", !/Brand terms|Generic/.test((await rows()).join("|")));
+  ok("it sits in the maps panel, which is shown for it", (await M(() => document.getElementById("here").parentNode.id)) === "mapbar" && !(await M(() => document.getElementById("mapbar").hidden)));
+  await sel("Marketing");
+  ok("a top branch's row is its side of the centre", (await rows()).join("|") === "^Launch [3 under]|*Marketing [▸ 2]|Product [▸ 1]|Legal", await rows());
+  ok("a flag shows its !", (await sel("Email"), await M(() => [...document.querySelectorAll("#here .rr.on .fl")].length)) === 1);
+  await sel("Paid ads"); await press("Meta+Shift+Digit7"); await sel("Email");
+  ok("a numbered row shows its numbers", (await M(() => [...document.querySelectorAll("#here .rr .hn")].map((h) => h.textContent))).join() === "1.,2.", await M(() => [...document.querySelectorAll("#here .rr .hn")].map((h) => h.textContent)));
+  await sel("Long tail");
+  ok("a deep trail folds its middle", /more up/.test((await rows())[1]) && (await rows()).length === 6, await rows());
+  await sel("Launch");
+  ok("on the centre it says so", /the centre/.test((await rows())[0]) && (await rows()).length === 1, await rows());
+  // click goes there
+  await sel("Brand terms");
+  await M(() => { const r = [...document.querySelectorAll("#here .rr.sib")].find((x) => /Generic/.test(x.textContent)); r.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true })); });
+  await page.waitForTimeout(300);
+  ok("clicking a sibling selects it", (await M(() => __mf.selected)) === (await id("Generic")));
+  ok("and the keyboard stays with the map", (await M(() => document.activeElement === document.body || document.activeElement.id === "sink")));
+  await M(() => { const r = [...document.querySelectorAll("#here .rr.anc")].find((x) => /Marketing/.test(x.textContent)); r.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true })); });
+  await page.waitForTimeout(300);
+  ok("clicking an ancestor goes up to it", (await M(() => __mf.selected)) === (await id("Marketing")));
+  // the compass
+  await sel("Generic");
+  ok("no compass while the centre is on screen", (await M(() => document.querySelectorAll("#here .compass").length)) === 0);
+  await M(() => { const v = __mf.view; __mf.setView(v.x - 2000, v.y, v.z); });
+  await page.waitForTimeout(150);
+  ok("the compass appears when the centre leaves the screen", (await M(() => document.querySelectorAll("#here .compass").length)) === 1);
+  await press("Meta+0");
+  // show: auto and never, and the key that cycles them
+  await M(() => __mf.set("hereShow", "auto"));
+  await sel("Generic");
+  ok("auto: hidden while the parent and the centre are in view", !(await shown()));
+  await M(() => { const v = __mf.view; __mf.setView(v.x - 2000, v.y, v.z); });
+  await page.waitForTimeout(150);
+  ok("auto: shown once the centre is out of view", await shown());
+  await press("Meta+0");
+  await press("Alt+Shift+w");
+  ok("Option+Shift+W cycles to off", (await M(() => __mf.cfg.hereShow)) === "never" && !(await shown()) && /off/.test(await status()), await status());
+  await press("Alt+Shift+w");
+  ok("and round to always", (await M(() => __mf.cfg.hereShow)) === "always" && (await shown()));
+  // the other looks
+  await M(() => __mf.set("hereStyle", "strip"));
+  ok("the strip is the trail on one line and the siblings as chips", (await M(() => document.querySelectorAll("#here .trail button").length)) >= 3 && (await M(() => [...document.querySelectorAll("#here .sibs button .nm")].map((b) => b.textContent))).join("|") === "Brand terms|Generic");
+  await M(() => __mf.set("hereStyle", "sketch"));
+  ok("the sketch is drawn", (await M(() => document.querySelectorAll("#here .hsketch svg [data-go]").length)) >= 4);
+  await M(() => __mf.set("hereStyle", "rail"));
+  // its own bar
+  await M(() => __mf.set("hereAttach", false));
+  ok("detached, it stands in its own bar", (await M(() => document.getElementById("here").parentNode.id)) === "herebar" && !(await M(() => document.getElementById("herebar").hidden)) && (await M(() => document.getElementById("mapbar").hidden)));
+  await M(() => __mf.set("hereAttach", true));
+  ok("attached again", (await M(() => document.getElementById("here").parentNode.id)) === "mapbar" && (await M(() => document.getElementById("herebar").hidden)));
+  // fades when idle, wakes on a move
+  await sel("Brand terms"); await page.waitForTimeout(2900);
+  ok("it fades after a while", await M(() => document.getElementById("here").classList.contains("idle")));
+  await press("ArrowDown");
+  ok("and wakes on a move", !(await M(() => document.getElementById("here").classList.contains("idle"))));
+  await M(() => __mf.set("hereFade", false));
+  await page.waitForTimeout(2900);
+  ok("unless told not to", !(await M(() => document.getElementById("here").classList.contains("idle"))));
+  await M(() => __mf.set("hereFade", true));
+  // presenting hides it, by css
+  ok("presenting hides it", (await M(() => { document.body.classList.add("presenting"); const d = getComputedStyle(document.getElementById("mapbar")).display; document.body.classList.remove("presenting"); return d; })) === "none");
   ok("no runtime errors", errors.length === 0, errors);
 }
 

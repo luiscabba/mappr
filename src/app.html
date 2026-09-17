@@ -168,6 +168,56 @@
   #rail .rr .also{color:var(--muted);font-size:10.5px;font-style:italic;white-space:nowrap}
   #rail .rr.d1{padding-left:22px}#rail .rr.d2{padding-left:36px}#rail .rr.d3{padding-left:50px}#rail .rr.d4{padding-left:64px}
   #rail .rf{padding:6px 8px 0;color:var(--muted);font-size:10.5px}
+  /* Where you are (1.2): the way up and the row you are on, never children */
+  #here{font:12.5px var(--font-ui);transition:opacity .4s}
+  #here[hidden]{display:none}
+  #mapbar #here.sec{border-top:1px solid var(--panel-line)}
+  #herebar{top:62px;left:14px;padding:0;max-width:calc(100vw - 28px);overflow:hidden}
+  #herebar[hidden]{display:none}
+  body.presenting #herebar{display:none}
+  #here.idle{opacity:.45}
+  #here .rh{display:flex;align-items:center;font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);padding:0 8px 6px;gap:6px}
+  #here .rh .k{margin-left:auto;text-transform:none;letter-spacing:0;font-size:10px}
+  #here .compass{display:inline-block;width:12px;height:12px;vertical-align:-1px;color:var(--sel);flex:none}
+  #here .hlist{width:262px;padding:8px 6px 6px}
+  #here .rr{display:flex;align-items:center;gap:6px;padding:4px 8px;border-radius:6px;cursor:pointer;position:relative;color:var(--ink)}
+  #here .rr:hover{background:var(--panel-hover)}
+  #here .rr.on{background:var(--panel-hover);color:var(--sel);font-weight:600}
+  #here .rr.anc{color:var(--muted)}
+  #here .rr.anc .nm{font-size:12.5px}
+  #here .rr .tw{width:10px;color:var(--muted);font-size:10px;flex:none;text-align:center}
+  #here .rr .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--font-sketch);font-size:13.5px;font-weight:inherit}
+  #here .nm.done{text-decoration:line-through;opacity:.6}
+  #here .rr .n{margin-left:auto;color:var(--muted);font-size:11px;flex:none;font-weight:400;white-space:nowrap}
+  #here .fl{color:var(--danger);font-weight:700;font-size:12px;flex:none}
+  #here .hn{color:var(--muted);font-family:var(--font-sketch);font-size:12px;flex:none;font-weight:400}
+  #here .rr.d1{padding-left:20px}#here .rr.d2{padding-left:32px}#here .rr.d3{padding-left:44px}#here .rr.d4{padding-left:56px}
+  #here .rr.sib{padding-left:calc(var(--sd) * 12px + 8px)}
+  #here .rr.sib::before{content:"";position:absolute;left:calc(var(--sd) * 12px - 3px);top:0;bottom:0;border-left:1.5px solid var(--panel-line)}
+  #here .rr.sib.on::before{border-color:var(--sel)}
+  #here .rr.more{color:var(--muted);font-size:11px;cursor:default}
+  #here .rf{padding:6px 8px 0;color:var(--muted);font-size:10.5px;display:flex;gap:8px;align-items:center}
+  /* pill and strip */
+  #here .hstrip{padding:6px 8px 8px;width:max-content;max-width:calc(100vw - 28px)}
+  #here .trail{display:flex;align-items:center;gap:2px;white-space:nowrap}
+  #here .trail button{font:13px var(--font-sketch);border:0;background:none;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:6px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #here .trail button:hover{background:var(--panel-hover);color:var(--ink)}
+  #here .trail button.par{color:var(--ink)}
+  #here .trail i{font-style:normal;color:var(--muted);font-size:10px}
+  #here .trail .cnt{font:11px var(--font-ui);color:var(--muted);margin-left:6px;display:flex;align-items:center;gap:6px}
+  #here .sibs{display:flex;gap:4px;margin-top:5px;padding-left:4px;flex-wrap:wrap;max-width:560px}
+  #here .sibs button{font:12.5px var(--font-sketch);border:1px solid var(--panel-line);background:none;color:var(--ink);cursor:pointer;padding:2px 9px;border-radius:7px;max-width:170px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:4px}
+  #here .sibs button.on{border-color:var(--sel);color:var(--sel);background:var(--sel-soft);font-weight:600}
+  #here .sibs button .n{color:var(--muted);font:10.5px var(--font-ui)}
+  /* the sketch */
+  #here .hsketch{padding:8px 8px 6px;width:max-content}
+  #here .hsketch svg{display:block;overflow:visible}
+  #here .hsketch .t{font-family:var(--font-sketch);font-size:11.5px;fill:var(--ink)}
+  #here .hsketch .t.mu{fill:var(--muted)}
+  #here .hsketch .t.on{fill:var(--sel);font-weight:600}
+  #here .hsketch .t.sm{font-size:9.5px;font-family:var(--font-ui);fill:var(--muted)}
+  #here .hsketch .foot{font:10.5px var(--font-ui);color:var(--muted);padding:6px 2px 0;display:flex;gap:8px;align-items:center}
+  #here .hsketch .foot b{font-family:var(--font-sketch);font-size:12.5px;font-weight:400;color:var(--ink)}
   /* not reached yet: invisible but still measured, so the layout is the real one */
   .node.preshide{visibility:hidden}
   .node.skipped{opacity:.3;text-decoration:line-through;text-decoration-thickness:1px}
@@ -596,7 +646,8 @@
   <span id="saveState">saved</span>
 </div>
 
-<div id="mapbar" class="bar" hidden><div id="pill" hidden></div><div id="rail" hidden></div></div>
+<div id="mapbar" class="bar" hidden><div id="pill" hidden></div><div id="rail" hidden></div><div id="here" hidden></div></div>
+<div id="herebar" class="bar" hidden></div>
 
 <div id="switcher">
   <input id="swIn" type="text" placeholder="Go to a map…" autocomplete="off" spellcheck="false">
@@ -705,6 +756,7 @@
       <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself. With a selection up, every selected branch is duplicated and the copies come out selected.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd><br><kbd>⌥</kbd><kbd>D</kbd> / <kbd>⌥</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag. Firefox and Zen keep <kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> and <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd> for themselves, so <kbd>⌥</kbd><kbd>D</kbd> and <kbd>⌥</kbd><kbd>F</kbd> do the same; likewise <kbd>⌥</kbd><kbd>G</kbd> ungroups and <kbd>⌥</kbd><kbd>C</kbd> copies as an image. <kbd>⌃</kbd> works as <kbd>⌘</kbd> everywhere, which is the key to use on an iPad. A flag is a hand-drawn pennant on the box; the Style panel has a ribbon, a ring and an asterisk instead. <kbd>⌘</kbd><kbd>4</kbd> dims the map to its flags and <kbd>Tab</kbd> steps through them; in <kbd>⌘</kbd><kbd>K</kbd>, type <kbd>!</kbd> first to list only flagged nodes. Sort has <em>Flagged first</em>, and a copied outline writes <kbd>!</kbd> before a flagged line, which flags it again when pasted back.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>7</kbd><br><kbd>⌥</kbd><kbd>7</kbd></td><td><b>Number.</b> Docs' own key. Numbers the row the node is on, its siblings in order; with a selection up, every row that has a selected node in it, so <kbd>⌘</kbd><kbd>⇧</kbd><kbd>→</kbd> then <kbd>⌘</kbd><kbd>⇧</kbd><kbd>7</kbd> numbers a whole branch as an outline. On the centre alone it numbers the branches. Pressed on rows already numbered, it takes the numbers off. A number belongs to the row, not the node: nothing is typed into the text, and a move, a sort, a delete or a paste renumbers on its own. Rows nest 1. then a. then i.; the Style panel has 1.1.1 and I. A. 1. instead, and draws the number in the gutter, in the box or on the edge. A copied outline writes the number before the line and a pasted <kbd>1.</kbd> or <kbd>a.</kbd> line comes in numbered.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>⇧</kbd><kbd>W</kbd></td><td><b>Where you are.</b> The rail top left follows the selection and shows only the way up and the row you are on: ancestors as a muted spine, the siblings under the parent with yours lit, children as a count. When the centre is off screen a small arrow points to where it is. Click a row to go there. The key cycles always, only when the centre is out of view, and off; the Style panel has the same, plus a pill with the siblings as chips or a drawn sketch instead of the rail, whether it fades when idle, and whether it joins the maps rail in one panel.</td></tr>
     </table></section>
     <section class="hpane" data-tab="frames"><h3>Select and frames</h3>
     <table class="keys">
@@ -800,6 +852,7 @@ var VERSION="__VERSION__";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid", flagStyle:"pennant",
   numStyle:"gutter", numScheme:"docs",
+  hereStyle:"rail", hereShow:"always", hereFade:true, hereAttach:true,
   width:2, dash:"solid", slop:1, edges:"round",
   arrow:"curve", head:"arrow", font:"sketch", size:"m",
   align:"center", valign:"center", nodew:"m", minSize:false,
@@ -2521,7 +2574,7 @@ function render(keepView,lead){
     meas[id]={k:el.className+"\u0001"+el.textContent, w:w, h:h};
   });
 
-  layout(); lensLayout(); reposition(); paint(); drawBadges(); drawFrameTitles(); drawCrumbs(); drawFrameBar(); drawStartHint();
+  layout(); lensLayout(); reposition(); paint(); drawBadges(); drawFrameTitles(); drawCrumbs(); drawFrameBar(); drawStartHint(); drawHere(true);
   if(!keepView && CFG.follow) cameraTo(selected,lead);
   applyView();
 }
@@ -3197,6 +3250,7 @@ function applyView(){
   else if(CFG.paper==="dots") elStage.style.backgroundSize=g+"px "+g+"px";
   else elStage.style.backgroundSize="auto";
   elStage.style.backgroundPosition=view.x+"px "+view.y+"px";
+  hereOnView();
 }
 function boundsOf(ids){
   var x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
@@ -5451,7 +5505,7 @@ function drawTrail(){
   var lib=idxCached();
   linkTrail=linkTrail.filter(function(t){ return lib.docs[t.doc]; });
   var all=mapTree(true), rows=mapTree();
-  if(all.length<2){ mb.hidden=true; pill.hidden=true; rail.hidden=true; return; }
+  if(all.length<2){ pill.hidden=true; rail.hidden=true; drawHere(false); return; }
   var count=0, seen={}; all.forEach(function(r){ if(!seen[r.doc]){ seen[r.doc]=1; count++; } });
   var name=function(d){ return esc((lib.docs[d]||{}).name||"Untitled"); };
   mb.hidden=false;
@@ -5478,13 +5532,161 @@ function drawTrail(){
     h2+='<div class="rf">\u2325[ \u2325] walk \u00b7 \u2325\u21e7M fold</div>';
     if(rail.innerHTML!==h2) rail.innerHTML=h2;
   }
-  placeMapbar();
+  drawHere(false);
 }
 function placeMapbar(){
-  var mb=document.getElementById("mapbar");
+  var mb=document.getElementById("mapbar"), hb=document.getElementById("herebar");
   if(!mb) return;
   var cr=document.getElementById("crumbs");
-  mb.style.top = (cr && cr.classList.contains("on")) ? (cr.getBoundingClientRect().bottom+8)+"px" : "62px";
+  var top=(cr && cr.classList.contains("on")) ? (cr.getBoundingClientRect().bottom+8) : 62;
+  mb.style.top=top+"px";
+  if(hb){ hb.style.top=(mb.hidden ? top : mb.getBoundingClientRect().bottom+8)+"px"; }
+}
+
+/* ---------- Where you are (1.2) ----------
+   The rail follows the selection and shows only the way up and the row you
+   are on: ancestors as a muted spine, the siblings under the parent with the
+   selected one lit, children as a count and never listed. It answers "saan
+   nanggaling" when you are zoomed in or deep in a branch and the centre has
+   gone off screen; a compass arrow then points to where the centre is. It
+   joins the maps rail in one panel, or stands in its own bar below it. Three
+   looks in Style: the rail, a pill with the siblings as chips, or a drawn
+   sketch of the same facts. Nothing here is saved with the map but the
+   settings; it is a view of the tree, redrawn with every render. */
+var hereIdle=null, hereRaf=null, hereHtml="", hereCtx=null;
+function hereFirst(id){ return (N(id).text||"\u2026").split("\n")[0]; }
+function hereScreen(id){ var p=pos[id]; if(!p) return null; return [view.x+p.cx*view.z, view.y+p.cy*view.z]; }
+function hereOnScreen(id){
+  var sc=hereScreen(id); if(!sc) return false;
+  var b=box[id]||{w:0,h:0}, hw=b.w*view.z/2, hh=b.h*view.z/2;
+  return sc[0]+hw>leftInset() && sc[0]-hw<innerWidth && sc[1]+hh>0 && sc[1]-hh<innerHeight;
+}
+/* the arrow that says where the centre is, shown only while it is off screen */
+function hereCompass(){
+  var r=state.rootId; if(!pos[r] || hereOnScreen(r)) return "";
+  var sc=hereScreen(r), a=Math.atan2(sc[1]-innerHeight/2, sc[0]-(leftInset()+innerWidth)/2)*180/Math.PI;
+  return '<svg class="compass" viewBox="-7 -7 14 14"><title>the centre is that way</title><g transform="rotate('+a.toFixed(1)+')"><path d="M-5,0 L4,0 M1,-3.5 L4.5,0 L1,3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></g></svg>';
+}
+function hereWanted(){
+  if(pres || CFG.hereShow==="never" || !state || !N(selected) || pristine()) return false;
+  if(CFG.hereShow==="always") return true;
+  var n=N(selected); if(!n.parent) return false;
+  return !hereOnScreen(n.parent) || (!!pos[state.rootId] && !hereOnScreen(state.rootId));
+}
+function hereName(id,cls){
+  var n=N(id), l=numLabel(id);
+  return (l?'<span class="hn">'+esc(l)+'</span>':'')+(n.mark==="flag"?'<span class="fl">!</span>':'')+
+    '<span class="nm'+(n.mark==="done"?' done':'')+(cls?' '+cls:'')+'">'+esc(hereFirst(id))+'</span>';
+}
+/* the way up, its middle folded when the trail is deep: root, "n more", grandparent, parent */
+function hereAnc(trail){
+  var anc=trail.slice(0,-1), rows=[];
+  if(anc.length>4){ rows.push({id:anc[0]}); rows.push({more:anc.length-3}); rows.push({id:anc[anc.length-2]}); rows.push({id:anc[anc.length-1]}); }
+  else anc.forEach(function(id){ rows.push({id:id}); });
+  return rows;
+}
+function hereRail(){
+  var sel=selected, n=N(sel), trail=pathTo(sel), kw=IS_MAC?"\u2325\u21e7W":"Alt+Shift+W";
+  var h='<div class="hlist"><div class="rh">Where you are'+hereCompass()+'<span class="k">'+kw+'</span></div>';
+  if(!n.parent){
+    h+='<div class="rr on" data-go="'+sel+'"><span class="tw">\u25cf</span>'+hereName(sel)+'<span class="n">the centre \u00b7 '+n.children.length+(n.children.length===1?' branch':' branches')+'</span></div></div>';
+    return h;
+  }
+  var rows=hereAnc(trail), sd=rows.length, ss=sibGroup(n);
+  rows.forEach(function(r,i){
+    if(r.more){ h+='<div class="rr more d'+i+'"><span class="tw"></span><span class="nm">\u2026 '+r.more+' more up</span></div>'; return; }
+    h+='<div class="rr anc d'+i+'" data-go="'+r.id+'"><span class="tw">'+(N(r.id).parent?'\u2514':'\u25cf')+'</span>'+hereName(r.id)+
+      (r.id===n.parent?'<span class="n">'+ss.length+' under</span>':'')+'</div>';
+  });
+  ss.forEach(function(sid){
+    var k=N(sid).children.length;
+    h+='<div class="rr sib'+(sid===sel?' on':'')+'" style="--sd:'+sd+'" data-go="'+sid+'"><span class="tw"></span>'+hereName(sid)+(k?'<span class="n">\u25b8 '+k+'</span>':'')+'</div>';
+  });
+  h+='<div class="rf">'+(ss.indexOf(sel)+1)+' of '+ss.length+' \u00b7 depth '+(trail.length-1)+'</div></div>';
+  return h;
+}
+function hereStrip(){
+  var sel=selected, n=N(sel), trail=pathTo(sel), h='<div class="hstrip"><div class="trail">';
+  if(!n.parent) return h+'<button class="par" data-go="'+sel+'">'+esc(trunc(hereFirst(sel)))+'</button><span class="cnt">the centre</span></div></div>';
+  var anc=trail.slice(0,-1), shown=anc.length>3?[anc[0],null,anc[anc.length-1]]:anc;
+  shown.forEach(function(id,i){
+    if(i) h+='<i>\u25b8</i>';
+    if(id===null){ h+='<button class="more" title="'+(anc.length-2)+' more up">\u2026</button>'; return; }
+    h+='<button class="'+(i===shown.length-1?'par':'')+'" data-go="'+id+'">'+esc(trunc(hereFirst(id)))+'</button>';
+  });
+  var ss=sibGroup(n);
+  h+='<span class="cnt">'+(ss.indexOf(sel)+1)+' of '+ss.length+hereCompass()+'</span></div><div class="sibs">';
+  ss.forEach(function(sid){ var k=N(sid).children.length; h+='<button class="'+(sid===sel?'on':'')+'" data-go="'+sid+'">'+hereName(sid)+(k?'<span class="n">\u25b8'+k+'</span>':'')+'</button>'; });
+  return h+'</div></div>';
+}
+function hereTw(t,px){
+  if(!hereCtx){ var c=document.createElement("canvas"); hereCtx=c.getContext("2d"); }
+  hereCtx.font=(px||11.5)+"px Excalifont, Chalkboard SE, cursive"; return hereCtx.measureText(t).width;
+}
+function hereSketch(){
+  var sel=selected, n=N(sel), trail=pathTo(sel), ink=dark()?"#e3e3e3":"#1e1e1e", mu=dark()?"#5a5a5a":"#adb5bd", paper=dark()?"#1e1e1e":"#fff";
+  if(!n.parent) return '<div class="hsketch"><div class="foot"><b>'+esc(trunc(hereFirst(sel)))+'</b> the centre</div></div>';
+  var anc=trail.slice(0,-1), ss=sibGroup(n), r=rngFrom(seedOf("sk"+sel)), o="", y=8;
+  var cut=function(t,k){ return t.length>k?t.slice(0,k-1)+"\u2026":t; };
+  var bw=function(t,px){ return Math.min(120,hereTw(t,px)+16); }, boxes=[];
+  var spine=anc.length>3?[anc[0],"more",anc[anc.length-1]]:anc;
+  spine.forEach(function(id){
+    if(id==="more"){ o+='<text class="t mu" x="46" y="'+(y+9)+'" text-anchor="middle">\u22ee '+(anc.length-2)+' more</text>'; y+=18; return; }
+    var t=cut(hereFirst(id),16), w=bw(t); boxes.push({x:46-w/2,y:y,w:w,id:id,t:t}); y+=30;
+  });
+  var par=boxes[boxes.length-1], sy=y+12, gap=8;
+  var widths=ss.map(function(sid){ return bw(cut(hereFirst(sid),14),11); }), total=widths.reduce(function(a,b){ return a+b+gap; },-gap);
+  var sx=Math.max(4,46-total/2), sib=[];
+  ss.forEach(function(sid,i){ sib.push({x:sx,y:sy,w:widths[i],id:sid,t:cut(hereFirst(sid),14),on:sid===sel}); sx+=widths[i]+gap; });
+  var W=Math.max(92,sx-gap+4), H=sy+30;
+  for(var i=1;i<boxes.length;i++) o+='<path d="'+wline(boxes[i-1].x+boxes[i-1].w/2,boxes[i-1].y+20,boxes[i].x+boxes[i].w/2,boxes[i].y,r,.8)+'" fill="none" stroke="'+mu+'" stroke-width="1.2"/>';
+  sib.forEach(function(b){ o+='<path d="M'+(par.x+par.w/2)+','+(par.y+20)+' C'+(par.x+par.w/2)+','+(sy-6)+' '+(b.x+b.w/2)+','+(par.y+26)+' '+(b.x+b.w/2)+','+sy+'" fill="none" stroke="'+(b.on?(dark()?"#a5a1ff":"#6965db"):mu)+'" stroke-width="'+(b.on?1.6:1.1)+'"/>'; });
+  boxes.forEach(function(b){ o+='<g data-go="'+b.id+'" style="cursor:pointer"><path d="'+roughRect(b.x,b.y,b.w,20,5,r,.9)+'" fill="'+paper+'" stroke="'+mu+'" stroke-width="1.2"/><text class="t mu" x="'+(b.x+b.w/2)+'" y="'+(b.y+14)+'" text-anchor="middle">'+esc(b.t)+'</text></g>'; });
+  sib.forEach(function(b){
+    var k=N(b.id).children.length, fl=N(b.id).mark==="flag";
+    o+='<g data-go="'+b.id+'" style="cursor:pointer"><path d="'+roughRect(b.x,b.y,b.w,20,5,r,.9)+'" fill="'+(b.on?(dark()?"#2a2856":"#e0dfff"):paper)+'" stroke="'+(b.on?(dark()?"#a5a1ff":"#6965db"):ink)+'" stroke-width="'+(b.on?1.8:1.2)+'"/>'+
+      '<text class="t'+(b.on?' on':'')+'" x="'+(b.x+b.w/2)+'" y="'+(b.y+14)+'" text-anchor="middle">'+(fl?'<tspan fill="'+(dark()?"#ff8b7a":"#c0392b")+'" font-weight="700">! </tspan>':'')+esc(b.t)+'</text>'+
+      (k?'<text class="t sm" x="'+(b.x+b.w/2)+'" y="'+(b.y+31)+'" text-anchor="middle">\u25b8 '+k+'</text>':'')+'</g>';
+  });
+  return '<div class="hsketch"><svg width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">'+o+'</svg><div class="foot">'+(ss.indexOf(sel)+1)+' of '+ss.length+' under <b>'+esc(trunc(hereFirst(n.parent)))+'</b>'+hereCompass()+'</div></div>';
+}
+/* wake: a selection or a key, which unfades it; a pan only redraws */
+function drawHere(wake){
+  var he=document.getElementById("here"), mb=document.getElementById("mapbar"), hb=document.getElementById("herebar");
+  if(!he||!mb||!hb) return;
+  var show=hereWanted();
+  var home=CFG.hereAttach?mb:hb;
+  if(he.parentNode!==home) home.appendChild(he);
+  he.className=CFG.hereAttach?"sec":"";
+  if(show){
+    var h=CFG.hereStyle==="strip"?hereStrip():CFG.hereStyle==="sketch"?hereSketch():hereRail();
+    if(h!==hereHtml){ he.innerHTML=h; hereHtml=h; }
+  }
+  he.hidden=!show;
+  var pill=document.getElementById("pill"), rail=document.getElementById("rail");
+  mb.hidden = pill.hidden && rail.hidden && (he.hidden || !CFG.hereAttach);
+  hb.hidden = !CFG.hereAttach ? he.hidden : true;
+  if(wake!==false){
+    he.classList.remove("idle"); clearTimeout(hereIdle);
+    if(CFG.hereFade && show) hereIdle=setTimeout(function(){ he.classList.add("idle"); },2500);
+  }
+  placeMapbar();
+}
+/* the camera moved: the compass and the "out of view" rule may have changed */
+function hereOnView(){
+  if(hereRaf) return;
+  hereRaf=requestAnimationFrame(function(){ hereRaf=null; if(CFG.hereShow!=="never") drawHere(false); });
+}
+function hereGo(id){
+  if(!N(id)) return;
+  if(!visible(id) || !pos[id]){ jumpTo(id); return; }
+  clearMarks(); selected=id; editing=null; render(true); cameraTo(id);
+}
+function hereCycle(){
+  var order=["always","auto","never"], i=order.indexOf(CFG.hereShow);
+  CFG.hereShow=order[(i+1)%3];
+  drawPanel(); drawHere(true); save();
+  flashSave(CFG.hereShow==="always"?"where you are: always":CFG.hereShow==="auto"?"where you are: only when the centre is out of view":"where you are: off");
 }
 function linkNodeTo(nodeId,target,newName){
   var n=N(nodeId); if(!n) return;
@@ -5927,6 +6129,12 @@ function svg(inner){ return '<svg viewBox="0 0 20 20" fill="none" stroke="curren
 function lt(t,extra){ return '<span class="lt"'+(extra?' style="'+extra+'"':"")+'>'+t+'</span>'; }
 var I={
   fpen:svg('<path d="M6 3v14M6.5 4l8 2.6-8 2.8"/>'),
+  hrail:svg('<path d="M4 5h5M6 9h6M8 13h8M8 17h8" /><path d="M8 11v7" stroke-width="1"/>'),
+  hstrip:svg('<path d="M3 6h14"/><rect x="3" y="10" width="4" height="4" rx="1.2"/><rect x="9" y="10" width="4" height="4" rx="1.2" fill="currentColor" opacity=".4"/><rect x="15" y="10" width="2.5" height="4" rx="1"/>'),
+  hsketch:svg('<rect x="7" y="3" width="6" height="4" rx="1"/><path d="M10 7v3M10 10L5 13M10 10v3M10 10l5 3"/><rect x="2.5" y="13" width="5" height="4" rx="1"/><rect x="7.5" y="13" width="5" height="4" rx="1" fill="currentColor" opacity=".4"/><rect x="12.5" y="13" width="5" height="4" rx="1"/>'),
+  halways:svg('<path d="M2.5 10s3-5 7.5-5 7.5 5 7.5 5-3 5-7.5 5-7.5-5-7.5-5z"/><circle cx="10" cy="10" r="2.2"/>'),
+  hauto:svg('<path d="M2.5 10s3-5 7.5-5 7.5 5 7.5 5-3 5-7.5 5-7.5-5-7.5-5z" stroke-dasharray="2.5 2"/><circle cx="10" cy="10" r="2.2"/>'),
+  hnever:svg('<path d="M2.5 10s3-5 7.5-5 7.5 5 7.5 5-3 5-7.5 5-7.5-5-7.5-5z"/><path d="M4 16L16 4"/>'),
   ngut:svg('<path d="M8 6h9v8H8z"/><path d="M3.5 8.5h1.5v3M3.2 11.5h2.2" stroke-width="1.2"/>'),
   nbox:svg('<path d="M3 6h14v8H3z"/><path d="M5.5 8.5h1.5v3M5.2 11.5h2.2M10 10h4.5" stroke-width="1.2"/>'),
   nedge:svg('<path d="M6 6h11v8H6z"/><circle cx="6" cy="10" r="2.6" fill="var(--panel)"/><path d="M5.4 9.2h1v1.8" stroke-width="1.1"/>'),
@@ -5999,9 +6207,11 @@ var PANEL=[
   {h:"Flags",key:"flagStyle",opts:[["pennant",I.fpen,"Pennant"],["ribbon",I.frib,"Ribbon"],["ring",I.fring,"Ring"],["star",I.fstar,"Asterisk"]]},
   {h:"Numbers",key:"numStyle",opts:[["gutter",I.ngut,"In the gutter"],["box",I.nbox,"In the box"],["edge",I.nedge,"On the edge"]]},
   {h:"Number scheme",key:"numScheme",opts:[["docs",lt("1a"),"1. a. i."],["legal",lt("1.1"),"1.1.1"],["formal",lt("IA"),"I. A. 1."]]},
+  {h:"Where you are",key:"hereStyle",opts:[["rail",I.hrail,"The rail: the way up, then your row"],["strip",I.hstrip,"A pill, with the siblings as chips"],["sketch",I.hsketch,"A drawn sketch of the same"]]},
+  {h:"Show it",key:"hereShow",opts:[["always",I.halways,"Always"],["auto",I.hauto,"Only when the centre is out of view"],["never",I.hnever,"Never (\u2325\u21e7W cycles these)"]]},
   {h:"Paper",key:"paper",opts:[["graph",I.pgraph,"Graph"],["lines",I.plines,"Ruled"],["dots",I.pdots,"Dots"],["blank",I.pblank,"Blank"]]},
   {h:"Theme",key:"theme",opts:[["light",I.tlight,"Light"],["dark",I.tdark,"Dark"]]},
-  {h:"Behaviour",toggles:[["minSize","Uniform node size"],["typeOnCreate","Cursor in new nodes"],["follow","Camera follows"]]}
+  {h:"Behaviour",toggles:[["minSize","Uniform node size"],["typeOnCreate","Cursor in new nodes"],["follow","Camera follows"],["hereFade","Where you are fades when idle"],["hereAttach","Where you are joins the maps rail"]]}
 ];
 var elStyle=document.getElementById("style"), elScroll=document.getElementById("styleScroll");
 function drawPanel(){
@@ -6156,6 +6366,7 @@ document.addEventListener("keydown",function(e){
     if(e.code==="KeyB" && !e.shiftKey){ e.preventDefault(); breakOut(); return; }
     if(e.code==="KeyK" && !e.shiftKey){ e.preventDefault(); openLinkPicker(); return; }
     if(e.code==="KeyM" && e.shiftKey){ e.preventDefault(); railToggle(); return; }
+    if(e.code==="KeyW" && e.shiftKey){ e.preventDefault(); hereCycle(); return; }
     if(e.code==="KeyM"){ e.preventDefault(); swOpen()?closeSwitcher():openSwitcher(); return; }
     if(e.code==="BracketLeft" || e.code==="BracketRight"){ e.preventDefault(); railStep(e.code==="BracketRight"?1:-1); return; }
     if(e.code==="KeyP" && !e.shiftKey){ e.preventDefault(); save(); togglePin(curDoc); return; }
@@ -6758,7 +6969,12 @@ document.getElementById("mapbar").addEventListener("mousedown",function(e){
   e.preventDefault();
   var f=e.target.closest("[data-fold]"); if(f){ e.stopPropagation(); railFold[f.dataset.fold]=!railFold[f.dataset.fold]; drawTrail(); return; }
   if(e.target.closest("[data-rail]")){ railToggle(); return; }
+  var g=e.target.closest("[data-go]"); if(g){ hereGo(g.dataset.go); return; }
   var o=e.target.closest("[data-open]"); if(o) openMap(o.dataset.open);
+});
+document.getElementById("herebar").addEventListener("mousedown",function(e){
+  e.preventDefault();
+  var g=e.target.closest("[data-go]"); if(g) hereGo(g.dataset.go);
 });
 elNodes.addEventListener("dblclick",function(e){
   var el=e.target.closest(".node"); if(!el||!N(el.dataset.id)||!N(el.dataset.id).link||e.shiftKey) return;
@@ -6862,6 +7078,7 @@ window.__mf={
   mark:function(ids){ marked={}; ids.forEach(function(i){ marked[i]=1; }); render(true); },
   markSibs:markSiblings, fold:toggleCollapse,
   number:toggleNumber, numLabel:numLabel, get anyNum(){ return anyNum(); },
+  hereGo:hereGo, hereCycle:hereCycle, get hereShown(){ return !document.getElementById("here").hidden; }, get view(){ return {x:view.x,y:view.y,z:view.z}; }, setView:function(x,y,z){ stopCam(); view.x=x; view.y=y; view.z=z; applyView(); },
   get links(){ return (state.links||[]).map(function(l){ return l.branch?{a:l.a,b:l.b,branch:true}:{a:l.a,b:l.b}; }); },
   branchTie:function(a,b){ var r=toggleBranchTie(a,b); if(r&&r!=="same"){ hardRender(); save(); } return r; },
   tie:function(a,b){ var r=toggleLink(a,b); if(r){ hardRender(); save(); } return r; },

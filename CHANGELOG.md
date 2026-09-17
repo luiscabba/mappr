@@ -3,6 +3,21 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.2.0] - 2026-09-18
+
+### Added
+- **Where you are.** A rail top left that follows the selection and shows only
+  the way up and the row you are on: the ancestors as a muted spine, the
+  siblings under the parent with yours lit, children as a count and never
+  listed, flags with their `!` and numbers with their figures. A deep trail
+  folds its middle. When the centre has gone off screen a small arrow points
+  to where it is. Click a row to go there. It joins the maps rail in one
+  panel, so the two read as one place; the Style panel can give it its own
+  bar instead, swap the rail for a pill with the siblings as chips or for a
+  drawn sketch of the same, stop it fading when you leave it alone, and set
+  when it shows: always, only when the centre is out of view, or never.
+  `⌥⇧W` cycles those three.
+
 ## [1.1.0] - 2026-09-18
 
 ### Added
