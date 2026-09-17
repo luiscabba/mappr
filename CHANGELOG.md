@@ -3,6 +3,24 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.1.0] - 2026-09-18
+
+### Added
+- **Numbers, like a list in Docs.** `⌘⇧7` (or `⌥7`) numbers the row the
+  selected node is on, its siblings in order. With a selection up it numbers
+  every row that has a selected node in it, so `⌘⇧→` then `⌘⇧7` turns a
+  whole branch into an outline, and `⌘A` then `⌘⇧7` the whole map. On the
+  centre alone it numbers the branches. Pressed on rows already numbered, it
+  takes the numbers off. A number belongs to the row, not the node: nothing is
+  typed into the text, and a move, a sort, a delete or a paste renumbers on its
+  own. Rows nest 1. then a. then i., as Docs does; the Style panel has 1.1.1
+  and I. A. 1. instead, and draws the number in the gutter (a bare figure
+  outside the box, so a long node never wraps earlier), in the box, or as a
+  pill on the edge that faces the parent. Numbers export with the map. A copied
+  outline writes the number before each line, and a pasted `1.` or `a.` line,
+  or a numbered list from Docs, comes in numbered. The right-click menu has the
+  row.
+
 ## [1.0.2] - 2026-09-17
 
 ### Fixed

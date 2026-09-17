@@ -3347,6 +3347,76 @@ group("1.0.2: the keyboard sink (iPad keys need a focused editable)");
   await M(() => __mf.spread("sides"));
 }
 
+group("1.1: numbers, like a list in Docs");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(250); };
+  const status = () => M(() => document.getElementById("saveState").textContent);
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  const lab = async (t) => M((x) => __mf.numLabel(x), await id(t));
+  const sel = async (t) => M((x) => __mf.select(x), await id(t));
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  await M(() => { __mf.spread("right"); __mf.paste("Launch\n- Marketing\n  - Paid ads\n    - Search\n    - Social\n  - Email\n- Product\n  - Onboarding\n- Legal"); __mf.mark([]); });
+  await page.waitForTimeout(300);
+  ok("nothing is numbered to start", !(await M(() => __mf.anyNum)) && (await lab("Marketing")) === null);
+  await sel("Marketing");
+  await press("Meta+Shift+Digit7");
+  ok("Cmd+Shift+7 numbers the row the node is on", (await lab("Marketing")) === "1." && (await lab("Product")) === "2." && (await lab("Legal")) === "3.", [await lab("Marketing"), await lab("Product")]);
+  ok("and only that row", (await lab("Paid ads")) === null && (await lab("Launch")) === null);
+  ok("it says so", /row numbered/.test(await status()), await status());
+  ok("the number is drawn in the gutter, in the paint layer", (await M(() => [...document.querySelectorAll("#paintLayer text")].map((t) => t.textContent))).join() === "1.,2.,3.");
+  await press("Meta+Shift+Digit7");
+  ok("pressed again on a numbered row, the numbers come off", (await lab("Marketing")) === null && /numbers off/.test(await status()), await status());
+  await press("Alt+Digit7");
+  ok("Option+7 is the twin", (await lab("Marketing")) === "1.");
+  // a branch selected with Cmd+Shift+arrow: every level in it
+  await press("Meta+Shift+ArrowRight"); await press("Meta+Shift+Digit7");
+  ok("a selected branch numbers every level in it, nested 1. a. i.", (await lab("Paid ads")) === "a." && (await lab("Email")) === "b." && (await lab("Search")) === "i." && (await lab("Social")) === "ii.", [await lab("Paid ads"), await lab("Search")]);
+  ok("the row's other branches stay as they were", (await lab("Onboarding")) === null);
+  await M(() => __mf.mark([]));
+  // a move renumbers on its own
+  await sel("Marketing"); await press("Alt+ArrowDown");
+  ok("moving a node down its row renumbers the row", (await lab("Product")) === "1." && (await lab("Marketing")) === "2.", [await lab("Product"), await lab("Marketing")]);
+  await press("Alt+ArrowUp");
+  // schemes and styles
+  await M(() => __mf.set("numScheme", "legal"));
+  ok("the legal scheme reads the numbered chain", (await lab("Search")) === "1.1.1" && (await lab("Email")) === "1.2" && (await lab("Product")) === "2", [await lab("Search"), await lab("Email")]);
+  await M(() => __mf.set("numScheme", "formal"));
+  ok("the formal scheme starts at I.", (await lab("Marketing")) === "I." && (await lab("Paid ads")) === "A." && (await lab("Search")) === "1.");
+  await M(() => __mf.set("numScheme", "docs"));
+  await M(() => __mf.set("numStyle", "box"));
+  ok("in the box, the number is a data attribute on the node, not text", (await M((x) => document.querySelector('.node[data-id="' + x + '"]').dataset.num, await id("Marketing"))) === "1." && (await M((x) => document.querySelector('.node[data-id="' + x + '"]').textContent, await id("Marketing"))) === "Marketing");
+  ok("and nothing is drawn in the paint layer for it", (await M(() => document.querySelectorAll("#paintLayer text").length)) === 0);
+  await M(() => __mf.set("numStyle", "edge"));
+  ok("on the edge it is drawn as a pill with the figure", (await M(() => document.querySelectorAll("#paintLayer text").length)) === 7 && (await M((x) => !document.querySelector('.node[data-id="' + x + '"]').dataset.num, await id("Marketing"))));
+  await M(() => __mf.set("numStyle", "gutter"));
+  // outline both ways
+  const out = await M(() => __mf.outline());
+  ok("the outline writes the number before each line", /- 1\. Marketing\n  - a\. Paid ads\n    - i\. Search/.test(out), out);
+  await sel("Onboarding");
+  await M(() => __mf.paste("- 1. Alpha\n- 2. Beta\n  - a. Gamma"));
+  await page.waitForTimeout(250);
+  ok("a pasted numbered outline comes in numbered, at the depth it lands", (await lab("Alpha")) === "a." && (await lab("Beta")) === "b." && (await lab("Gamma")) === "i.", [await lab("Alpha"), await lab("Gamma")]);
+  await M(() => __mf.mark([]));
+  await sel("Legal");
+  await M(() => __mf.paste("- 3) Delta\n- Plain line\n- I. Roman"));
+  await page.waitForTimeout(250);
+  ok("a 3) or an I. also count, and the text is clean", (await lab("Delta")) === "a." && !!(await id("Roman")) && (await lab("Plain line")) === "b.", [await lab("Delta"), await lab("Plain line"), await M(() => Object.values(__mf.state.nodes).map((n) => n.text).filter((t) => /Roman|Delta/.test(t)))]);
+  await M(() => __mf.mark([]));
+  // the centre alone numbers its branches; undo
+  await sel("Launch"); await press("Meta+Shift+Digit7");
+  ok("on the centre alone, the branches", (await lab("Legal")) === null && /numbers off/.test(await status()));
+  await press("Meta+z");
+  ok("and undo brings them back", (await lab("Legal")) === "3.");
+  // the menu row
+  await M((x) => { const el = document.querySelector('.node[data-id="' + x + '"]'); const r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: r.left + 5, clientY: r.top + 5, button: 2 })); }, await id("Legal"));
+  await page.waitForTimeout(200);
+  ok("the right-click menu has the row, with its key", (await M(() => [...document.querySelectorAll("#storyMenu .mi")].map((b) => b.textContent))).some((t) => /Unnumber this row.*7/.test(t)), await M(() => [...document.querySelectorAll("#storyMenu .mi")].map((b) => b.textContent).filter((t) => /umber/.test(t))));
+  await press("Escape");
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 

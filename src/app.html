@@ -127,6 +127,8 @@
 
   .node.done{opacity:.5;text-decoration:line-through;text-decoration-thickness:1.5px}
   .node.flag{font-weight:600;overflow:visible}
+  /* the number in the box: a ::before, so it sizes the box but is never in the text */
+  .node[data-num]::before{content:attr(data-num);color:var(--muted);margin-right:.4em;flex:none;font-weight:400;text-decoration:none}
   #jumpList .jf{font-style:normal;color:var(--danger);font-weight:700}
   /* dimmed by the connections lens: still there, still where you put it */
   .node.ghost{opacity:.17}
@@ -702,6 +704,7 @@
       <tr><td><kbd>⌥</kbd><kbd>X</kbd></td><td><b>Carry.</b> Picks up the selection (or the selected node): it goes faint where it is, and the arrows, or a click, choose where it goes. <kbd>⏎</kbd> drops it inside the ringed node, <kbd>⇧</kbd><kbd>⏎</kbd> right after it, <kbd>Esc</kbd> puts it back. Nothing changes until the drop, and one <kbd>⌘</kbd><kbd>Z</kbd> undoes it.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself. With a selection up, every selected branch is duplicated and the copies come out selected.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd><br><kbd>⌥</kbd><kbd>D</kbd> / <kbd>⌥</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag. Firefox and Zen keep <kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> and <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd> for themselves, so <kbd>⌥</kbd><kbd>D</kbd> and <kbd>⌥</kbd><kbd>F</kbd> do the same; likewise <kbd>⌥</kbd><kbd>G</kbd> ungroups and <kbd>⌥</kbd><kbd>C</kbd> copies as an image. <kbd>⌃</kbd> works as <kbd>⌘</kbd> everywhere, which is the key to use on an iPad. A flag is a hand-drawn pennant on the box; the Style panel has a ribbon, a ring and an asterisk instead. <kbd>⌘</kbd><kbd>4</kbd> dims the map to its flags and <kbd>Tab</kbd> steps through them; in <kbd>⌘</kbd><kbd>K</kbd>, type <kbd>!</kbd> first to list only flagged nodes. Sort has <em>Flagged first</em>, and a copied outline writes <kbd>!</kbd> before a flagged line, which flags it again when pasted back.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>7</kbd><br><kbd>⌥</kbd><kbd>7</kbd></td><td><b>Number.</b> Docs' own key. Numbers the row the node is on, its siblings in order; with a selection up, every row that has a selected node in it, so <kbd>⌘</kbd><kbd>⇧</kbd><kbd>→</kbd> then <kbd>⌘</kbd><kbd>⇧</kbd><kbd>7</kbd> numbers a whole branch as an outline. On the centre alone it numbers the branches. Pressed on rows already numbered, it takes the numbers off. A number belongs to the row, not the node: nothing is typed into the text, and a move, a sort, a delete or a paste renumbers on its own. Rows nest 1. then a. then i.; the Style panel has 1.1.1 and I. A. 1. instead, and draws the number in the gutter, in the box or on the edge. A copied outline writes the number before the line and a pasted <kbd>1.</kbd> or <kbd>a.</kbd> line comes in numbered.</td></tr>
     </table></section>
     <section class="hpane" data-tab="frames"><h3>Select and frames</h3>
     <table class="keys">
@@ -796,6 +799,7 @@
 var VERSION="__VERSION__";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid", flagStyle:"pennant",
+  numStyle:"gutter", numScheme:"docs",
   width:2, dash:"solid", slop:1, edges:"round",
   arrow:"curve", head:"arrow", font:"sketch", size:"m",
   align:"center", valign:"center", nodew:"m", minSize:false,
@@ -1037,6 +1041,51 @@ function flagList(){
   return out;
 }
 function anyFlag(){ return Object.keys(state.nodes).some(function(i){ return state.nodes[i].mark==="flag"; }); }
+/* ---------- numbering (1.1) ----------
+   A number belongs to a level, not a node: `num` on a parent says its children
+   are numbered, in their order. Nothing is written into the text, so a move, a
+   sort, a delete or a paste renumbers on its own. The style of a level comes
+   from how many numbered levels sit above it, the way Docs steps 1. then a.
+   then i.; the legal scheme reads the whole numbered chain as 1.2.3. */
+var NUM_SEQ={docs:["1","a","i"], formal:["I","A","1","a","i"]};
+function numRoman(n){ var t=[[1000,"m"],[900,"cm"],[500,"d"],[400,"cd"],[100,"c"],[90,"xc"],[50,"l"],[40,"xl"],[10,"x"],[9,"ix"],[5,"v"],[4,"iv"],[1,"i"]], s=""; t.forEach(function(p){ while(n>=p[0]){ s+=p[1]; n-=p[0]; } }); return s; }
+function numFmt(st,i){
+  if(st==="a") return i<=26?String.fromCharCode(96+i):"a"+i;
+  if(st==="A") return i<=26?String.fromCharCode(64+i):"A"+i;
+  if(st==="i") return numRoman(i);
+  if(st==="I") return numRoman(i).toUpperCase();
+  return String(i);
+}
+function numLabel(id){
+  var n=N(id); if(!n||!n.parent||!N(n.parent).num) return null;
+  if(CFG.numScheme==="legal"){
+    var parts=[], p=n;
+    while(p.parent && N(p.parent).num){ parts.unshift(N(p.parent).children.indexOf(p.id)+1); p=N(p.parent); }
+    return parts.join(".");
+  }
+  var k=0, q=N(n.parent);
+  while(q.parent){ if(N(q.parent).num) k++; q=N(q.parent); }
+  var seq=NUM_SEQ[CFG.numScheme]||NUM_SEQ.docs;
+  return numFmt(seq[k%seq.length], N(n.parent).children.indexOf(id)+1)+".";
+}
+function anyNum(){ return Object.keys(state.nodes).some(function(i){ return state.nodes[i].num; }); }
+/* Cmd+Shift+7, Docs' own key. Numbers the level of every selected node: one
+   node numbers its own row, a branch selected with Cmd+Shift+arrow numbers
+   every level in it. The centre alone numbers its branches. Pressed on rows
+   that are all numbered already, it takes the numbers off. */
+function toggleNumber(){
+  if(editing) commitEdit();
+  var ids=Object.keys(marked).filter(function(i){ return N(i); }); if(!ids.length) ids=[selected];
+  var levels={};
+  ids.forEach(function(i){ var n=N(i); if(n.parent) levels[n.parent]=1; else if(n.children.length) levels[i]=1; });
+  var L=Object.keys(levels).filter(function(p){ return N(p).children.length; });
+  if(!L.length){ flash(selected); flashSave("nothing to number yet"); return; }
+  var allOn=L.every(function(p){ return N(p).num; });
+  snap();
+  L.forEach(function(p){ if(allOn) delete N(p).num; else N(p).num=true; });
+  render(true); saveSoon();
+  flashSave(allOn ? "numbers off" : (L.length===1 ? "row numbered" : L.length+" rows numbered")+" · the Style panel has the scheme");
+}
 function lensSolo(){ return !!lensOne; }
 /* A network, walked breadth first from one node along links only, at whatever
    node currently stands for each end. The walk ignores folds so that every node
@@ -1713,7 +1762,7 @@ function presArrange(on){
 function outlineOf(root,kidsOf){
   var lines=[], html=[];
   (function walk(id,d){
-    var t=(N(id).mark==="flag"?"! ":"")+(N(id).text||"").replace(/\n/g," ");
+    var t=lineOf(id);
     lines.push(d===0?t:"  ".repeat(d-1)+"- "+t);
     html.push("<li>"+esc(t));
     var ks=kidsOf(id);
@@ -2448,6 +2497,10 @@ function render(keepView,lead){
       (carry && carry.set[id] ? " carried" : "")+
       (n.link ? " link"+(CFG.linkStyle==="arrow"?" la":"")+(linkInfo(n.link).missing?" missing":"") : "");
     if(el.className!==cls) el.className=cls;
+    /* the in-the-box number is a ::before from data-num, so it is never part
+       of the text being typed; written only when it changed, like the class */
+    var dn=(CFG.numStyle==="box" && !n.link) ? numLabel(id) : null;
+    if((el.dataset.num||null)!==dn){ if(dn) el.dataset.num=dn; else delete el.dataset.num; }
   });
   Object.keys(els).forEach(function(id){ if(!showing[id]){ els[id].remove(); delete els[id]; } });
   Object.keys(wraps).forEach(function(k){ if(!wraps[k].firstChild){ wraps[k].remove(); delete wraps[k]; } });
@@ -2456,7 +2509,7 @@ function render(keepView,lead){
   box={};
   var stale=[];
   Object.keys(els).forEach(function(id){
-    var el=els[id], m=meas[id], k=el.className+"\u0001"+el.textContent;
+    var el=els[id], m=meas[id], k=el.className+"\u0001"+el.textContent+"\u0001"+(el.dataset.num||"");
     /* The node being typed in changes size as you type, so never trust a cached
        measurement for it. */
     if(m && m.k===k && id!==editing) box[id]={w:m.w,h:m.h};
@@ -2669,6 +2722,29 @@ function flagMark(id,x,y,w,h,amp){
   }
   return o;
 }
+/* The number, drawn on the side that faces the parent, where the eye arrives.
+   In the gutter it is a bare figure outside the box, the way Docs hangs one in
+   the margin, so a long node never wraps a line earlier; on the edge it is a
+   pill straddling the box in the node's own colours. Same seed as the box, so
+   it is the same every render, and it exports with the shapes. */
+function numFont(){ return CFG.font==="code" ? "ui-monospace, Menlo, monospace" : CFG.font==="plain" ? "-apple-system, Segoe UI, Helvetica, Arial, sans-serif" : "Excalifont, Chalkboard SE, cursive"; }
+function numMark(id,l,x,y,w,h,P,amp){
+  var d=dirOf(id), fs=Math.round(SIZES[CFG.size]*.8), mu=dark()?"#8d949b":"#868e96", fam=numFont();
+  var s=(d==="L")?-1:1, fx=(d==="L")?x+w:x, cy=y+h/2;
+  if(CFG.numStyle==="edge"){
+    var r=rngFrom(seedOf(id+"nb")), pw=Math.max(fs*1.35,l.length*fs*.58+fs*.7), ph=fs*1.35;
+    var px=(d==="U"||d==="D")?x+fs*.9:fx, py=(d==="D")?y:(d==="U")?y+h:cy;
+    var ink=dark()?"#e3e3e3":"#1e1e1e";
+    /* a rough rect is open segments, so the fill is its own smooth path under the stroke */
+    return '<path d="'+smoothRect(px-pw/2,py-ph/2,pw,ph,ph/2)+'" fill="'+(P.fill||(dark()?"#232323":"#ffffff"))+'" stroke="none"/>'+
+      '<path d="'+(amp?roughRect(px-pw/2,py-ph/2,pw,ph,ph/2,r,Math.min(amp,1)*.8):smoothRect(px-pw/2,py-ph/2,pw,ph,ph/2))+
+      '" fill="none" stroke="'+P.line+'" stroke-width="1.5" stroke-linecap="round"/>'+
+      '<text x="'+px+'" y="'+(py+fs*.36)+'" text-anchor="middle" font-family="'+fam+'" font-size="'+fs+'" fill="'+ink+'">'+esc(l)+'</text>';
+  }
+  /* gutter: outside the facing edge, raised clear of the connector */
+  if(d==="U"||d==="D") return '<text x="'+(x-4)+'" y="'+(y+fs)+'" text-anchor="end" font-family="'+fam+'" font-size="'+fs+'" fill="'+mu+'">'+esc(l)+'</text>';
+  return '<text x="'+(fx-s*7)+'" y="'+(cy-fs*.75)+'" text-anchor="'+(s>0?"end":"start")+'" font-family="'+fam+'" font-size="'+fs+'" fill="'+mu+'">'+esc(l)+'</text>';
+}
 /* ---------- shape building (shared by screen and export) ---------- */
 function shapes(ids, opt){
   opt=opt||{};
@@ -2833,7 +2909,7 @@ function shapes(ids, opt){
     var n=N(id), P=paletteFor(n), key=null;
     var b=box[id], p=pos[id], out=[], def="";
     if(cache){
-      key=id+"|"+SC.gen+"|"+size(id)+"|"+P.line+"|"+(P.fill||"")+"|"+(n.mark||"")+"|"+(isVR(n)?1:0)+
+      key=id+"|"+SC.gen+"|"+size(id)+"|"+P.line+"|"+(P.fill||"")+"|"+(n.mark||"")+"|"+(numLabel(id)||"")+dirOf(id)+"|"+(isVR(n)?1:0)+
           "|"+((lensQuiet && !lensGhosts[id] && !isVR(n))?1:0)+"|"+(presFade(id)?1:0)+
           "|"+(n.link?CFG.linkStyle+(linkInfo(n.link).missing?"m":""):"");
       var hit=SC.body[key];
@@ -2872,6 +2948,8 @@ function shapes(ids, opt){
         '" fill="none" stroke="'+P.line+'" stroke-width="'+bsw+'" stroke-linecap="round"'+bda+
         ' opacity="'+(amp?(k?.5:.95):1)+'"/>');
     }
+    /* the number goes on last, so the pill sits over the box's own stroke */
+    if(CFG.numStyle!=="box"){ var nl=numLabel(id); if(nl) out.push(numMark(id,nl,x,y,b.w,b.h,P,amp)); }
     if(lk && CFG.linkStyle==="arrow"){
       var ax=x+b.w-18, ay=p.cy;
       out.push('<circle cx="'+ax+'" cy="'+ay+'" r="9" fill="'+lk+'"/>'+
@@ -3815,6 +3893,7 @@ function ctxItems(id,from){
   if(!t.link) add("Retype","Space",function(){ beginEdit(id,true); });
   add(t.mark==="done"?"Not done":"Done",IS_FF?"\u2325D":"\u2318\u21e7D",function(){ toggleMark("done"); });
   add(t.mark==="flag"?"Unflag":"Flag",IS_FF?"\u2325F":"\u2318\u21e7F",function(){ toggleMark("flag"); });
+  add((t.parent?N(t.parent).num:t.num)?(many?"Unnumber the selection":"Unnumber this row"):(many?"Number the selection":"Number this row"),"\u2318\u21e77",function(){ toggleNumber(); });
   if(!centre) add(many?"Duplicate the selection":"Duplicate","\u2318D",function(){ duplicateBranch(); });
   if(splitLines(t.text).length>1 && !centre) add("Split into one node per line","\u2325S",function(){ splitNode(false); });
   if(many) add("Merge the selection into one","\u2325J",function(){ mergeMarked(); });
@@ -4405,11 +4484,14 @@ function selectAllVisible(){
 /* ============================================================
    OUTLINE IN AND OUT
    ============================================================ */
+/* one line of an outline: the number, then the flag, then the text, so a
+   copied outline reads "1. ! Terms review" and comes back the same */
+function lineOf(id){ var n=N(id), l=numLabel(id); return (l?l+" ":"")+(n.mark==="flag"?"! ":"")+(n.text||"").replace(/\n/g," "); }
 function toOutline(rootIds){
   var lines=[];
   (rootIds||[VR()]).forEach(function(rid,i){
     (function walk(id,d){
-      var t=(N(id).mark==="flag"?"! ":"")+(N(id).text||"").replace(/\n/g," ");
+      var t=lineOf(id);
       lines.push(d===0?t:"  ".repeat(d-1)+"- "+t);
       N(id).children.forEach(function(c){ walk(c,d+1); });
     })(rid,0);
@@ -4424,6 +4506,8 @@ var BULLET_RANK={"\u2022":0,"\u25cf":0,"\u25aa":2,"\u25ab":2,"\u25e6":1,"\u25cb"
    here counts as one level of lead; a tab counts as four. */
 var LEAD=/^[ \t\u00a0\u1680\u2000-\u200b\u202f\u205f\u3000]*/;
 var BULLET=/^([-*+>\u2022\u00b7\u25cf\u25aa\u25ab\u25e6\u25cb\u2023\u2043\u2013\u2014]|\d+[.)])[ \t\u00a0]+/;
+/* a number as the outline writes it: 1. or a. or iv. or A. or 1.2.3, then a space */
+var NUMLEAD=/^(\d+(?:\.\d+)*|[a-z]|[ivxl]{1,6}|[A-Z]|[IVXL]{1,6})[.)][ \t\u00a0]+/;
 
 /* The plain-text flavour of the clipboard is what a rendered page decides to
    give you, and some pages give you every line flush left with no bullets at
@@ -4448,9 +4532,11 @@ function parseOutlineHtml(html){
       var tag=(ch.tagName||"").toLowerCase();
       if(tag==="ul"||tag==="ol"){ walk(ch,depth+1); return; }
       if(tag==="li"){
-        var t=textOf(ch), fm=t.match(/^!\s+(.*)$/);
+        var t=textOf(ch), inOl=(el.tagName||"").toLowerCase()==="ol", nm=t.match(NUMLEAD);
+        if(nm) t=t.slice(nm[0].length);
+        var fm=t.match(/^!\s+(.*)$/);
         if(fm) t=fm[1];
-        if(t) items.push({indent:depth*10,text:t,mark:fm?"flag":null});
+        if(t) items.push({indent:depth*10,text:t,mark:fm?"flag":null,num:!!(inOl||nm)});
         Array.prototype.forEach.call(ch.children,function(k){
           var kt=(k.tagName||"").toLowerCase();
           if(kt==="ul"||kt==="ol") walk(k,depth+1);
@@ -4500,10 +4586,16 @@ function parseOutline(text){
       else indent=indent*10;
     }
     t=t.replace(/[\s\u00a0]+$/,"");
+    /* a number before the text, "1. " or "a. " or "1.2 ", says this row's
+       level is numbered, as the outline writes one and as Docs pastes one; a
+       "1." that stood as the bullet says the same */
+    var numbered=!!(glyph && /^\d+[.)]$/.test(glyph));
+    var nm=t.match(NUMLEAD);
+    if(nm){ t=t.slice(nm[0].length); numbered=true; }
     /* a leading "! " is a flag, the way the outline writes one */
     var fm=t.match(/^!\s+(.*)$/), flagged=false;
     if(fm){ t=fm[1]; flagged=true; }
-    if(t) rows.push({indent:indent,text:t,glyph:glyph,mark:flagged?"flag":null});
+    if(t) rows.push({indent:indent,text:t,glyph:glyph,mark:flagged?"flag":null,num:numbered});
   });
 
   /* A copy that lost its indentation leaves every bullet on one level with the
@@ -4523,7 +4615,7 @@ function parseOutline(text){
       r.indent=((known?BULLET_RANK[r.glyph]:seen[r.glyph])+1)*10;
     });
   }
-  return rows.map(function(r){ return {indent:r.indent,text:r.text,mark:r.mark||null}; });
+  return rows.map(function(r){ return {indent:r.indent,text:r.text,mark:r.mark||null,num:!!r.num}; });
 }
 /* A map you have not touched yet is a placeholder, not content: one root node
    still carrying the default label, nothing hanging off it. */
@@ -4578,6 +4670,7 @@ function insertOutline(items,opt){
     var n=addNode(parent.id,dir,at);
     n.text=it.text; made++; last=n.id; madeIds.push(n.id);
     if(it.mark) n.mark=it.mark;
+    if(it.num) N(parent.id).num=true;
     if(it.collapsed) n.collapsed=true;
     /* a copied link is a second link to the same map; only from Mappr's own
        clipboard, so a pasted outline cannot name a map id */
@@ -4638,7 +4731,7 @@ function toOutlineHtml(rootIds){
   var out=[];
   function walk(id){
     var n=N(id);
-    out.push("<li>"+esc((n.mark==="flag"?"! ":"")+(n.text||"").replace(/\n/g," ")));
+    out.push("<li>"+esc(lineOf(id)));
     if(n.children.length){
       out.push("<ul>");
       n.children.forEach(walk);
@@ -4678,8 +4771,8 @@ function selectionCopy(){
   order.forEach(function(id,k){
     var p=N(id).parent; while(p && !has[p]) p=N(p).parent;
     var d=p?depth[p]+1:0; depth[id]=d; idx[id]=k;
-    var n=N(id), t=(n.text||"").replace(/\n/g," "), tf=(n.mark==="flag"?"! ":"")+t;
-    items.push({indent:d, text:t, mark:n.mark||null, link:n.link||null,
+    var n=N(id), t=(n.text||"").replace(/\n/g," "), tf=lineOf(id);
+    items.push({indent:d, text:t, mark:n.mark||null, link:n.link||null, num:!!(n.parent&&N(n.parent).num),
       collapsed:!!n.collapsed && n.children.length>0 && n.children.every(function(c){ return has[c]; })});
     lines.push("  ".repeat(d)+"- "+tf);
   });
@@ -4687,7 +4780,7 @@ function selectionCopy(){
   order.forEach(function(id){ var p=N(id).parent; while(p && !has[p]) p=N(p).parent; if(p) (kidsOf[p]=kidsOf[p]||[]).push(id); else tops.push(id); });
   (function walk(list){
     html+="<ul>";
-    list.forEach(function(id){ html+="<li>"+esc((N(id).mark==="flag"?"! ":"")+(N(id).text||"").replace(/\n/g," ")); if(kidsOf[id]) walk(kidsOf[id]); html+="</li>"; });
+    list.forEach(function(id){ html+="<li>"+esc(lineOf(id)); if(kidsOf[id]) walk(kidsOf[id]); html+="</li>"; });
     html+="</ul>";
   })(tops);
   void open;
@@ -4789,6 +4882,15 @@ function textSvgFor(id){
   }
   if(start!==null) lines.push([start,s.length]);
   var out=[];
+  /* the in-the-box number is a ::before, not text, so the export writes it
+     itself: at the padding edge, on the first line's baseline */
+  if(el.dataset.num && lines.length){
+    range.setStart(tn,lines[0][0]); range.setEnd(tn,lines[0][1]);
+    var fr=range.getBoundingClientRect(), er=el.getBoundingClientRect();
+    var nb=(fr.top-view.y)/view.z+(hpx(fr.height)-fs)/2+fs*0.80;
+    out.push('<text x="'+w(er.left+parseFloat(cs.paddingLeft))+'" y="'+nb+'" font-family="'+esc(fam)+'" font-size="'+fs+
+      '" fill="'+(dark()?"#8d949b":"#868e96")+'" xml:space="preserve">'+esc(el.dataset.num)+'</text>');
+  }
   lines.forEach(function(seg){
     var txt=s.slice(seg[0],seg[1]).replace(/\n/g,"");
     if(!txt.trim()) return;
@@ -5825,6 +5927,9 @@ function svg(inner){ return '<svg viewBox="0 0 20 20" fill="none" stroke="curren
 function lt(t,extra){ return '<span class="lt"'+(extra?' style="'+extra+'"':"")+'>'+t+'</span>'; }
 var I={
   fpen:svg('<path d="M6 3v14M6.5 4l8 2.6-8 2.8"/>'),
+  ngut:svg('<path d="M8 6h9v8H8z"/><path d="M3.5 8.5h1.5v3M3.2 11.5h2.2" stroke-width="1.2"/>'),
+  nbox:svg('<path d="M3 6h14v8H3z"/><path d="M5.5 8.5h1.5v3M5.2 11.5h2.2M10 10h4.5" stroke-width="1.2"/>'),
+  nedge:svg('<path d="M6 6h11v8H6z"/><circle cx="6" cy="10" r="2.6" fill="var(--panel)"/><path d="M5.4 9.2h1v1.8" stroke-width="1.1"/>'),
   frib:svg('<path d="M6 3h8v13l-4-3.6L6 16z"/>'),
   fring:svg('<circle cx="10" cy="10" r="6.5"/><path d="M10 6.5v4.2"/><circle cx="10" cy="13.4" r=".9" fill="currentColor" stroke="none"/>'),
   fstar:svg('<path d="M10 4v12M4.8 7l10.4 6M4.8 13l10.4-6"/>'),
@@ -5892,6 +5997,8 @@ var PANEL=[
   {h:"Spacing",key:"gap",opts:[["s",I.gs,"Compact"],["m",I.gm,"Normal"],["l",I.gl,"Airy"]]},
   {h:"Map links",key:"linkStyle",opts:[["stack",I.lstack,"Stacked card"],["dashed",I.ldash,"Dashed"],["arrow",I.larrow,"Arrow badge"]]},
   {h:"Flags",key:"flagStyle",opts:[["pennant",I.fpen,"Pennant"],["ribbon",I.frib,"Ribbon"],["ring",I.fring,"Ring"],["star",I.fstar,"Asterisk"]]},
+  {h:"Numbers",key:"numStyle",opts:[["gutter",I.ngut,"In the gutter"],["box",I.nbox,"In the box"],["edge",I.nedge,"On the edge"]]},
+  {h:"Number scheme",key:"numScheme",opts:[["docs",lt("1a"),"1. a. i."],["legal",lt("1.1"),"1.1.1"],["formal",lt("IA"),"I. A. 1."]]},
   {h:"Paper",key:"paper",opts:[["graph",I.pgraph,"Graph"],["lines",I.plines,"Ruled"],["dots",I.pdots,"Dots"],["blank",I.pblank,"Blank"]]},
   {h:"Theme",key:"theme",opts:[["light",I.tlight,"Light"],["dark",I.tdark,"Dark"]]},
   {h:"Behaviour",toggles:[["minSize","Uniform node size"],["typeOnCreate","Cursor in new nodes"],["follow","Camera follows"]]}
@@ -6042,6 +6149,8 @@ document.addEventListener("keydown",function(e){
        marks and the frame have Option twins by physical key */
     if(e.code==="KeyF" && !e.shiftKey){ e.preventDefault(); toggleMark("flag"); return; }
     if(e.code==="KeyD" && !e.shiftKey){ e.preventDefault(); toggleMark("done"); return; }
+    /* Option+7 is the twin of Cmd+Shift+7, numbering, for the browsers and the iPad that keep the chord */
+    if(e.code==="Digit7" && !e.shiftKey){ e.preventDefault(); toggleNumber(); return; }
     if(e.code==="KeyG" && !e.shiftKey){ e.preventDefault(); ungroup(); return; }
     if(e.code==="KeyC" && !e.shiftKey){ e.preventDefault(); doExport("png-copy"); return; }
     if(e.code==="KeyB" && !e.shiftKey){ e.preventDefault(); breakOut(); return; }
@@ -6154,6 +6263,8 @@ document.addEventListener("keydown",function(e){
   if(mod&&e.shiftKey&&(e.key==="d"||e.key==="D")){ e.preventDefault(); if(editing) commitEdit(); toggleMark("done"); return; }
   if(mod&&(e.key==="d"||e.key==="D")){ e.preventDefault(); if(editing) commitEdit(); duplicateBranch(); return; }
   if(mod&&e.shiftKey&&(e.key==="f"||e.key==="F")){ e.preventDefault(); if(editing) commitEdit(); toggleMark("flag"); return; }
+  /* Cmd+Shift+7 numbers, as it does in Docs; by physical key, since Shift turns the 7 into & */
+  if(mod&&e.shiftKey&&e.code==="Digit7"){ e.preventDefault(); toggleNumber(); return; }
   if(mod&&e.key==="/"){
     e.preventDefault(); if(editing) commitEdit();
     /* With any lens up, Focus on a tied node means "this node and its whole
@@ -6750,6 +6861,7 @@ window.__mf={
   between:insertBetween, del:doDelete, select:select,
   mark:function(ids){ marked={}; ids.forEach(function(i){ marked[i]=1; }); render(true); },
   markSibs:markSiblings, fold:toggleCollapse,
+  number:toggleNumber, numLabel:numLabel, get anyNum(){ return anyNum(); },
   get links(){ return (state.links||[]).map(function(l){ return l.branch?{a:l.a,b:l.b,branch:true}:{a:l.a,b:l.b}; }); },
   branchTie:function(a,b){ var r=toggleBranchTie(a,b); if(r&&r!=="same"){ hardRender(); save(); } return r; },
   tie:function(a,b){ var r=toggleLink(a,b); if(r){ hardRender(); save(); } return r; },
