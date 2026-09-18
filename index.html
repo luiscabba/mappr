@@ -648,7 +648,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v1.5.0">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
+  <span class="brand" id="brand" title="Mappr v1.5.1">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -733,7 +733,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.5.0</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.5.1</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <div id="helpBody">
@@ -854,9 +854,9 @@
      panel cannot drift from the record of what actually shipped. -->
 <div id="notes">
   <div id="notesCard">
-    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.5.0</span></h2>
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.5.1</span></h2>
     <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
-    <div id="notesBody"><h3 class="rel">1.5.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Markdown arrives as a shape, not as asterisks.</b> Paste a list out of a chat or a document and the markdown written inside the lines comes off: bold, italic, code, strikethrough and links all arrive as their words. When the paste has no indentation left in it, which is what a chat answer and most stripped copies give you, the markdown says what the shape was. A line that is bold from end to end becomes a heading, a line that ends in a colon with nothing after it introduces what follows, and everything after them hangs underneath. A list that used to land as forty siblings in one column now lands as the two or three levels it was written as.</li><li><b>A term and its definition come in as two nodes.</b> A line like <b>PTP (Promise to Pay):</b> the borrower commits to an amount and a date becomes the term as a node with the sentence as a paragraph under it, so a definition list becomes a map rather than a column of long boxes. The same two readings work on a rich-text copy, where the bold arrives as real bold rather than asterisks.</li><li><b>Nothing is invented from a paste that already has a shape.</b> A paste that carries any indentation of its own is taken exactly as it is, and a paste with no bold anywhere in it is left flat, so a branch copied out of a map and pasted back always comes home unchanged.</li></ul><h4>Fixed</h4><ul><li><b>A paragraph&#x27;s children are joined to something you can see.</b> A paragraph has no box, so the lines to its children used to start at an edge nobody had drawn and read as lines joined to nothing. A paragraph with children on screen now carries a lighter rule down the side they leave from, and the lines meet it.</li><li><b>A row&#x27;s numbering stays its own.</b> A bulleted line and a bare line written at the same depth are two rows of the tree, but the paste was counting them as one when it decided whether a row was numbered, so one row could take the other&#x27;s numbering.</li></ul><h3 class="rel">1.4.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Prose.</b> <code>⌘⇧9</code> turns a node into a paragraph: wider, left aligned, smaller type, a rule down the side instead of a box, and never numbered. <code>⏎</code> on a paragraph writes the next one and <code>⌘⏎</code> starts an ordinary node under it, so a branch can go from map to document and back without leaving the map. Numbering skips paragraphs, so a row of paragraph, bullet, bullet still counts a. b. Copy still gives you the outline, with your paragraphs as paragraphs, and pasting one back brings them in as paragraphs, so a branch with prose in it travels without losing what it was. The Style panel draws them with a rule or a dotted box. <code>⌥9</code> is the twin, for the browsers and the iPad that keep the chord. A branch with paragraphs in it is a document; the rest of the map is still a map.</li><li><b>Two new rows in the copy menu.</b> Copy as markdown hands over the branch as a document, with real headings and sections worked out from what hangs under each node, and Copy as JSON hands over the branch itself. Both are on the right-click menu on the map and in the Copy menu while presenting or in a network.</li></ul><h4>Fixed</h4><ul><li><b>A numbered map stops re-measuring itself.</b> Every numbered node was being measured again on every render, because the size Mappr remembered for it was filed without its figure and looked up with one, so the two could never match. In a numbered map of 1500 nodes that was 1500 measurements on every keystroke; it is now none.</li></ul><h4>Changed</h4><ul><li><b>A numbered row with a paragraph in it copies out as a plain list.</b> A document&#x27;s numbered list has no way to hold a paragraph between two numbered items without either counting it or breaking the list in two, so a row that is part document keeps its bullets and carries its figures in the text, the way the 1.2.3 scheme already does. A numbered row with no paragraph in it is unchanged, and still arrives as a real numbered list.</li></ul><h3 class="rel">1.3.2 <span>2026-09-18</span></h3><h4>Fixed</h4><ul><li><b>A numbered list copies out as a numbered list.</b> Copying a numbered branch and pasting it into a document used to give you two markers on every line, the document&#x27;s own bullet and the figure Mappr had written into the text. Mappr now hands over a real numbered list and lets the document draw the figures, so what lands looks like what you copied, nested and numbered the way it was on the map. Copying part way down a row keeps its place rather than restarting at one. The 1.2.3 scheme is the one exception, since a document&#x27;s own lists cannot count that way, so it still travels with its figures written in. The story copy and the network copy come through the same writer, so a network, where what hangs under the centre is not a row of the map, keeps its bullets and its figures as before.</li><li><b>Pasting a numbered list back into Mappr keeps it numbered.</b> A copy whose first line sits above the list used to have its numbering read off the wrong line and lost, so a row copied out numbered came back plain. It comes back numbered now.</li></ul><h3 class="rel">1.3.1 <span>2026-09-18</span></h3><h4>Changed</h4><ul><li><b>Numbering leaves a half-hidden row alone.</b> Numbering a row reads the order off the picture, so every node in the row has to be in the picture. If one of them is folded away or hidden, the numbers still go on but the order is left exactly as it was, and the status line says so. Unhide it and press again for the ordered result. Before this, the hidden ones held whatever slot they happened to have, which mixed the old creation order back into the result and gave you a different answer depending on what was hidden at the time.</li></ul><h3 class="rel">1.3.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Cut picks the branch up instead of taking it away.</b> <code>⌘X</code> now copies to the clipboard and lifts the selection off the map: it goes faint where it was, the arrows walk a ring round the map to choose where it lands, and <code>⌘V</code> or <code>⏎</code> puts it down, <code>⇧⏎</code> right after the ringed node. Nothing leaves the map until you put it down, and <code>Esc</code> puts it back exactly where it was. The clipboard still holds what you picked up, so a second <code>⌘V</code> pastes a copy of it. In a network or during a talk the clipboard is written and the map is left alone. <code>⌥X</code> is now Done, which is the mark you reach for most; <code>⌥D</code> still does the same, and <code>⌘⇧D</code> is gone, since Firefox kept it anyway.</li><li><b>Read another mode&#x27;s keys without leaving the one you are in.</b> <code>⌥⇧K</code> walks the key bar through the modes: Map, Focus, Connections, Flags, Network, Story, Selection, Carrying, one press each. The bar says which mode it is showing and never takes the keyboard, so the next key you press does what it always does and brings your own keys back. Five seconds does the same.</li><li><b>Tap a selection key twice to take the whole row.</b> Two presses of the same <code>⇧</code>+arrow inside four tenths of a second select every node in the row, the way <code>⇧</code>+click does. One press is still one more node, and <code>⌘⇧</code>+arrow still takes whole branches.</li><li><b>navi, and a row that stops growing.</b> Where you are is now called navi. A long row used to be listed in full, so a row forty wide ran off the bottom of the window. It now shows the node you are on with three either side and a folded row at each end saying how many more are above and below, the same shape the way up already used. The Style panel has three alternatives: the whole row in a small box that scrolls, just the one you are on with the count, or the row as chips. The chips are capped at ten and a plus whichever you pick. Inside a focus, navi shows how deep you are rather than a spine you cannot leave: six pips by default, or the depth in words, or the focus root and where you are in it.</li></ul><h4>Changed</h4><ul><li><b>Numbering a row also settles its order.</b> Numbering used to count the branches in the order they were made, which on a row that spans both sides of the centre had nothing to do with what you were looking at. It now reads the row off the picture: down the page on a side row, clockwise from the top for the branches round the centre. Numbering the centre&#x27;s row also fixes the branches where they are, so they stop rearranging themselves as you add to them. One <code>⌘Z</code> puts both the order and the numbers back.</li><li><b>A pasted list keeps the kind of list it was.</b> A numbered list pastes in numbered and a bulleted list pastes in plain, with no marker left in the text. A list that mixes its markers comes in as one kind of row, whichever most of its lines used. A list copied out of a page keeps its numbering even where the page printed no figures.</li><li><b>A new map you never wrote in no longer joins the library.</b> Make a map, look at it, leave it untouched and it goes with you rather than sitting in the list. A map you typed even one letter into stays, so does a map you made earlier and came back to, and so does a map something links to.</li></ul><h3 class="rel">1.2.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Where you are.</b> A rail top left that follows the selection and shows only the way up and the row you are on: the ancestors as a muted spine, the siblings under the parent with yours lit, children as a count and never listed, flags with their <code>!</code> and numbers with their figures. A deep trail folds its middle. When the centre has gone off screen a small arrow points to where it is. Click a row to go there. It joins the maps rail in one panel, so the two read as one place; the Style panel can give it its own bar instead, swap the rail for a pill with the siblings as chips or for a drawn sketch of the same, stop it fading when you leave it alone, and set when it shows: always, only when the centre is out of view, or never. <code>⌥⇧W</code> cycles those three.</li></ul></div>
+    <div id="notesBody"><h3 class="rel">1.5.1 <span>2026-09-18</span></h3><h4>Fixed</h4><ul><li><b>A copy made from something already rendered keeps its headings.</b> Copy a chat answer or a page and the plain text arrives with the bold already gone, so 1.5.0 had nothing to read the shape from and everything landed in one column. The bold is still there in the clipboard&#x27;s rich-text flavour, and Mappr now reads that flavour whenever it carries headings, bold or code, not only when it carries a list. A bold paragraph is a heading, the paragraphs after it are its children, and a bold label still opens a definition. The rule that keeps a paste honest is unchanged and now carries the whole weight: a row with no bold anywhere in it is left exactly as it was pasted, so an indented list keeps every level it came with and a branch copied out of a map and pasted back comes home unchanged.</li><li><b>A code block is one node, and its fences are not nodes at all.</b> A fenced block used to arrive as a stack of lines wrapped in two nodes made of backticks. It now comes in as a single node with its lines intact, which ⌥S splits again if that is what you wanted, and a copy that put a bullet in front of every line, as a chat copy does, has that bullet taken off the code too. An unclosed fence still ends, and a code span inside a line is left alone.</li></ul><h3 class="rel">1.5.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Markdown arrives as a shape, not as asterisks.</b> Paste a list out of a chat or a document and the markdown written inside the lines comes off: bold, italic, code, strikethrough and links all arrive as their words. When the paste has no indentation left in it, which is what a chat answer and most stripped copies give you, the markdown says what the shape was. A line that is bold from end to end becomes a heading, a line that ends in a colon with nothing after it introduces what follows, and everything after them hangs underneath. A list that used to land as forty siblings in one column now lands as the two or three levels it was written as.</li><li><b>A term and its definition come in as two nodes.</b> A line like <b>PTP (Promise to Pay):</b> the borrower commits to an amount and a date becomes the term as a node with the sentence as a paragraph under it, so a definition list becomes a map rather than a column of long boxes. The same two readings work on a rich-text copy, where the bold arrives as real bold rather than asterisks.</li><li><b>Nothing is invented from a paste that already has a shape.</b> A paste that carries any indentation of its own is taken exactly as it is, and a paste with no bold anywhere in it is left flat, so a branch copied out of a map and pasted back always comes home unchanged.</li></ul><h4>Fixed</h4><ul><li><b>A paragraph&#x27;s children are joined to something you can see.</b> A paragraph has no box, so the lines to its children used to start at an edge nobody had drawn and read as lines joined to nothing. A paragraph with children on screen now carries a lighter rule down the side they leave from, and the lines meet it.</li><li><b>A row&#x27;s numbering stays its own.</b> A bulleted line and a bare line written at the same depth are two rows of the tree, but the paste was counting them as one when it decided whether a row was numbered, so one row could take the other&#x27;s numbering.</li></ul><h3 class="rel">1.4.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Prose.</b> <code>⌘⇧9</code> turns a node into a paragraph: wider, left aligned, smaller type, a rule down the side instead of a box, and never numbered. <code>⏎</code> on a paragraph writes the next one and <code>⌘⏎</code> starts an ordinary node under it, so a branch can go from map to document and back without leaving the map. Numbering skips paragraphs, so a row of paragraph, bullet, bullet still counts a. b. Copy still gives you the outline, with your paragraphs as paragraphs, and pasting one back brings them in as paragraphs, so a branch with prose in it travels without losing what it was. The Style panel draws them with a rule or a dotted box. <code>⌥9</code> is the twin, for the browsers and the iPad that keep the chord. A branch with paragraphs in it is a document; the rest of the map is still a map.</li><li><b>Two new rows in the copy menu.</b> Copy as markdown hands over the branch as a document, with real headings and sections worked out from what hangs under each node, and Copy as JSON hands over the branch itself. Both are on the right-click menu on the map and in the Copy menu while presenting or in a network.</li></ul><h4>Fixed</h4><ul><li><b>A numbered map stops re-measuring itself.</b> Every numbered node was being measured again on every render, because the size Mappr remembered for it was filed without its figure and looked up with one, so the two could never match. In a numbered map of 1500 nodes that was 1500 measurements on every keystroke; it is now none.</li></ul><h4>Changed</h4><ul><li><b>A numbered row with a paragraph in it copies out as a plain list.</b> A document&#x27;s numbered list has no way to hold a paragraph between two numbered items without either counting it or breaking the list in two, so a row that is part document keeps its bullets and carries its figures in the text, the way the 1.2.3 scheme already does. A numbered row with no paragraph in it is unchanged, and still arrives as a real numbered list.</li></ul><h3 class="rel">1.3.2 <span>2026-09-18</span></h3><h4>Fixed</h4><ul><li><b>A numbered list copies out as a numbered list.</b> Copying a numbered branch and pasting it into a document used to give you two markers on every line, the document&#x27;s own bullet and the figure Mappr had written into the text. Mappr now hands over a real numbered list and lets the document draw the figures, so what lands looks like what you copied, nested and numbered the way it was on the map. Copying part way down a row keeps its place rather than restarting at one. The 1.2.3 scheme is the one exception, since a document&#x27;s own lists cannot count that way, so it still travels with its figures written in. The story copy and the network copy come through the same writer, so a network, where what hangs under the centre is not a row of the map, keeps its bullets and its figures as before.</li><li><b>Pasting a numbered list back into Mappr keeps it numbered.</b> A copy whose first line sits above the list used to have its numbering read off the wrong line and lost, so a row copied out numbered came back plain. It comes back numbered now.</li></ul><h3 class="rel">1.3.1 <span>2026-09-18</span></h3><h4>Changed</h4><ul><li><b>Numbering leaves a half-hidden row alone.</b> Numbering a row reads the order off the picture, so every node in the row has to be in the picture. If one of them is folded away or hidden, the numbers still go on but the order is left exactly as it was, and the status line says so. Unhide it and press again for the ordered result. Before this, the hidden ones held whatever slot they happened to have, which mixed the old creation order back into the result and gave you a different answer depending on what was hidden at the time.</li></ul><h3 class="rel">1.3.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Cut picks the branch up instead of taking it away.</b> <code>⌘X</code> now copies to the clipboard and lifts the selection off the map: it goes faint where it was, the arrows walk a ring round the map to choose where it lands, and <code>⌘V</code> or <code>⏎</code> puts it down, <code>⇧⏎</code> right after the ringed node. Nothing leaves the map until you put it down, and <code>Esc</code> puts it back exactly where it was. The clipboard still holds what you picked up, so a second <code>⌘V</code> pastes a copy of it. In a network or during a talk the clipboard is written and the map is left alone. <code>⌥X</code> is now Done, which is the mark you reach for most; <code>⌥D</code> still does the same, and <code>⌘⇧D</code> is gone, since Firefox kept it anyway.</li><li><b>Read another mode&#x27;s keys without leaving the one you are in.</b> <code>⌥⇧K</code> walks the key bar through the modes: Map, Focus, Connections, Flags, Network, Story, Selection, Carrying, one press each. The bar says which mode it is showing and never takes the keyboard, so the next key you press does what it always does and brings your own keys back. Five seconds does the same.</li><li><b>Tap a selection key twice to take the whole row.</b> Two presses of the same <code>⇧</code>+arrow inside four tenths of a second select every node in the row, the way <code>⇧</code>+click does. One press is still one more node, and <code>⌘⇧</code>+arrow still takes whole branches.</li><li><b>navi, and a row that stops growing.</b> Where you are is now called navi. A long row used to be listed in full, so a row forty wide ran off the bottom of the window. It now shows the node you are on with three either side and a folded row at each end saying how many more are above and below, the same shape the way up already used. The Style panel has three alternatives: the whole row in a small box that scrolls, just the one you are on with the count, or the row as chips. The chips are capped at ten and a plus whichever you pick. Inside a focus, navi shows how deep you are rather than a spine you cannot leave: six pips by default, or the depth in words, or the focus root and where you are in it.</li></ul><h4>Changed</h4><ul><li><b>Numbering a row also settles its order.</b> Numbering used to count the branches in the order they were made, which on a row that spans both sides of the centre had nothing to do with what you were looking at. It now reads the row off the picture: down the page on a side row, clockwise from the top for the branches round the centre. Numbering the centre&#x27;s row also fixes the branches where they are, so they stop rearranging themselves as you add to them. One <code>⌘Z</code> puts both the order and the numbers back.</li><li><b>A pasted list keeps the kind of list it was.</b> A numbered list pastes in numbered and a bulleted list pastes in plain, with no marker left in the text. A list that mixes its markers comes in as one kind of row, whichever most of its lines used. A list copied out of a page keeps its numbering even where the page printed no figures.</li><li><b>A new map you never wrote in no longer joins the library.</b> Make a map, look at it, leave it untouched and it goes with you rather than sitting in the list. A map you typed even one letter into stays, so does a map you made earlier and came back to, and so does a map something links to.</li></ul></div>
     <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
 </div>
@@ -870,7 +870,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="1.5.0";
+var VERSION="1.5.1";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid", flagStyle:"pennant",
   numStyle:"gutter", numScheme:"docs", prose:"rule",
@@ -4970,11 +4970,23 @@ function parseOutlineHtml(html){
       }
       var h=tag.match(/^h([1-6])$/);
       if(h){ var ht=textOf(ch); if(ht) items.push({indent:(+h[1]-1)*10,text:ht}); return; }
+      if(tag==="pre"){
+        var code=(ch.textContent||"").replace(/\s+$/,"");
+        if(code) items.push({indent:depth*10,text:code,code:true});
+        return;
+      }
       if(tag==="p"||tag==="div"){
         /* A paragraph that only wraps a list is scaffolding, not an item. */
         if(!ch.querySelector("ul,ol")){
           var pt=textOf(ch);
-          if(pt) items.push({indent:depth*10,text:pt});
+          if(!pt) return;
+          /* the same two readings as a list item: a paragraph that is bold from
+             end to end is a heading, and a bold label opens a definition. A
+             chat answer or a pasted document is paragraphs, not a list, and
+             this is where its headings live. */
+          var ps=strongOf(ch,pt);
+          if(ps.all) pt=ps.text; else if(ps.label) pt=ps.label;
+          items.push({indent:depth*10,text:pt,bold:!!ps.all,colonEnd:/:$/.test(pt),body:ps.rest||null});
           return;
         }
       }
@@ -5054,16 +5066,24 @@ function applyNumFrom(src,dst){
   });
   return dst;
 }
-/* Whichever flavour recovered more structure wins. A copy with real nesting in
-   its html beats flattened text; a plain-text copy with no html beats nothing. */
 function levelCount(items){
   var m={}; (items||[]).forEach(function(x){ m[x.indent]=1; });
   return Object.keys(m).length;
 }
+/* Whichever flavour recovered more structure wins. A copy with real nesting in
+   its html beats flattened text; a plain-text copy with no html beats nothing.
+   The html is worth reading for more than its lists: a chat answer and most
+   pasted documents arrive as paragraphs with real <strong> in them, and that
+   bold is the same signal the text flavour reads off asterisks. When the text
+   flavour lost it, which is what happens whenever the copy was made from
+   something already rendered, the html is the only place the shape survives. */
+var HTML_SHAPE=/<li|<ul|<ol|<h[1-6]\b|<strong\b|<b\b|<pre\b/i;
+function markedUp(items){ return (items||[]).some(function(x){ return x.bold || x.body; }); }
 function bestOutline(html,text){
   var t=parseOutline(text||"");
-  var h=(html&&/<li|<ul|<ol/i.test(html))?parseOutlineHtml(html):null;
+  var h=(html&&HTML_SHAPE.test(html))?parseOutlineHtml(html):null;
   if(h && h.length>1 && levelCount(h)>levelCount(t)) return h;
+  if(h && h.length>1 && markedUp(h) && !markedUp(t)) return h;
   if(h && h.length) applyNumFrom(h,t);
   return t;
 }
@@ -5098,15 +5118,12 @@ var MD_LABEL_OUT=/^(?:\*\*|__)[ \t]*(.+?)[ \t]*(?:\*\*|__)[ \t]*:[ \t]+(\S[\s\S]
    children. Two ranks and no more, because a third would be guessing, and a
    run with no heading in it is left exactly as it was pasted. */
 function promoteHeaders(rows){
-  function rank(r){ return (r.bold && !r.body) ? 1 : ((r.colonEnd && !r.body) ? 2 : 3); }
-  /* Two guards, and both matter more than the feature does. A paste that
-     carries any indentation of its own is never second-guessed: it already
-     said what its shape is. And nothing happens without a bold line somewhere
-     in it, because bold is the one mark Mappr's own outline never writes, so a
-     branch copied out of a map and pasted back always comes home unchanged. */
-  var one={}; rows.forEach(function(r){ one[r.indent]=1; });
-  if(Object.keys(one).length!==1) return rows;
-  if(!rows.some(function(r){ return r.bold || r.body; })) return rows;
+  function rank(r){ return (r.code || r.body) ? 3 : (r.bold ? 1 : (r.colonEnd ? 2 : 3)); }
+  /* One guard, and it matters more than the feature does: nothing happens in a
+     row that has no bold in it. Bold is the one mark Mappr's own outline never
+     writes, in either flavour, so a branch copied out of a map and pasted back
+     always comes home unchanged, and a list that was indented when you pasted
+     it keeps every level it came with. */
   var i=0;
   while(i<rows.length){
     var j=i; while(j+1<rows.length && rows[j+1].indent===rows[i].indent) j++;
@@ -5114,7 +5131,7 @@ function promoteHeaders(rows){
     var tops=run.filter(function(r){ return rank(r)===1; }).length;
     var heads=run.filter(function(r){ return rank(r)<3; }).length;
     /* one heading and nothing under it is not a shape worth inventing */
-    if(run.length>2 && heads && heads<run.length){
+    if(run.length>2 && tops && heads<run.length){
       var lvl1=false, lvl2=false;
       run.forEach(function(r){
         var k=rank(r);
@@ -5141,9 +5158,39 @@ function expandLabels(rows){
   });
   return out;
 }
+/* A fenced code block is one thing, not a stack of lines, and the fences
+   themselves are punctuation rather than content. Pulled out before the outline
+   is read so nothing inside a block is taken for a bullet, a heading or a
+   number, and handed back as one line with its newlines in it, which a node
+   holds and ⌥S splits again if that is what you wanted. A copy that bulleted
+   every line, as a chat copy does, has that bullet taken off the code too. */
+var FENCE=/^([ \t]*)(?:[-*+\u2022][ \t]+)?(`{3,}|~{3,})(.*)$/;
+function liftFences(text){
+  var out=[], open=null, buf=[];
+  text.replace(/\r/g,"").split("\n").forEach(function(raw){
+    var f=raw.match(FENCE);
+    if(f && !open){ open={lead:f[1],mark:f[2].charAt(0)}; buf=[]; return; }
+    if(f && open && f[2].charAt(0)===open.mark){
+      if(buf.length) out.push({lead:open.lead,code:buf.join("\n").replace(/\s+$/,"")});
+      open=null; buf=[]; return;
+    }
+    if(open){ buf.push(raw.replace(/^[ \t]*(?:[-*+\u2022][ \t]+)?/,"")); return; }
+    out.push({raw:raw});
+  });
+  /* a block nobody closed still ends somewhere */
+  if(open && buf.length) out.push({lead:open.lead,code:buf.join("\n").replace(/\s+$/,"")});
+  return out;
+}
 function parseOutline(text){
   var rows=[];
-  text.replace(/\r/g,"").split("\n").forEach(function(raw){
+  liftFences(text).forEach(function(line){
+    if(line.code!==undefined){
+      var cl=line.lead||"", ci=0;
+      for(var k=0;k<cl.length;k++) ci+=(cl[k]==="\t")?4:1;
+      rows.push({indent:ci*10+1,text:line.code,glyph:null,heading:false,marker:null,mark:null,num:false,bold:false,colonEnd:false,body:null,code:true});
+      return;
+    }
+    var raw=line.raw;
     if(!raw.trim()) return;
     var lead=raw.match(LEAD)[0], indent=0;
     for(var i=0;i<lead.length;i++) indent+=(lead[i]==="\t")?4:1;
@@ -5218,7 +5265,7 @@ function parseOutline(text){
    one inside the other, and a paragraph under a heading still lands under
    it. */
 function proseRows(rows){
-  var listy=function(r){ return !!(r.heading||r.glyph||r.marker); };
+  var listy=function(r){ return !!(r.heading||r.glyph||r.marker||r.code); };
   if(!rows.some(listy)) return rows;
   rows.forEach(function(r,i){ if(i===0||listy(r)) return; r.prose=true; r.indent+=1; });
   return rows;

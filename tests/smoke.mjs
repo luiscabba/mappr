@@ -4404,6 +4404,58 @@ group("1.5.0: a paragraph's children have something to meet");
   ok("no runtime errors", errors.length === 0, errors);
 }
 
+group("1.5.1: the shape survives a rendered copy, and a fence is not a node");
+{
+  const P = (txt) => M((x) => __mf.parseOutline(x), txt);
+  const H = (html, txt) => M((a) => __mf.bestOutline(a[0], a[1]), [html, txt]);
+  const depths = (rows) => { const s = []; rows.forEach((r) => { if (s.indexOf(r.indent) < 0) s.push(r.indent); }); return s.sort((a, b) => a - b); };
+  const at = (rows, t) => rows.find((r) => r.text === t);
+
+  // ---- 1. fenced code ----
+  let r = await P("- before\n```\nline one\nline two\n```\n- after");
+  ok("a fence leaves no node of its own", !r.some((x) => /^[`~]/.test(x.text)), r.map((x) => x.text));
+  const code = r.find((x) => x.text.indexOf("line one") === 0);
+  ok("the block comes in as one node", !!code && code.text === "line one\nline two", code && code.text);
+  ok("and is not a paragraph", !!code && !code.prose);
+  r = await P("* intro\n* ```\n* cd ~/Projects/mappr && git push\n* ```\n* outro");
+  ok("a copy that bulleted the fence too is read the same way",
+    !r.some((x) => /^[`~]/.test(x.text)) && !!r.find((x) => x.text === "cd ~/Projects/mappr && git push"), r.map((x) => x.text));
+  r = await P("- before\n```\nnobody closed this\n");
+  ok("an unclosed block still ends", !!r.find((x) => x.text === "nobody closed this"), r.map((x) => x.text));
+  r = await P("- a ``code span`` in a line is not a fence\n- second");
+  ok("a code span in the middle of a line is not a fence", r.length === 2, r.map((x) => x.text));
+
+  // ---- 2. the bold that only the html flavour still has ----
+  const HTML = "<p><strong>Your push</strong></p>" +
+    "<pre><code>git push</code></pre>" +
+    "<p><strong>What changed</strong></p>" +
+    "<p>Your paste lands with levels.</p>" +
+    "<p>Two guards keep it honest.</p>";
+  const FLAT = "Your push\ngit push\nWhat changed\nYour paste lands with levels.\nTwo guards keep it honest.";
+  const t2 = await P(FLAT);
+  ok("the text flavour alone has nothing to go on", depths(t2).length === 1, depths(t2));
+  r = await H(HTML, FLAT);
+  ok("the html flavour is read even with no list in it", depths(r).length > 1, depths(r));
+  ok("a bold paragraph is a heading", at(r, "What changed").indent < at(r, "Your paste lands with levels.").indent);
+  ok("and the lines after it are its children",
+    at(r, "Two guards keep it honest.").indent === at(r, "Your paste lands with levels.").indent);
+  ok("a <pre> block is one node", !!at(r, "git push"));
+
+  // ---- 3. still hands a plain rich copy to the text flavour ----
+  r = await H("<p>one</p><p>two</p><p>three</p>", "one\ntwo\nthree");
+  ok("a rich copy with no markdown in it changes nothing", depths(r).length === 1, depths(r));
+  r = await H("<ul><li>alpha</li><li>beta</li><li>gamma</li></ul>", "- alpha\n- beta\n- gamma");
+  ok("and a plain list is still a plain list", depths(r).length === 1, depths(r));
+
+  // ---- 4. an indented paste keeps every level it came with ----
+  r = await P("- **Heading**\n\t- one\n\t- two\n- **Second**\n\t- three");
+  ok("bold at the top of an indented list moves nothing",
+    at(r, "Heading").indent === at(r, "Second").indent && at(r, "one").indent > at(r, "Heading").indent,
+    [at(r, "Heading").indent, at(r, "Second").indent, at(r, "one").indent]);
+
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 

@@ -3,6 +3,28 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.5.1] - 2026-09-18
+
+### Fixed
+- **A copy made from something already rendered keeps its headings.** Copy a
+  chat answer or a page and the plain text arrives with the bold already gone,
+  so 1.5.0 had nothing to read the shape from and everything landed in one
+  column. The bold is still there in the clipboard's rich-text flavour, and
+  Mappr now reads that flavour whenever it carries headings, bold or code, not
+  only when it carries a list. A bold paragraph is a heading, the paragraphs
+  after it are its children, and a bold label still opens a definition. The rule
+  that keeps a paste honest is unchanged and now carries the whole weight: a row
+  with no bold anywhere in it is left exactly as it was pasted, so an indented
+  list keeps every level it came with and a branch copied out of a map and
+  pasted back comes home unchanged.
+- **A code block is one node, and its fences are not nodes at all.** A fenced
+  block used to arrive as a stack of lines wrapped in two nodes made of
+  backticks. It now comes in as a single node with its lines intact, which
+  ⌥S splits again if that is what you wanted, and a copy that put a bullet in
+  front of every line, as a chat copy does, has that bullet taken off the code
+  too. An unclosed fence still ends, and a code span inside a line is left
+  alone.
+
 ## [1.5.0] - 2026-09-18
 
 ### Added

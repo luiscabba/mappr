@@ -4970,11 +4970,23 @@ function parseOutlineHtml(html){
       }
       var h=tag.match(/^h([1-6])$/);
       if(h){ var ht=textOf(ch); if(ht) items.push({indent:(+h[1]-1)*10,text:ht}); return; }
+      if(tag==="pre"){
+        var code=(ch.textContent||"").replace(/\s+$/,"");
+        if(code) items.push({indent:depth*10,text:code,code:true});
+        return;
+      }
       if(tag==="p"||tag==="div"){
         /* A paragraph that only wraps a list is scaffolding, not an item. */
         if(!ch.querySelector("ul,ol")){
           var pt=textOf(ch);
-          if(pt) items.push({indent:depth*10,text:pt});
+          if(!pt) return;
+          /* the same two readings as a list item: a paragraph that is bold from
+             end to end is a heading, and a bold label opens a definition. A
+             chat answer or a pasted document is paragraphs, not a list, and
+             this is where its headings live. */
+          var ps=strongOf(ch,pt);
+          if(ps.all) pt=ps.text; else if(ps.label) pt=ps.label;
+          items.push({indent:depth*10,text:pt,bold:!!ps.all,colonEnd:/:$/.test(pt),body:ps.rest||null});
           return;
         }
       }
@@ -5054,16 +5066,24 @@ function applyNumFrom(src,dst){
   });
   return dst;
 }
-/* Whichever flavour recovered more structure wins. A copy with real nesting in
-   its html beats flattened text; a plain-text copy with no html beats nothing. */
 function levelCount(items){
   var m={}; (items||[]).forEach(function(x){ m[x.indent]=1; });
   return Object.keys(m).length;
 }
+/* Whichever flavour recovered more structure wins. A copy with real nesting in
+   its html beats flattened text; a plain-text copy with no html beats nothing.
+   The html is worth reading for more than its lists: a chat answer and most
+   pasted documents arrive as paragraphs with real <strong> in them, and that
+   bold is the same signal the text flavour reads off asterisks. When the text
+   flavour lost it, which is what happens whenever the copy was made from
+   something already rendered, the html is the only place the shape survives. */
+var HTML_SHAPE=/<li|<ul|<ol|<h[1-6]\b|<strong\b|<b\b|<pre\b/i;
+function markedUp(items){ return (items||[]).some(function(x){ return x.bold || x.body; }); }
 function bestOutline(html,text){
   var t=parseOutline(text||"");
-  var h=(html&&/<li|<ul|<ol/i.test(html))?parseOutlineHtml(html):null;
+  var h=(html&&HTML_SHAPE.test(html))?parseOutlineHtml(html):null;
   if(h && h.length>1 && levelCount(h)>levelCount(t)) return h;
+  if(h && h.length>1 && markedUp(h) && !markedUp(t)) return h;
   if(h && h.length) applyNumFrom(h,t);
   return t;
 }
@@ -5098,15 +5118,12 @@ var MD_LABEL_OUT=/^(?:\*\*|__)[ \t]*(.+?)[ \t]*(?:\*\*|__)[ \t]*:[ \t]+(\S[\s\S]
    children. Two ranks and no more, because a third would be guessing, and a
    run with no heading in it is left exactly as it was pasted. */
 function promoteHeaders(rows){
-  function rank(r){ return (r.bold && !r.body) ? 1 : ((r.colonEnd && !r.body) ? 2 : 3); }
-  /* Two guards, and both matter more than the feature does. A paste that
-     carries any indentation of its own is never second-guessed: it already
-     said what its shape is. And nothing happens without a bold line somewhere
-     in it, because bold is the one mark Mappr's own outline never writes, so a
-     branch copied out of a map and pasted back always comes home unchanged. */
-  var one={}; rows.forEach(function(r){ one[r.indent]=1; });
-  if(Object.keys(one).length!==1) return rows;
-  if(!rows.some(function(r){ return r.bold || r.body; })) return rows;
+  function rank(r){ return (r.code || r.body) ? 3 : (r.bold ? 1 : (r.colonEnd ? 2 : 3)); }
+  /* One guard, and it matters more than the feature does: nothing happens in a
+     row that has no bold in it. Bold is the one mark Mappr's own outline never
+     writes, in either flavour, so a branch copied out of a map and pasted back
+     always comes home unchanged, and a list that was indented when you pasted
+     it keeps every level it came with. */
   var i=0;
   while(i<rows.length){
     var j=i; while(j+1<rows.length && rows[j+1].indent===rows[i].indent) j++;
@@ -5114,7 +5131,7 @@ function promoteHeaders(rows){
     var tops=run.filter(function(r){ return rank(r)===1; }).length;
     var heads=run.filter(function(r){ return rank(r)<3; }).length;
     /* one heading and nothing under it is not a shape worth inventing */
-    if(run.length>2 && heads && heads<run.length){
+    if(run.length>2 && tops && heads<run.length){
       var lvl1=false, lvl2=false;
       run.forEach(function(r){
         var k=rank(r);
@@ -5141,9 +5158,39 @@ function expandLabels(rows){
   });
   return out;
 }
+/* A fenced code block is one thing, not a stack of lines, and the fences
+   themselves are punctuation rather than content. Pulled out before the outline
+   is read so nothing inside a block is taken for a bullet, a heading or a
+   number, and handed back as one line with its newlines in it, which a node
+   holds and ⌥S splits again if that is what you wanted. A copy that bulleted
+   every line, as a chat copy does, has that bullet taken off the code too. */
+var FENCE=/^([ \t]*)(?:[-*+\u2022][ \t]+)?(`{3,}|~{3,})(.*)$/;
+function liftFences(text){
+  var out=[], open=null, buf=[];
+  text.replace(/\r/g,"").split("\n").forEach(function(raw){
+    var f=raw.match(FENCE);
+    if(f && !open){ open={lead:f[1],mark:f[2].charAt(0)}; buf=[]; return; }
+    if(f && open && f[2].charAt(0)===open.mark){
+      if(buf.length) out.push({lead:open.lead,code:buf.join("\n").replace(/\s+$/,"")});
+      open=null; buf=[]; return;
+    }
+    if(open){ buf.push(raw.replace(/^[ \t]*(?:[-*+\u2022][ \t]+)?/,"")); return; }
+    out.push({raw:raw});
+  });
+  /* a block nobody closed still ends somewhere */
+  if(open && buf.length) out.push({lead:open.lead,code:buf.join("\n").replace(/\s+$/,"")});
+  return out;
+}
 function parseOutline(text){
   var rows=[];
-  text.replace(/\r/g,"").split("\n").forEach(function(raw){
+  liftFences(text).forEach(function(line){
+    if(line.code!==undefined){
+      var cl=line.lead||"", ci=0;
+      for(var k=0;k<cl.length;k++) ci+=(cl[k]==="\t")?4:1;
+      rows.push({indent:ci*10+1,text:line.code,glyph:null,heading:false,marker:null,mark:null,num:false,bold:false,colonEnd:false,body:null,code:true});
+      return;
+    }
+    var raw=line.raw;
     if(!raw.trim()) return;
     var lead=raw.match(LEAD)[0], indent=0;
     for(var i=0;i<lead.length;i++) indent+=(lead[i]==="\t")?4:1;
@@ -5218,7 +5265,7 @@ function parseOutline(text){
    one inside the other, and a paragraph under a heading still lands under
    it. */
 function proseRows(rows){
-  var listy=function(r){ return !!(r.heading||r.glyph||r.marker); };
+  var listy=function(r){ return !!(r.heading||r.glyph||r.marker||r.code); };
   if(!rows.some(listy)) return rows;
   rows.forEach(function(r,i){ if(i===0||listy(r)) return; r.prose=true; r.indent+=1; });
   return rows;
