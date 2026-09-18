@@ -1886,15 +1886,21 @@ function presArrange(on){
    story, the part of it told so far and a network all copy through here. */
 function outlineOf(root,kidsOf){
   var lines=[], html=[];
-  (function walk(id,d){
+  var top=listOpen(rowParent([root]),[root]);
+  (function walk(id,d,noNum){
     var t=lineOf(id);
     lines.push(d===0?t:"  ".repeat(d-1)+"- "+t);
-    html.push("<li>"+esc(t));
+    html.push("<li>"+esc(noNum?lineOf(id,NONUM):t));
     var ks=kidsOf(id);
-    if(ks.length){ html.push("<ul>"); ks.forEach(function(k){ walk(k,d+1); }); html.push("</ul>"); }
+    if(ks.length){
+      var ol=listOpen(id,ks);
+      html.push(ol||"<ul>");
+      ks.forEach(function(k){ walk(k,d+1,!!ol); });
+      html.push(ol?"</ol>":"</ul>");
+    }
     html.push("</li>");
-  })(root,0);
-  return { txt:lines.join("\n"), html:"<ul>"+html.join("")+"</ul>" };
+  })(root,0,!!top);
+  return { txt:lines.join("\n"), html:(top||"<ul>")+html.join("")+(top?"</ol>":"</ul>") };
 }
 /* "sofar" is what the audience has seen; "all" is the whole story. Arranging,
    the finale and Shift+O all show the whole story, so there it is always all. */
@@ -4653,7 +4659,49 @@ function selectAllVisible(){
    ============================================================ */
 /* one line of an outline: the number, then the flag, then the text, so a
    copied outline reads "1. ! Terms review" and comes back the same */
-function lineOf(id){ var n=N(id), l=numLabel(id); return (l?l+" ":"")+(n.mark==="flag"?"! ":"")+(n.text||"").replace(/\n/g," "); }
+function lineOf(id,opt){ var n=N(id), l=(opt&&opt.noNum)?null:numLabel(id); return (l?l+" ":"")+(n.mark==="flag"?"! ":"")+(n.text||"").replace(/\n/g," "); }
+/* The figure belongs to the text only where the receiving side has no list of
+   its own to count with. An html writer that has just opened a real <ol> says
+   NONUM here, so the document draws the figures and ours are not printed next
+   to them. */
+var NONUM={noNum:true};
+/* The list a row of items copies out as: a real <ol> when the row is a
+   numbered one, otherwise null and the caller writes <ul>.
+
+   The glyph comes from the same NUM_SEQ table numLabel reads, stepped by the
+   same count of numbered levels above, so a new scheme cannot drift between
+   what the map draws and what a copy carries.
+
+   Two things make a row keep <ul> and its figures in the text. The legal
+   scheme is one: a document's own list cannot count 1.2.3, so there is nothing
+   to hand it. Do not "fix" that. The other is a set of items that is not a run
+   of the real row, which is what a network copy and a story that skips a child
+   produce: a document's list counts every item it holds, so it would print a
+   different sequence from the one on the map. A run that starts part way down
+   is fine, and carries "start" so a copy of items 4 to 6 does not paste as 1
+   to 3.
+
+   Runs once per row, on copy. Nothing here is on a render path. */
+function listOpen(parentId,ids){
+  var p=(parentId!=null)?N(parentId):null;
+  if(!p||!p.num||!ids||!ids.length) return null;
+  if(CFG.numScheme==="legal") return null;
+  var row=numSibs(parentId), s=row.indexOf(ids[0]);
+  if(s<0) return null;
+  for(var i=1;i<ids.length;i++) if(row[s+i]!==ids[i]) return null;
+  var k=0, q=p;
+  while(q.parent){ if(N(q.parent).num) k++; q=N(q.parent); }
+  var seq=NUM_SEQ[CFG.numScheme]||NUM_SEQ.docs;
+  return "<ol type=\""+seq[k%seq.length]+"\""+(s>0?" start=\""+(s+1)+"\"":"")+">";
+}
+/* The row a set of top-level items came out of, when they all came out of one.
+   A copy that starts part way down a numbered row needs it to know where. */
+function rowParent(ids){
+  if(!ids||!ids.length) return null;
+  var n=N(ids[0]); if(!n||n.parent==null) return null;
+  for(var i=1;i<ids.length;i++){ var m=N(ids[i]); if(!m||m.parent!==n.parent) return null; }
+  return n.parent;
+}
 function toOutline(rootIds){
   var lines=[];
   (rootIds||[VR()]).forEach(function(rid,i){
@@ -4749,21 +4797,26 @@ function rowFlavour(items){
 /* The html flavour knows an <ol> from a <ul>; the text flavour only knows what
    glyph a page chose to print. So when both parse, the html decides whether a
    row is numbered even where the text won on structure. */
+/* The levels a parse found, in the order they first appear. It counts the
+   lead exactly as parseOutline wrote it, bullet mark and all: a line with no
+   bullet and a line with one at the same lead are two levels of the tree, not
+   one, and rounding them together used to hand a row's numbering to the line
+   above it and lose it. */
 function levelsOf(items){
   var order=[], seen={};
-  (items||[]).forEach(function(x){ var L=Math.floor(x.indent/10); if(!seen[L]){ seen[L]=1; order.push(L); } });
+  (items||[]).forEach(function(x){ var L=x.indent; if(!seen[L]){ seen[L]=1; order.push(L); } });
   return order;
 }
 function applyNumFrom(src,dst){
   var sl=levelsOf(src), dl=levelsOf(dst), by={};
   sl.forEach(function(L,i){
     var num=false;
-    src.forEach(function(x){ if(Math.floor(x.indent/10)===L && x.num) num=true; });
+    src.forEach(function(x){ if(x.indent===L && x.num) num=true; });
     by[i]=num;
   });
   dl.forEach(function(L,i){
     if(by[i]===undefined) return;
-    dst.forEach(function(x){ if(Math.floor(x.indent/10)===L) x.num=by[i]; });
+    dst.forEach(function(x){ if(x.indent===L) x.num=by[i]; });
   });
   return dst;
 }
@@ -4939,19 +4992,21 @@ function copyText(txt,label,html){
    <ul>/<li> nesting. */
 function toOutlineHtml(rootIds){
   var out=[];
-  function walk(id){
+  function walk(id,noNum){
     var n=N(id);
-    out.push("<li>"+esc(lineOf(id)));
+    out.push("<li>"+esc(lineOf(id,noNum?NONUM:null)));
     if(n.children.length){
-      out.push("<ul>");
-      n.children.forEach(walk);
-      out.push("</ul>");
+      var ol=listOpen(id,n.children);
+      out.push(ol||"<ul>");
+      n.children.forEach(function(c){ walk(c,!!ol); });
+      out.push(ol?"</ol>":"</ul>");
     }
     out.push("</li>");
   }
-  out.push("<ul>");
-  (rootIds||[VR()]).forEach(walk);
-  out.push("</ul>");
+  var tops=(rootIds||[VR()]).slice(), top=listOpen(rowParent(tops),tops);
+  out.push(top||"<ul>");
+  tops.forEach(function(r){ walk(r,!!top); });
+  out.push(top?"</ol>":"</ul>");
   return out.join("");
 }
 function currentOutlineHtml(){
@@ -4988,11 +5043,12 @@ function selectionCopy(){
   });
   var kidsOf={}, tops=[];
   order.forEach(function(id){ var p=N(id).parent; while(p && !has[p]) p=N(p).parent; if(p) (kidsOf[p]=kidsOf[p]||[]).push(id); else tops.push(id); });
-  (function walk(list){
-    html+="<ul>";
-    list.forEach(function(id){ html+="<li>"+esc(lineOf(id)); if(kidsOf[id]) walk(kidsOf[id]); html+="</li>"; });
-    html+="</ul>";
-  })(tops);
+  (function walk(list,pid){
+    var ol=listOpen(pid,list);
+    html+=ol||"<ul>";
+    list.forEach(function(id){ html+="<li>"+esc(lineOf(id,ol?NONUM:null)); if(kidsOf[id]) walk(kidsOf[id],id); html+="</li>"; });
+    html+=ol?"</ol>":"</ul>";
+  })(tops,rowParent(tops));
   void open;
   var links=[];
   (state.links||[]).forEach(function(l){ if(has[l.a]&&has[l.b]) links.push(l.branch?[idx[l.a],idx[l.b],1]:[idx[l.a],idx[l.b]]); });
@@ -7422,6 +7478,7 @@ window.__mf={
   focusIn:enterFocus, focusOut:exitFocus,
   dir:dirOf, spread:function(v){ if(v===undefined) return CFG.spread; CFG.spread=v; drawPanel(); render(true); save(); },
   outline:currentOutline, outlineHtml:currentOutlineHtml,
+  storyOutlineOf:storyOutlineOf, netOutlineOf:netOutlineOf,
   paste:function(t){ return insertOutline(parseOutline(t)); },
   pasteRich:function(html,text){ return insertOutline(bestOutline(html,text||"")); },
   svg:function(){ var t=exportTargets(); return buildSvg(t.ids,t.frame); },

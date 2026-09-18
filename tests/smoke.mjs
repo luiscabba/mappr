@@ -3926,6 +3926,111 @@ group("1.3.1: a half-hidden row keeps its order");
   ok("no runtime errors", errors.length === 0, errors);
 }
 
+group("1.3.2: a numbered list copies out as a numbered list");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(220); };
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  const sel = async (t) => M((x) => __mf.select(x), await id(t));
+  const copy = () => M(() => { const dt = new DataTransfer(); document.dispatchEvent(new ClipboardEvent("copy", { clipboardData: dt, bubbles: true, cancelable: true })); return { txt: dt.getData("text/plain"), html: dt.getData("text/html") }; });
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  await M(() => { __mf.spread("right"); __mf.paste("Recipe\n- Ingredients\n  - Tomato\n  - Basil\n- Menu\n  - Drinks\n- Notes"); __mf.mark([]); });
+  await page.waitForTimeout(280);
+  // number the top row and the row under it
+  await sel("Ingredients");
+  await press("Meta+Shift+ArrowRight");
+  await press("Alt+Digit7");
+  await M(() => __mf.mark([]));
+  await page.waitForTimeout(200);
+  const lab = async (t) => M((x) => __mf.numLabel(x), await id(t));
+  ok("the branch is numbered 1. a.", (await lab("Ingredients")) === "1." && (await lab("Tomato")) === "a.", [await lab("Ingredients"), await lab("Tomato")]);
+
+  // 1. a numbered branch copies out as a real ordered list
+  await sel("Recipe");
+  const whole = await copy();
+  ok("the html flavour opens the numbered row as <ol type=\"1\">", /<ol type="1">/.test(whole.html), whole.html);
+  ok("and the level under it as <ol type=\"a\">", /<ol type="a">/.test(whole.html), whole.html);
+  ok("no item carries a figure as text", !/<li>\s*(\d+|[a-z]|[ivx]+)\./.test(whole.html), whole.html);
+  ok("the unnumbered top level is still a <ul>", /^<ul><li>Recipe/.test(whole.html), whole.html.slice(0, 60));
+  ok("the plain text flavour still writes the figures", /- 1\. Ingredients\n  - a\. Tomato/.test(whole.txt), whole.txt);
+
+  // 2. the other schemes
+  await M(() => __mf.set("numScheme", "formal"));
+  const formal = await copy();
+  ok("formal gives <ol type=\"I\"> then <ol type=\"A\">", /<ol type="I">/.test(formal.html) && /<ol type="A">/.test(formal.html), formal.html);
+  await M(() => __mf.set("numScheme", "legal"));
+  const legal = await copy();
+  ok("legal keeps <ul>, since a document's list cannot count 1.2.3", !/<ol/.test(legal.html), legal.html);
+  ok("and keeps its figures in the text", /<li>1\.1 Tomato/.test(legal.html) || /<li>1 Ingredients/.test(legal.html), legal.html);
+  await M(() => __mf.set("numScheme", "docs"));
+
+  // a branch that is itself in a numbered row keeps its place in that row
+  await sel("Menu");
+  const one = await copy();
+  ok("a branch copied out of a numbered row keeps its own place", /^<ol type="1" start="2"><li>Menu/.test(one.html), one.html);
+
+  // 3. an unnumbered branch is untouched
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  await M(() => { __mf.spread("right"); __mf.paste("Menu\n- Drinks\n  - Water"); __mf.mark([]); });
+  await page.waitForTimeout(280);
+  await sel("Menu");
+  const plain = await copy();
+  ok("an unnumbered branch copies as <ul> in html", !/<ol/.test(plain.html) && /<li>Menu<ul><li>Drinks/.test(plain.html), plain.html);
+  ok("and unchanged in text", plain.txt === "Menu\n- Drinks\n  - Water", plain.txt);
+
+  // 4. a partial copy keeps its place
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  await M(() => { __mf.spread("right"); __mf.paste("Row\n- One\n- Two\n- Three\n- Four\n- Five\n- Six"); __mf.mark([]); });
+  await page.waitForTimeout(280);
+  await sel("One");
+  await press("Alt+Digit7");
+  await M(() => __mf.mark([]));
+  const four = await id("Four"), five = await id("Five"), six = await id("Six");
+  await M(([a, b, c]) => { __mf.select(a); __mf.mark([a, b, c]); }, [four, five, six]);
+  await page.waitForTimeout(220);
+  const part = await copy();
+  ok("a copy of items 4 to 6 carries start=\"4\"", /<ol type="1" start="4">/.test(part.html), part.html);
+  ok("and the items themselves are figure-free", /<li>Four<\/li><li>Five<\/li><li>Six<\/li>/.test(part.html), part.html);
+  await M(() => __mf.mark([]));
+
+  // 5. the round trip
+  await sel("Row");
+  const trip = await copy();
+  const back = await M(([h, t]) => __mf.bestOutline(h, t), [trip.html, trip.txt]);
+  ok("it parses back as a numbered row", back.filter((x) => x.indent > 0).every((x) => x.num === true), back);
+  ok("with no figure in any text", back.every((x) => !/^\s*(\d+|[a-z]|[ivx]+)[.)]\s/.test(x.text)), back.map((x) => x.text));
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  await M(([h, t]) => { __mf.pasteRich(h, t); __mf.mark([]); }, [trip.html, trip.txt]);
+  await page.waitForTimeout(300);
+  const pasted = await M(() => Object.values(__mf.state.nodes).map((n) => n.text));
+  ok("the tree lands whole", ["One", "Two", "Three", "Four", "Five", "Six"].every((t) => pasted.includes(t)), pasted);
+  ok("numbered the way it was copied", (await lab("One")) === "1." && (await lab("Six")) === "6.", [await lab("One"), await lab("Six")]);
+  ok("and no figure ended up in a node's text", pasted.every((t) => !/^\s*(\d+|[a-z]|[ivx]+)[.)]\s/.test(t)), pasted);
+
+  // 6. the story copy and the network copy go through the same writer
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  await M(() => { __mf.spread("right"); __mf.paste("Talk\n- Alpha\n- Beta\n- Gamma"); __mf.mark([]); });
+  await page.waitForTimeout(280);
+  await sel("Alpha");
+  await press("Alt+Digit7");
+  await M(() => __mf.mark([]));
+  const story = await M(() => __mf.storyOutlineOf("all"));
+  ok("the story copy opens the numbered row as an <ol>", /<ol type="1">/.test(story.html), story.html);
+  ok("with figure-free items", /<li>Alpha<\/li><li>Beta<\/li><li>Gamma<\/li>/.test(story.html), story.html);
+  ok("and its text flavour keeps the figures", /- 1\. Alpha/.test(story.txt), story.txt);
+  const [ga, gb] = [await id("Alpha"), await id("Gamma")];
+  await M(([a, b]) => { __mf.tie(a, b); __mf.setLens("one", a); }, [ga, gb]);
+  await page.waitForTimeout(260);
+  const net = await M(() => __mf.netOutlineOf());
+  ok("a network is not a row, so what hangs under the centre keeps <ul> and its figures", /<li>Alpha<ul><li>3\. Gamma<\/li><\/ul>/.test(net.html), net.html);
+  await press("Escape");
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 

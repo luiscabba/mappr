@@ -3,6 +3,25 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.3.2] - 2026-09-18
+
+### Fixed
+- **A numbered list copies out as a numbered list.** Copying a numbered branch
+  and pasting it into a document used to give you two markers on every line,
+  the document's own bullet and the figure Mappr had written into the text.
+  Mappr now hands over a real numbered list and lets the document draw the
+  figures, so what lands looks like what you copied, nested and numbered the
+  way it was on the map. Copying part way down a row keeps its place rather
+  than restarting at one. The 1.2.3 scheme is the one exception, since a
+  document's own lists cannot count that way, so it still travels with its
+  figures written in. The story copy and the network copy come through the same
+  writer, so a network, where what hangs under the centre is not a row of the
+  map, keeps its bullets and its figures as before.
+- **Pasting a numbered list back into Mappr keeps it numbered.** A copy whose
+  first line sits above the list used to have its numbering read off the wrong
+  line and lost, so a row copied out numbered came back plain. It comes back
+  numbered now.
+
 ## [1.3.1] - 2026-09-18
 
 ### Changed

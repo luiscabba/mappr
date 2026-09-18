@@ -636,7 +636,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v1.3.1">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
+  <span class="brand" id="brand" title="Mappr v1.3.2">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -721,7 +721,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.3.1</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.3.2</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <div id="helpBody">
@@ -841,9 +841,9 @@
      panel cannot drift from the record of what actually shipped. -->
 <div id="notes">
   <div id="notesCard">
-    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.3.1</span></h2>
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.3.2</span></h2>
     <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
-    <div id="notesBody"><h3 class="rel">1.3.1 <span>2026-09-18</span></h3><h4>Changed</h4><ul><li><b>Numbering leaves a half-hidden row alone.</b> Numbering a row reads the order off the picture, so every node in the row has to be in the picture. If one of them is folded away or hidden, the numbers still go on but the order is left exactly as it was, and the status line says so. Unhide it and press again for the ordered result. Before this, the hidden ones held whatever slot they happened to have, which mixed the old creation order back into the result and gave you a different answer depending on what was hidden at the time.</li></ul><h3 class="rel">1.3.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Cut picks the branch up instead of taking it away.</b> <code>⌘X</code> now copies to the clipboard and lifts the selection off the map: it goes faint where it was, the arrows walk a ring round the map to choose where it lands, and <code>⌘V</code> or <code>⏎</code> puts it down, <code>⇧⏎</code> right after the ringed node. Nothing leaves the map until you put it down, and <code>Esc</code> puts it back exactly where it was. The clipboard still holds what you picked up, so a second <code>⌘V</code> pastes a copy of it. In a network or during a talk the clipboard is written and the map is left alone. <code>⌥X</code> is now Done, which is the mark you reach for most; <code>⌥D</code> still does the same, and <code>⌘⇧D</code> is gone, since Firefox kept it anyway.</li><li><b>Read another mode&#x27;s keys without leaving the one you are in.</b> <code>⌥⇧K</code> walks the key bar through the modes: Map, Focus, Connections, Flags, Network, Story, Selection, Carrying, one press each. The bar says which mode it is showing and never takes the keyboard, so the next key you press does what it always does and brings your own keys back. Five seconds does the same.</li><li><b>Tap a selection key twice to take the whole row.</b> Two presses of the same <code>⇧</code>+arrow inside four tenths of a second select every node in the row, the way <code>⇧</code>+click does. One press is still one more node, and <code>⌘⇧</code>+arrow still takes whole branches.</li><li><b>navi, and a row that stops growing.</b> Where you are is now called navi. A long row used to be listed in full, so a row forty wide ran off the bottom of the window. It now shows the node you are on with three either side and a folded row at each end saying how many more are above and below, the same shape the way up already used. The Style panel has three alternatives: the whole row in a small box that scrolls, just the one you are on with the count, or the row as chips. The chips are capped at ten and a plus whichever you pick. Inside a focus, navi shows how deep you are rather than a spine you cannot leave: six pips by default, or the depth in words, or the focus root and where you are in it.</li></ul><h4>Changed</h4><ul><li><b>Numbering a row also settles its order.</b> Numbering used to count the branches in the order they were made, which on a row that spans both sides of the centre had nothing to do with what you were looking at. It now reads the row off the picture: down the page on a side row, clockwise from the top for the branches round the centre. Numbering the centre&#x27;s row also fixes the branches where they are, so they stop rearranging themselves as you add to them. One <code>⌘Z</code> puts both the order and the numbers back.</li><li><b>A pasted list keeps the kind of list it was.</b> A numbered list pastes in numbered and a bulleted list pastes in plain, with no marker left in the text. A list that mixes its markers comes in as one kind of row, whichever most of its lines used. A list copied out of a page keeps its numbering even where the page printed no figures.</li><li><b>A new map you never wrote in no longer joins the library.</b> Make a map, look at it, leave it untouched and it goes with you rather than sitting in the list. A map you typed even one letter into stays, so does a map you made earlier and came back to, and so does a map something links to.</li></ul><h3 class="rel">1.2.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Where you are.</b> A rail top left that follows the selection and shows only the way up and the row you are on: the ancestors as a muted spine, the siblings under the parent with yours lit, children as a count and never listed, flags with their <code>!</code> and numbers with their figures. A deep trail folds its middle. When the centre has gone off screen a small arrow points to where it is. Click a row to go there. It joins the maps rail in one panel, so the two read as one place; the Style panel can give it its own bar instead, swap the rail for a pill with the siblings as chips or for a drawn sketch of the same, stop it fading when you leave it alone, and set when it shows: always, only when the centre is out of view, or never. <code>⌥⇧W</code> cycles those three.</li></ul><h3 class="rel">1.1.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Numbers, like a list in Docs.</b> <code>⌘⇧7</code> (or <code>⌥7</code>) numbers the row the selected node is on, its siblings in order. With a selection up it numbers every row that has a selected node in it, so <code>⌘⇧→</code> then <code>⌘⇧7</code> turns a whole branch into an outline, and <code>⌘A</code> then <code>⌘⇧7</code> the whole map. On the centre alone it numbers the branches. Pressed on rows already numbered, it takes the numbers off. A number belongs to the row, not the node: nothing is typed into the text, and a move, a sort, a delete or a paste renumbers on its own. Rows nest 1. then a. then i., as Docs does; the Style panel has 1.1.1 and I. A. 1. instead, and draws the number in the gutter (a bare figure outside the box, so a long node never wraps earlier), in the box, or as a pill on the edge that faces the parent. Numbers export with the map. A copied outline writes the number before each line, and a pasted <code>1.</code> or <code>a.</code> line, or a numbered list from Docs, comes in numbered. The right-click menu has the row.</li></ul><h3 class="rel">1.0.2 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Keys on an iPad.</b> iPadOS hands hardware-keyboard events and paste to a page only while something editable has the cursor; with nothing focused, Safari keeps the keys for itself. That is why every shortcut and <code>⌘V</code> only worked after tapping into a node. Mappr now keeps an invisible editable focused whenever no node, frame title or box has the keyboard, so the keys always have somewhere to land: arrows, <code>⌘</code>/<code>⌃</code> chords, <code>⏎</code>, typing and paste work straight away, and the on-screen keyboard stays out of the way. On for iPads and iPhones, and for anyone who adds <code>#sink</code> to the address.</li></ul><h3 class="rel">1.0.1 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Keys the browser keeps.</b> Firefox and Zen hold <code>⌘⇧D</code>, <code>⌘⇧F</code>, <code>⌘⇧G</code> and <code>⌘⇧C</code> for themselves, so done, flag, ungroup and copy as an image never reached Mappr there. Each now has an Option twin by physical key: <code>⌥D</code>, <code>⌥F</code>, <code>⌥G</code>, <code>⌥C</code>. The menu shows the twin on those browsers. <code>⌃</code> has always stood in for <code>⌘</code>, which is the key to use on an iPad, where Safari keeps <code>⌘</code> with the arrows and the number row.</li><li><b>The Flags view is always on the mode bar</b>, muted until the map has a flag, with a hint saying how to make one. It used to be hidden, which read as missing.</li><li><b>Long press opens the menu.</b> On a node or the canvas, a touch held for half a second opens the same menu as a right-click, so every action is reachable on a tablet with no chord at all.</li></ul></div>
+    <div id="notesBody"><h3 class="rel">1.3.2 <span>2026-09-18</span></h3><h4>Fixed</h4><ul><li><b>A numbered list copies out as a numbered list.</b> Copying a numbered branch and pasting it into a document used to give you two markers on every line, the document&#x27;s own bullet and the figure Mappr had written into the text. Mappr now hands over a real numbered list and lets the document draw the figures, so what lands looks like what you copied, nested and numbered the way it was on the map. Copying part way down a row keeps its place rather than restarting at one. The 1.2.3 scheme is the one exception, since a document&#x27;s own lists cannot count that way, so it still travels with its figures written in. The story copy and the network copy come through the same writer, so a network, where what hangs under the centre is not a row of the map, keeps its bullets and its figures as before.</li><li><b>Pasting a numbered list back into Mappr keeps it numbered.</b> A copy whose first line sits above the list used to have its numbering read off the wrong line and lost, so a row copied out numbered came back plain. It comes back numbered now.</li></ul><h3 class="rel">1.3.1 <span>2026-09-18</span></h3><h4>Changed</h4><ul><li><b>Numbering leaves a half-hidden row alone.</b> Numbering a row reads the order off the picture, so every node in the row has to be in the picture. If one of them is folded away or hidden, the numbers still go on but the order is left exactly as it was, and the status line says so. Unhide it and press again for the ordered result. Before this, the hidden ones held whatever slot they happened to have, which mixed the old creation order back into the result and gave you a different answer depending on what was hidden at the time.</li></ul><h3 class="rel">1.3.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Cut picks the branch up instead of taking it away.</b> <code>⌘X</code> now copies to the clipboard and lifts the selection off the map: it goes faint where it was, the arrows walk a ring round the map to choose where it lands, and <code>⌘V</code> or <code>⏎</code> puts it down, <code>⇧⏎</code> right after the ringed node. Nothing leaves the map until you put it down, and <code>Esc</code> puts it back exactly where it was. The clipboard still holds what you picked up, so a second <code>⌘V</code> pastes a copy of it. In a network or during a talk the clipboard is written and the map is left alone. <code>⌥X</code> is now Done, which is the mark you reach for most; <code>⌥D</code> still does the same, and <code>⌘⇧D</code> is gone, since Firefox kept it anyway.</li><li><b>Read another mode&#x27;s keys without leaving the one you are in.</b> <code>⌥⇧K</code> walks the key bar through the modes: Map, Focus, Connections, Flags, Network, Story, Selection, Carrying, one press each. The bar says which mode it is showing and never takes the keyboard, so the next key you press does what it always does and brings your own keys back. Five seconds does the same.</li><li><b>Tap a selection key twice to take the whole row.</b> Two presses of the same <code>⇧</code>+arrow inside four tenths of a second select every node in the row, the way <code>⇧</code>+click does. One press is still one more node, and <code>⌘⇧</code>+arrow still takes whole branches.</li><li><b>navi, and a row that stops growing.</b> Where you are is now called navi. A long row used to be listed in full, so a row forty wide ran off the bottom of the window. It now shows the node you are on with three either side and a folded row at each end saying how many more are above and below, the same shape the way up already used. The Style panel has three alternatives: the whole row in a small box that scrolls, just the one you are on with the count, or the row as chips. The chips are capped at ten and a plus whichever you pick. Inside a focus, navi shows how deep you are rather than a spine you cannot leave: six pips by default, or the depth in words, or the focus root and where you are in it.</li></ul><h4>Changed</h4><ul><li><b>Numbering a row also settles its order.</b> Numbering used to count the branches in the order they were made, which on a row that spans both sides of the centre had nothing to do with what you were looking at. It now reads the row off the picture: down the page on a side row, clockwise from the top for the branches round the centre. Numbering the centre&#x27;s row also fixes the branches where they are, so they stop rearranging themselves as you add to them. One <code>⌘Z</code> puts both the order and the numbers back.</li><li><b>A pasted list keeps the kind of list it was.</b> A numbered list pastes in numbered and a bulleted list pastes in plain, with no marker left in the text. A list that mixes its markers comes in as one kind of row, whichever most of its lines used. A list copied out of a page keeps its numbering even where the page printed no figures.</li><li><b>A new map you never wrote in no longer joins the library.</b> Make a map, look at it, leave it untouched and it goes with you rather than sitting in the list. A map you typed even one letter into stays, so does a map you made earlier and came back to, and so does a map something links to.</li></ul><h3 class="rel">1.2.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Where you are.</b> A rail top left that follows the selection and shows only the way up and the row you are on: the ancestors as a muted spine, the siblings under the parent with yours lit, children as a count and never listed, flags with their <code>!</code> and numbers with their figures. A deep trail folds its middle. When the centre has gone off screen a small arrow points to where it is. Click a row to go there. It joins the maps rail in one panel, so the two read as one place; the Style panel can give it its own bar instead, swap the rail for a pill with the siblings as chips or for a drawn sketch of the same, stop it fading when you leave it alone, and set when it shows: always, only when the centre is out of view, or never. <code>⌥⇧W</code> cycles those three.</li></ul><h3 class="rel">1.1.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Numbers, like a list in Docs.</b> <code>⌘⇧7</code> (or <code>⌥7</code>) numbers the row the selected node is on, its siblings in order. With a selection up it numbers every row that has a selected node in it, so <code>⌘⇧→</code> then <code>⌘⇧7</code> turns a whole branch into an outline, and <code>⌘A</code> then <code>⌘⇧7</code> the whole map. On the centre alone it numbers the branches. Pressed on rows already numbered, it takes the numbers off. A number belongs to the row, not the node: nothing is typed into the text, and a move, a sort, a delete or a paste renumbers on its own. Rows nest 1. then a. then i., as Docs does; the Style panel has 1.1.1 and I. A. 1. instead, and draws the number in the gutter (a bare figure outside the box, so a long node never wraps earlier), in the box, or as a pill on the edge that faces the parent. Numbers export with the map. A copied outline writes the number before each line, and a pasted <code>1.</code> or <code>a.</code> line, or a numbered list from Docs, comes in numbered. The right-click menu has the row.</li></ul><h3 class="rel">1.0.2 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Keys on an iPad.</b> iPadOS hands hardware-keyboard events and paste to a page only while something editable has the cursor; with nothing focused, Safari keeps the keys for itself. That is why every shortcut and <code>⌘V</code> only worked after tapping into a node. Mappr now keeps an invisible editable focused whenever no node, frame title or box has the keyboard, so the keys always have somewhere to land: arrows, <code>⌘</code>/<code>⌃</code> chords, <code>⏎</code>, typing and paste work straight away, and the on-screen keyboard stays out of the way. On for iPads and iPhones, and for anyone who adds <code>#sink</code> to the address.</li></ul></div>
     <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
 </div>
@@ -857,7 +857,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="1.3.1";
+var VERSION="1.3.2";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid", flagStyle:"pennant",
   numStyle:"gutter", numScheme:"docs",
@@ -1886,15 +1886,21 @@ function presArrange(on){
    story, the part of it told so far and a network all copy through here. */
 function outlineOf(root,kidsOf){
   var lines=[], html=[];
-  (function walk(id,d){
+  var top=listOpen(rowParent([root]),[root]);
+  (function walk(id,d,noNum){
     var t=lineOf(id);
     lines.push(d===0?t:"  ".repeat(d-1)+"- "+t);
-    html.push("<li>"+esc(t));
+    html.push("<li>"+esc(noNum?lineOf(id,NONUM):t));
     var ks=kidsOf(id);
-    if(ks.length){ html.push("<ul>"); ks.forEach(function(k){ walk(k,d+1); }); html.push("</ul>"); }
+    if(ks.length){
+      var ol=listOpen(id,ks);
+      html.push(ol||"<ul>");
+      ks.forEach(function(k){ walk(k,d+1,!!ol); });
+      html.push(ol?"</ol>":"</ul>");
+    }
     html.push("</li>");
-  })(root,0);
-  return { txt:lines.join("\n"), html:"<ul>"+html.join("")+"</ul>" };
+  })(root,0,!!top);
+  return { txt:lines.join("\n"), html:(top||"<ul>")+html.join("")+(top?"</ol>":"</ul>") };
 }
 /* "sofar" is what the audience has seen; "all" is the whole story. Arranging,
    the finale and Shift+O all show the whole story, so there it is always all. */
@@ -4653,7 +4659,49 @@ function selectAllVisible(){
    ============================================================ */
 /* one line of an outline: the number, then the flag, then the text, so a
    copied outline reads "1. ! Terms review" and comes back the same */
-function lineOf(id){ var n=N(id), l=numLabel(id); return (l?l+" ":"")+(n.mark==="flag"?"! ":"")+(n.text||"").replace(/\n/g," "); }
+function lineOf(id,opt){ var n=N(id), l=(opt&&opt.noNum)?null:numLabel(id); return (l?l+" ":"")+(n.mark==="flag"?"! ":"")+(n.text||"").replace(/\n/g," "); }
+/* The figure belongs to the text only where the receiving side has no list of
+   its own to count with. An html writer that has just opened a real <ol> says
+   NONUM here, so the document draws the figures and ours are not printed next
+   to them. */
+var NONUM={noNum:true};
+/* The list a row of items copies out as: a real <ol> when the row is a
+   numbered one, otherwise null and the caller writes <ul>.
+
+   The glyph comes from the same NUM_SEQ table numLabel reads, stepped by the
+   same count of numbered levels above, so a new scheme cannot drift between
+   what the map draws and what a copy carries.
+
+   Two things make a row keep <ul> and its figures in the text. The legal
+   scheme is one: a document's own list cannot count 1.2.3, so there is nothing
+   to hand it. Do not "fix" that. The other is a set of items that is not a run
+   of the real row, which is what a network copy and a story that skips a child
+   produce: a document's list counts every item it holds, so it would print a
+   different sequence from the one on the map. A run that starts part way down
+   is fine, and carries "start" so a copy of items 4 to 6 does not paste as 1
+   to 3.
+
+   Runs once per row, on copy. Nothing here is on a render path. */
+function listOpen(parentId,ids){
+  var p=(parentId!=null)?N(parentId):null;
+  if(!p||!p.num||!ids||!ids.length) return null;
+  if(CFG.numScheme==="legal") return null;
+  var row=numSibs(parentId), s=row.indexOf(ids[0]);
+  if(s<0) return null;
+  for(var i=1;i<ids.length;i++) if(row[s+i]!==ids[i]) return null;
+  var k=0, q=p;
+  while(q.parent){ if(N(q.parent).num) k++; q=N(q.parent); }
+  var seq=NUM_SEQ[CFG.numScheme]||NUM_SEQ.docs;
+  return "<ol type=\""+seq[k%seq.length]+"\""+(s>0?" start=\""+(s+1)+"\"":"")+">";
+}
+/* The row a set of top-level items came out of, when they all came out of one.
+   A copy that starts part way down a numbered row needs it to know where. */
+function rowParent(ids){
+  if(!ids||!ids.length) return null;
+  var n=N(ids[0]); if(!n||n.parent==null) return null;
+  for(var i=1;i<ids.length;i++){ var m=N(ids[i]); if(!m||m.parent!==n.parent) return null; }
+  return n.parent;
+}
 function toOutline(rootIds){
   var lines=[];
   (rootIds||[VR()]).forEach(function(rid,i){
@@ -4749,21 +4797,26 @@ function rowFlavour(items){
 /* The html flavour knows an <ol> from a <ul>; the text flavour only knows what
    glyph a page chose to print. So when both parse, the html decides whether a
    row is numbered even where the text won on structure. */
+/* The levels a parse found, in the order they first appear. It counts the
+   lead exactly as parseOutline wrote it, bullet mark and all: a line with no
+   bullet and a line with one at the same lead are two levels of the tree, not
+   one, and rounding them together used to hand a row's numbering to the line
+   above it and lose it. */
 function levelsOf(items){
   var order=[], seen={};
-  (items||[]).forEach(function(x){ var L=Math.floor(x.indent/10); if(!seen[L]){ seen[L]=1; order.push(L); } });
+  (items||[]).forEach(function(x){ var L=x.indent; if(!seen[L]){ seen[L]=1; order.push(L); } });
   return order;
 }
 function applyNumFrom(src,dst){
   var sl=levelsOf(src), dl=levelsOf(dst), by={};
   sl.forEach(function(L,i){
     var num=false;
-    src.forEach(function(x){ if(Math.floor(x.indent/10)===L && x.num) num=true; });
+    src.forEach(function(x){ if(x.indent===L && x.num) num=true; });
     by[i]=num;
   });
   dl.forEach(function(L,i){
     if(by[i]===undefined) return;
-    dst.forEach(function(x){ if(Math.floor(x.indent/10)===L) x.num=by[i]; });
+    dst.forEach(function(x){ if(x.indent===L) x.num=by[i]; });
   });
   return dst;
 }
@@ -4939,19 +4992,21 @@ function copyText(txt,label,html){
    <ul>/<li> nesting. */
 function toOutlineHtml(rootIds){
   var out=[];
-  function walk(id){
+  function walk(id,noNum){
     var n=N(id);
-    out.push("<li>"+esc(lineOf(id)));
+    out.push("<li>"+esc(lineOf(id,noNum?NONUM:null)));
     if(n.children.length){
-      out.push("<ul>");
-      n.children.forEach(walk);
-      out.push("</ul>");
+      var ol=listOpen(id,n.children);
+      out.push(ol||"<ul>");
+      n.children.forEach(function(c){ walk(c,!!ol); });
+      out.push(ol?"</ol>":"</ul>");
     }
     out.push("</li>");
   }
-  out.push("<ul>");
-  (rootIds||[VR()]).forEach(walk);
-  out.push("</ul>");
+  var tops=(rootIds||[VR()]).slice(), top=listOpen(rowParent(tops),tops);
+  out.push(top||"<ul>");
+  tops.forEach(function(r){ walk(r,!!top); });
+  out.push(top?"</ol>":"</ul>");
   return out.join("");
 }
 function currentOutlineHtml(){
@@ -4988,11 +5043,12 @@ function selectionCopy(){
   });
   var kidsOf={}, tops=[];
   order.forEach(function(id){ var p=N(id).parent; while(p && !has[p]) p=N(p).parent; if(p) (kidsOf[p]=kidsOf[p]||[]).push(id); else tops.push(id); });
-  (function walk(list){
-    html+="<ul>";
-    list.forEach(function(id){ html+="<li>"+esc(lineOf(id)); if(kidsOf[id]) walk(kidsOf[id]); html+="</li>"; });
-    html+="</ul>";
-  })(tops);
+  (function walk(list,pid){
+    var ol=listOpen(pid,list);
+    html+=ol||"<ul>";
+    list.forEach(function(id){ html+="<li>"+esc(lineOf(id,ol?NONUM:null)); if(kidsOf[id]) walk(kidsOf[id],id); html+="</li>"; });
+    html+=ol?"</ol>":"</ul>";
+  })(tops,rowParent(tops));
   void open;
   var links=[];
   (state.links||[]).forEach(function(l){ if(has[l.a]&&has[l.b]) links.push(l.branch?[idx[l.a],idx[l.b],1]:[idx[l.a],idx[l.b]]); });
@@ -7422,6 +7478,7 @@ window.__mf={
   focusIn:enterFocus, focusOut:exitFocus,
   dir:dirOf, spread:function(v){ if(v===undefined) return CFG.spread; CFG.spread=v; drawPanel(); render(true); save(); },
   outline:currentOutline, outlineHtml:currentOutlineHtml,
+  storyOutlineOf:storyOutlineOf, netOutlineOf:netOutlineOf,
   paste:function(t){ return insertOutline(parseOutline(t)); },
   pasteRich:function(html,text){ return insertOutline(bestOutline(html,text||"")); },
   svg:function(){ var t=exportTargets(); return buildSvg(t.ids,t.frame); },
