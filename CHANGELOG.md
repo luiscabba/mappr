@@ -3,6 +3,41 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.4.0] - 2026-09-18
+
+### Added
+- **Prose.** `⌘⇧9` turns a node into a paragraph: wider, left aligned,
+  smaller type, a rule down the side instead of a box, and never numbered.
+  `⏎` on a paragraph writes the next one and `⌘⏎` starts an
+  ordinary node under it, so a branch can go from map to document and back
+  without leaving the map. Numbering skips paragraphs, so a row of paragraph,
+  bullet, bullet still counts a. b. Copy still gives you the outline, with your
+  paragraphs as paragraphs, and pasting one back brings them in as paragraphs,
+  so a branch with prose in it travels without losing what it was. The Style
+  panel draws them with a rule or a dotted box. `⌥9` is the twin, for the
+  browsers and the iPad that keep the chord. A branch with paragraphs in it is a
+  document; the rest of the map is still a map.
+- **Two new rows in the copy menu.** Copy as markdown hands over the branch as a
+  document, with real headings and sections worked out from what hangs under
+  each node, and Copy as JSON hands over the branch itself. Both are on the
+  right-click menu on the map and in the Copy menu while presenting or in a
+  network.
+
+### Fixed
+- **A numbered map stops re-measuring itself.** Every numbered node was being
+  measured again on every render, because the size Mappr remembered for it was
+  filed without its figure and looked up with one, so the two could never match.
+  In a numbered map of 1500 nodes that was 1500 measurements on every keystroke;
+  it is now none.
+
+### Changed
+- **A numbered row with a paragraph in it copies out as a plain list.** A
+  document's numbered list has no way to hold a paragraph between two numbered
+  items without either counting it or breaking the list in two, so a row that is
+  part document keeps its bullets and carries its figures in the text, the way
+  the 1.2.3 scheme already does. A numbered row with no paragraph in it is
+  unchanged, and still arrives as a real numbered list.
+
 ## [1.3.2] - 2026-09-18
 
 ### Fixed

@@ -199,6 +199,36 @@ for (const size of [600, 1500]) {
   row("an arrow, in a " + r.nodes + "-node map", r.move);
 }
 
+/* The same keystroke, on a map whose every row is numbered. Until 1.4.0 the
+   measure cache stored a key without the node's figure in it while looking one
+   up with the figure, so the two could never match and every numbered node
+   re-measured on every render. This row is what shows that. */
+{
+  const page = await build(1500);
+  const r = await page.evaluate(() => {
+    __mf.mark([]);
+    const s = __mf.state;
+    Object.keys(s.nodes).forEach((id) => { if (s.nodes[id].children.length) s.nodes[id].num = true; });
+    __mf.set("numStyle", "box");
+    const ids = Object.keys(s.nodes);
+    __mf.select(ids[Math.floor(ids.length / 2)]);
+    const move = [];
+    for (let i = 0; i < 20; i++) { const a = performance.now(); __mf.arrow(i % 2 ? "D" : "U"); move.push(performance.now() - a); }
+    move.sort((x, y) => x - y);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+    const type = [];
+    for (let i = 0; i < 20; i++) { const a = performance.now(); document.execCommand("insertText", false, "x"); type.push(performance.now() - a); }
+    type.sort((x, y) => x - y);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    const again = __mf.reMeasured;
+    return { nodes: ids.length, again: again, move: Math.round(move[10] * 100) / 100, type: Math.round(type[10] * 100) / 100 };
+  });
+  results.keysNumbered = { move: r.move, type: r.type, again: r.again };
+  row("a letter, in a numbered " + r.nodes + "-node map", r.type);
+  row("an arrow, in a numbered " + r.nodes + "-node map", r.move);
+  console.log("  " + "nodes re-measured per keystroke".padEnd(34) + String(r.again).padStart(6) + "   ");
+}
+
 /* ---------- 3b. navi on a wide row ----------
    The rail used to build one row per sibling on every selection change, so a
    forty-wide row cost forty rows built and written. Capped, it should cost

@@ -1818,7 +1818,7 @@ group("QoL: focus toggle, undoing a retype, copying views, tabbed keys");
   }));
   ok("Cmd+C in a network copies the network as an outline", clip && clip.t === "Alpha\n- B1\n  - A2", clip);
   ok("with nested html", clip && /<ul><li>Alpha<ul><li>B1<ul><li>A2/.test(clip.h), clip);
-  ok("the network bar has a copy menu", await M(() => __mf.copyMenu() && document.querySelectorAll("#storyMenu .mi").length === 2));
+  ok("the network bar has a copy menu, with the two Copy as rows", await M(() => __mf.copyMenu() && document.querySelectorAll("#storyMenu .mi").length === 4));
   await press("Escape");
   ok("any key closes the copy menu first", await M(() => !document.getElementById("storyMenu")) && (await M(() => __mf.lens)) === "one");
   await page.evaluate(() => document.getElementById("btnExport").click());
@@ -1844,7 +1844,7 @@ group("QoL: focus toggle, undoing a retype, copying views, tabbed keys");
   ok("the frame title is not clickable while presenting", await M(() => [...document.querySelectorAll(".ftitle")].every((e) => getComputedStyle(e).pointerEvents === "none")));
   ok("a frame shows around what has been told", await M(() => document.querySelectorAll(".ftitle").length === 1));
   await M(() => __mf.copyMenu());
-  ok("the presenting copy menu has four choices", await M(() => document.querySelectorAll("#storyMenu .mi").length === 4));
+  ok("the presenting copy menu has four choices plus the two Copy as rows", await M(() => document.querySelectorAll("#storyMenu .mi").length === 6));
   await press("Digit4");
   await page.waitForTimeout(100);
   const whole = await M(() => __mf.lastSvg || "");
@@ -4028,6 +4028,239 @@ group("1.3.2: a numbered list copies out as a numbered list");
   const net = await M(() => __mf.netOutlineOf());
   ok("a network is not a row, so what hangs under the centre keeps <ul> and its figures", /<li>Alpha<ul><li>3\. Gamma<\/li><\/ul>/.test(net.html), net.html);
   await press("Escape");
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
+group("1.4.0: prose");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(220); };
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  const sel = async (t) => M((x) => __mf.select(x), await id(t));
+  const copy = () => M(() => { const dt = new DataTransfer(); document.dispatchEvent(new ClipboardEvent("copy", { clipboardData: dt, bubbles: true, cancelable: true })); return { txt: dt.getData("text/plain"), html: dt.getData("text/html") }; });
+  const lab = async (t) => M((x) => __mf.numLabel(x), await id(t));
+  const fresh = async (outline) => {
+    await M(() => document.getElementById("btnNewMap").click());
+    await page.waitForTimeout(240);
+    await M((o) => { __mf.spread("right"); __mf.paste(o); __mf.mark([]); }, outline);
+    await page.waitForTimeout(280);
+  };
+  const boxOf = async (t) => M((x) => { const b = __mf.boxes()[x]; return b && { w: b.w, h: b.h }; }, await id(t));
+
+  // ---- 1. the key ----
+  const LONG = "A paragraph long enough that it has to wrap, so the width it takes is the width it is allowed";
+  await fresh("Doc\n- " + LONG + "\n- Body\n- End");
+  await sel(LONG);
+  const wasBox = await boxOf(LONG);
+  await press("Meta+Shift+9");
+  ok("⌘⇧9 makes it prose", await M(() => __mf.prose()));
+  const nowBox = await boxOf(LONG);
+  ok("a paragraph measures wider", nowBox.w > wasBox.w, [wasBox, nowBox]);
+  ok("and it is left aligned", await M((x) => getComputedStyle(document.querySelector('[data-id="' + x + '"]')).textAlign === "left", await id(LONG)));
+  await press("Meta+Shift+9");
+  ok("and back again", !(await M(() => __mf.prose())));
+  await press("Alt+Digit9");
+  ok("⌥9 is the twin", await M(() => __mf.prose()));
+  await press("Alt+Digit9");
+  ok("and toggles off too", !(await M(() => __mf.prose())));
+
+  await M(() => __mf.select(__mf.state.rootId));
+  await press("Meta+Shift+9");
+  ok("a no-op on the centre", !(await M(() => __mf.prose())));
+  await sel("End");
+  await M((x) => { __mf.state.nodes[x].link = "nosuchmap"; }, await id("End"));
+  await press("Meta+Shift+9");
+  ok("a no-op on a map link node", !(await M(() => __mf.prose())));
+  await M((x) => { delete __mf.state.nodes[x].link; __mf.select(x); }, await id("End"));
+
+  // it works while typing, without ending the edit
+  await sel("Body");
+  await press("Space");
+  await M(() => document.execCommand("insertText", false, "!"));
+  await press("Meta+Shift+9");
+  ok("the toggle works while typing", await M(() => __mf.prose()));
+  ok("and does not end the edit", await M(() => !!document.querySelector(".node.editing")));
+  await press("Escape");
+
+  // ---- 2. Enter and Cmd+Enter ----
+  await fresh("Doc\n- Para\n- Other");
+  await sel("Para");
+  await press("Meta+Shift+9");
+  await press("Enter");
+  await page.keyboard.type("Second");
+  await press("Escape");
+  ok("⏎ on a paragraph writes a paragraph", (await M(() => __mf.prose())) && (await textOf()) === "Second", [await M(() => __mf.prose()), await textOf()]);
+  await press("Meta+Enter");
+  await page.keyboard.type("Child");
+  await press("Escape");
+  ok("⌘⏎ under a paragraph makes a plain node", !(await M(() => __mf.prose())) && (await textOf()) === "Child", [await M(() => __mf.prose()), await textOf()]);
+
+  // ---- 3. numbering skips prose ----
+  await fresh("Row\n- One\n- Note\n- Two");
+  await sel("Note");
+  await press("Meta+Shift+9");
+  await sel("One");
+  await press("Alt+Digit7");
+  await M(() => __mf.mark([]));
+  await page.waitForTimeout(220);
+  ok("the letters do not skip: 1. then 2.", (await lab("One")) === "1." && (await lab("Two")) === "2.", [await lab("One"), await lab("Two")]);
+  ok("and the paragraph carries no figure", (await lab("Note")) === null);
+  ok("nor a data-num in the box style", await M((x) => !document.querySelector('[data-id="' + x + '"]').dataset.num, await id("Note")));
+
+  // the 1.3.1 rule still holds with a paragraph in the row: a paragraph is an
+  // ordinary member of it, so a hidden one blocks the reorder like any other
+  await fresh("Hub\n- Alpha\n- Note\n- Beta");
+  await sel("Note");
+  await press("Meta+Shift+9");
+  await M(() => __mf.mark([]));
+  await M(() => { const s = __mf.state, r = s.nodes[s.rootId]; r.children = [r.children[2], r.children[1], r.children[0]]; });
+  await page.waitForTimeout(240);
+  const rowOf = () => M(() => __mf.rowOrder(__mf.state.rootId).map((c) => __mf.state.nodes[c].text).join());
+  const wasRow = await rowOf();
+  await M(() => { const r = __mf.state.nodes[__mf.state.rootId]; __mf.select(__mf.state.rootId); delete __mf.pos()[r.children[1]]; __mf.number(); });
+  await page.waitForTimeout(280);
+  ok("a hidden paragraph blocks the reorder just like a hidden node", (await rowOf()) === wasRow, [wasRow, await rowOf()]);
+  ok("and the numbers still go on", await M(() => __mf.anyNum));
+  ok("and the status line says so", /hidden/.test(await M(() => document.getElementById("saveState").textContent)));
+  await press("Meta+z");
+  await page.waitForTimeout(220);
+
+  // turning a numbered node into prose renumbers its row, and back gives it the next figure
+  await fresh("Row\n- One\n- Two\n- Three");
+  await sel("One");
+  await press("Alt+Digit7");
+  await M(() => __mf.mark([]));
+  await page.waitForTimeout(200);
+  ok("numbered 1. 2. 3.", (await lab("Three")) === "3.");
+  await sel("Two");
+  await press("Meta+Shift+9");
+  await page.waitForTimeout(200);
+  ok("turning one into prose renumbers the row", (await lab("One")) === "1." && (await lab("Three")) === "2." && (await lab("Two")) === null, [await lab("One"), await lab("Two"), await lab("Three")]);
+  await press("Meta+Shift+9");
+  await page.waitForTimeout(200);
+  ok("turning it back gives it its figure again", (await lab("Two")) === "2." && (await lab("Three")) === "3.");
+  await press("Meta+z");
+  await page.waitForTimeout(220);
+  ok("and one ⌘Z is one step", (await lab("Two")) === null);
+  await press("Meta+Shift+z");
+  await page.waitForTimeout(220);
+
+  // ---- 4. the outline out ----
+  await fresh("Brief\n- Summary\n- Detail\n  - Point");
+  await sel("Summary");
+  await press("Meta+Shift+9");
+  await M(() => __mf.mark([]));
+  await sel("Brief");
+  const out = await copy();
+  ok("a paragraph writes its indent and its text, with no bullet",
+     out.txt === "Brief\nSummary\n- Detail\n  - Point", JSON.stringify(out.txt));
+  await M((x) => { __mf.state.nodes[x].mark = "flag"; }, await id("Summary"));
+  await sel("Brief");
+  const outFlag = await copy();
+  ok("a flagged paragraph still writes ! ", /\n! Summary\n/.test(outFlag.txt), JSON.stringify(outFlag.txt));
+  await M((x) => { delete __mf.state.nodes[x].mark; }, await id("Summary"));
+
+  // ---- 5. the outline back in ----
+  await sel("Brief");
+  const trip = await copy();
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, trip.txt);
+  await page.waitForTimeout(300);
+  ok("the tree lands whole", await M(() => ["Brief", "Summary", "Detail", "Point"].every((t) => Object.values(__mf.state.nodes).some((n) => n.text === t))));
+  ok("Summary comes back a paragraph", await M((x) => !!__mf.state.nodes[x].prose, await id("Summary")));
+  ok("and it is a sibling of Detail, not its parent", (await node("Summary")).parent === "Brief" && (await node("Detail")).parent === "Brief", [await node("Summary"), await node("Detail")]);
+  ok("Detail is not a paragraph", !(await M((x) => !!__mf.state.nodes[x].prose, await id("Detail"))));
+
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  await M(() => { __mf.spread("right"); __mf.paste("One line\nTwo line\nThree line"); __mf.mark([]); });
+  await page.waitForTimeout(300);
+  ok("a paste of bare lines only comes in as plain nodes",
+     await M(() => Object.values(__mf.state.nodes).every((n) => !n.prose)));
+
+  // ---- 5b. the 1.3.2 fix, with and without prose in the row ----
+  await fresh("Recipe\n- One\n- Two\n- Three");
+  await sel("One");
+  await press("Alt+Digit7");
+  await M(() => __mf.mark([]));
+  await sel("Recipe");
+  const clean = await copy();
+  ok("a numbered row with no prose still copies as <ol type=\"1\">", /<ol type="1"><li>One<\/li><li>Two<\/li><li>Three<\/li><\/ol>/.test(clean.html), clean.html);
+  await sel("Two");
+  await press("Meta+Shift+9");
+  await M(() => __mf.mark([]));
+  await sel("Recipe");
+  const mixed = await copy();
+  ok("a numbered row with a paragraph in it keeps <ul>", !/<ol/.test(mixed.html), mixed.html);
+  ok("and writes its figures into the text", /<li>1\. One<\/li>/.test(mixed.html) && /<li>2\. Three<\/li>/.test(mixed.html), mixed.html);
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  await M(([h, t]) => { __mf.pasteRich(h, t); __mf.mark([]); }, [mixed.html, mixed.txt]);
+  await page.waitForTimeout(320);
+  ok("and it pastes back numbered", (await lab("One")) === "1." && (await lab("Three")) === "2.", [await lab("One"), await lab("Three")]);
+  ok("with no figure left in any text", await M(() => Object.values(__mf.state.nodes).every((n) => !/^\s*(\d+|[a-z]|[ivx]+)[.)]\s/.test(n.text))));
+
+  // ---- 6. Copy as markdown ----
+  await fresh("Report\n- Findings\n  - Costs rose\n  - Detail one\n  - Detail two\n- Next steps\n  - Hire\n  - Ship");
+  await M(async (x) => { __mf.state.nodes[x].prose = true; }, await id("Costs rose"));
+  await sel("Report");
+  const md = await M(() => __mf.markdown());
+  const WANT = "# Report\n\n## Findings\n\nCosts rose\n\n- Detail one\n- Detail two\n\n## Next steps\n\n- Hire\n- Ship";
+  ok("Copy as markdown matches the fixture", md === WANT, JSON.stringify(md));
+  const bj = await M(() => JSON.parse(__mf.branchJson()));
+  ok("Copy as JSON carries the branch and its prose flag", bj.state.nodes[bj.state.rootId].text === "Report" && Object.values(bj.state.nodes).some((n) => n.prose === true), Object.keys(bj.state.nodes).length);
+  ok("and the branch root has no parent", bj.state.nodes[bj.state.rootId].parent === null);
+
+  // ---- 7. cache keys ----
+  await fresh("Style\n- Para\n- Node");
+  await sel("Para");
+  await press("Meta+Shift+9");
+  await page.waitForTimeout(240);
+  const geom = () => M(() => [...document.querySelectorAll("#paintLayer path, #paintLayer circle")].map((e) => { const b = e.getBBox(), m = e.getCTM(); return [m.e + b.x * m.a, m.f + b.y * m.d, b.width * m.a, b.height * m.d].map((v) => Math.round(v * 4) / 4).join(","); }).sort().join("|"));
+  const gRule = await geom();
+  await M(() => __mf.set("prose", "dotted"));
+  await page.waitForTimeout(240);
+  const gDot = await geom();
+  ok("changing CFG.prose repaints the paragraph", gRule !== gDot && gDot.length > 20);
+  await M(() => __mf.set("prose", "rule"));
+  await page.waitForTimeout(240);
+  ok("and back again matches what it drew before", (await geom()) === gRule);
+  await sel("Para");
+  await press("Meta+Shift+9");
+  await page.waitForTimeout(240);
+  const gBox = await geom();
+  ok("toggling prose off repaints it as a box", gBox !== gRule && gBox.length > 20);
+
+  // ---- 8. the rich clipboard ----
+  await fresh("Clip\n- Para\n- Plain");
+  await sel("Para");
+  await press("Meta+Shift+9");
+  await M(() => __mf.mark([]));
+  await sel("Para");
+  await press("Meta+d");
+  await page.waitForTimeout(240);
+  ok("⌘D keeps the paragraph a paragraph", await M(() => __mf.prose()));
+  await sel("Plain");
+  const before = await M(() => Object.keys(__mf.state.nodes).length);
+  await sel("Para");
+  await cutEvent(260);
+  await sel("Plain");
+  await press("Enter");
+  await press("Escape");
+  await page.waitForTimeout(240);
+  const carried = await M(() => Object.values(__mf.state.nodes).filter((n) => n.text === "Para" && n.prose).length);
+  ok("the cut ring puts a paragraph down as a paragraph", carried >= 1, [before, carried]);
+
+  // ---- 9. an older settings blob ----
+  await M(() => {
+    const k = "mappr.doc." + __mf.doc, d = JSON.parse(localStorage.getItem(k));
+    delete d.cfg.prose; localStorage.setItem(k, JSON.stringify(d));
+  });
+  await page.reload();
+  await page.waitForTimeout(500);
+  ok("a 1.3.1 settings blob loads with CFG.prose defaulted", await M(() => __mf.cfg.prose === "rule"), await M(() => __mf.cfg.prose));
+  ok("and nothing else is disturbed", await M(() => __mf.cfg.numScheme === "docs" && __mf.cfg.theme === "light"));
+
   ok("no runtime errors", errors.length === 0, errors);
 }
 

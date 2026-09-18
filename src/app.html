@@ -121,6 +121,18 @@
     transition:transform .17s cubic-bezier(.2,.7,.3,1);
   }
   .node.root{font-size:calc(var(--node-size) + 3px);padding:12px 20px}
+  /* A paragraph. Wider, smaller, left aligned whatever the text align is,
+     and no box: the rule or the dotted outline is drawn in the paint layer
+     like every other shape. The metrics are relative to the node size and
+     width, so prose scales with the Style panel rather than fighting it. */
+  .node.prose{
+    font-size:var(--prose-size);
+    max-width:var(--prose-max);
+    padding:10px 14px;
+    line-height:1.45;
+    justify-content:flex-start;
+    text-align:left;
+  }
   .node.editing{user-select:text;cursor:text}
   .node.nudge{animation:nudge .24s ease}
   @keyframes nudge{0%,100%{opacity:1}50%{opacity:.4}}
@@ -763,6 +775,7 @@
       <tr><td><kbd>⌘</kbd><kbd>X</kbd></td><td><b>Carry.</b> Picks up the selection (or the selected node): it goes faint where it is, and the arrows, or a click, choose where it goes. <kbd>⏎</kbd> drops it inside the ringed node, <kbd>⇧</kbd><kbd>⏎</kbd> right after it, <kbd>Esc</kbd> puts it back. Nothing changes until the drop, and one <kbd>⌘</kbd><kbd>Z</kbd> undoes it. <kbd>⌘</kbd><kbd>V</kbd> puts it down as well as <kbd>⏎</kbd> does, and the clipboard still holds what you picked up, so you can paste a copy of it anywhere else.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself. With a selection up, every selected branch is duplicated and the copies come out selected.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>X</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd><br><kbd>⌥</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag. <kbd>⌥</kbd><kbd>D</kbd> still marks done, the older key. Firefox and Zen keep <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd> for themselves, so <kbd>⌥</kbd><kbd>F</kbd> does the same; likewise <kbd>⌥</kbd><kbd>G</kbd> ungroups and <kbd>⌥</kbd><kbd>C</kbd> copies as an image. <kbd>⌃</kbd> works as <kbd>⌘</kbd> everywhere, which is the key to use on an iPad. A flag is a hand-drawn pennant on the box; the Style panel has a ribbon, a ring and an asterisk instead. <kbd>⌘</kbd><kbd>4</kbd> dims the map to its flags and <kbd>Tab</kbd> steps through them; in <kbd>⌘</kbd><kbd>K</kbd>, type <kbd>!</kbd> first to list only flagged nodes. Sort has <em>Flagged first</em>, and a copied outline writes <kbd>!</kbd> before a flagged line, which flags it again when pasted back.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>9</kbd><br><kbd>⌥</kbd><kbd>9</kbd></td><td><b>Paragraph.</b> Turns the node into a paragraph: wider, left aligned, smaller type, a rule down the side instead of a box, and never numbered. <kbd>⏎</kbd> on a paragraph writes the next one and <kbd>⌘</kbd><kbd>⏎</kbd> starts an ordinary node under it, so a branch can go from map to document and back. It works while you are typing, without ending the edit. Numbering skips paragraphs, so a row of paragraph, bullet, bullet numbers a. b. Copying still gives you the outline, with your paragraphs as paragraphs, and pasting one back brings them in as paragraphs. The Style panel draws them with a rule or a dotted box.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>7</kbd><br><kbd>⌥</kbd><kbd>7</kbd></td><td><b>Number.</b> Docs' own key. Numbers the row the node is on, its siblings in order; with a selection up, every row that has a selected node in it, so <kbd>⌘</kbd><kbd>⇧</kbd><kbd>→</kbd> then <kbd>⌘</kbd><kbd>⇧</kbd><kbd>7</kbd> numbers a whole branch as an outline. On the centre alone it numbers the branches. Pressed on rows already numbered, it takes the numbers off. A number belongs to the row, not the node: nothing is typed into the text, and a move, a sort, a delete or a paste renumbers on its own. Rows nest 1. then a. then i.; the Style panel has 1.1.1 and I. A. 1. instead, and draws the number in the gutter, in the box or on the edge. A copied outline writes the number before the line and a pasted <kbd>1.</kbd> or <kbd>a.</kbd> line comes in numbered. Numbering a row also settles its order, read off the picture: down the page on a side row, clockwise from the top round the centre. A row with a node hidden or folded away in it keeps the order it had, since there is no honest place to put what you cannot see.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>⇧</kbd><kbd>W</kbd></td><td><b>navi.</b> The rail top left follows the selection and shows only the way up and the row you are on: ancestors as a muted spine, the siblings under the parent with yours lit, children as a count. When the centre is off screen a small arrow points to where it is. Click a row to go there. A long row is capped: three siblings either side and a folded row at each end, with the whole row in a scrolling box, just the count, or the row as chips as the alternatives in Style. Inside a focus it shows how deep you are instead of the spine, as pips, in words or as two crumbs. The key cycles always, only when the centre is out of view, and off; the Style panel has the same, plus a pill with the siblings as chips or a drawn sketch instead of the rail, whether it fades when idle, and whether it joins the maps rail in one panel.</td></tr>
     </table></section>
@@ -860,7 +873,7 @@
 var VERSION="__VERSION__";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid", flagStyle:"pennant",
-  numStyle:"gutter", numScheme:"docs",
+  numStyle:"gutter", numScheme:"docs", prose:"rule",
   hereStyle:"rail", hereShow:"always", hereFade:true, hereAttach:true,
   hereSibs:"window", hereFocus:"pips",
   width:2, dash:"solid", slop:1, edges:"round",
@@ -1122,12 +1135,23 @@ function numFmt(st,i){
 }
 /* The row a figure counts within. One place, so that what does and does not
    count as a sibling is decided once. */
-function numSibs(parentId){ var p=N(parentId); return p?p.children:[]; }
+function numSibs(parentId){
+  var p=N(parentId); if(!p) return [];
+  /* Prose does not count, so a row of paragraph, bullet, bullet numbers
+     a. b. rather than a. c. This runs once per numbered node per render, so
+     the ordinary row, which has no prose in it at all, hands back the
+     children array itself instead of allocating a copy of it. */
+  for(var i=0;i<p.children.length;i++){
+    var c=N(p.children[i]);
+    if(c && c.prose) return p.children.filter(function(x){ var q=N(x); return !(q&&q.prose); });
+  }
+  return p.children;
+}
 function numAt(parentId,id){ return numSibs(parentId).indexOf(id)+1; }
 /* Pure, and O(siblings). It reads the model and nothing else: no layout, no
    camera, no allocation past the string it returns. */
 function numLabel(id){
-  var n=N(id); if(!n||!n.parent||!N(n.parent).num) return null;
+  var n=N(id); if(!n||n.prose||!n.parent||!N(n.parent).num) return null;
   if(CFG.numScheme==="legal"){
     var parts=[], p=n;
     while(p.parent && N(p.parent).num){ parts.unshift(numAt(p.parent,p.id)); p=N(p.parent); }
@@ -1157,7 +1181,10 @@ function orderRow(parentId,dirOrder){
      back into the result, and where it went would depend on what happened to
      be hidden when the key was pressed. So the row is left exactly as it is
      and the numbers go on anyway. Unhide it and press again for the ordered
-     result. Phase 7 makes this the common case rather than the edge one. */
+     result. Phase 7 makes this the common case rather than the edge one.
+     A paragraph is an ordinary member of the row for this test even though
+     it carries no figure: a hidden paragraph blocks the reorder exactly as a
+     hidden node does, because the row it is ordering is the whole row. */
   if(p.children.some(function(c){ return !at(c); })) return "hidden";
   if(parentId===VR() && CFG.spread!=="manual") takeOverSpread();
   var order=dirOrder||["U","R","D","L"];
@@ -1207,6 +1234,23 @@ function toggleNumber(){
   var what=(L.length===1 ? "row numbered" : L.length+" rows numbered");
   flashSave(held ? what+" \u00b7 part of it is hidden, so the order was left alone"
                  : what+" \u00b7 the Style panel has the scheme");
+}
+/* Cmd+Shift+9, with an Option+9 twin. A paragraph is one boolean on the
+   node: wider, left aligned, a rule instead of a box, never numbered. It
+   works while you are typing and does not commit the edit, so a node can
+   become a paragraph mid-sentence without losing the cursor. The centre
+   stands for the whole map and a link node stands for another map, so
+   neither can be one. */
+function toggleProse(){
+  var ids=Object.keys(marked).filter(function(i){ return N(i); }); if(!ids.length) ids=[selected];
+  var can=ids.filter(function(i){ var n=N(i); return n && !isRoot(n) && !isVR(n) && !n.link; });
+  if(!can.length){ flash(selected); flashSave("the centre and a link to a map cannot be paragraphs"); return; }
+  snap();
+  var on=!can.every(function(i){ return !!N(i).prose; });
+  can.forEach(function(i){ if(on) N(i).prose=true; else delete N(i).prose; });
+  render(true); saveSoon();
+  flashSave(on ? (can.length===1?"a paragraph \u00b7 \u23ce writes the next one":can.length+" paragraphs")
+               : (can.length===1?"back to a node":"back to nodes"));
 }
 function lensSolo(){ return !!lensOne; }
 /* A network, walked breadth first from one node along links only, at whatever
@@ -1888,9 +1932,8 @@ function outlineOf(root,kidsOf){
   var lines=[], html=[];
   var top=listOpen(rowParent([root]),[root]);
   (function walk(id,d,noNum){
-    var t=lineOf(id);
-    lines.push(d===0?t:"  ".repeat(d-1)+"- "+t);
-    html.push("<li>"+esc(noNum?lineOf(id,NONUM):t));
+    lines.push(outLine(id,d));
+    html.push("<li>"+esc(lineOf(id,noNum?NONUM:null)));
     var ks=kidsOf(id);
     if(ks.length){
       var ol=listOpen(id,ks);
@@ -1938,19 +1981,102 @@ function storyImage(scope){
 }
 /* The copy menu in the presenting, arranging and network bars. Numbers pick
    while it is open, like the story menu. */
+/* ---------- Copy as ----------
+   Cmd+C stays the outline, which is what a branch travels as. These two are
+   for when the branch is leaving Mappr for good: markdown with real headings
+   and sections, and the branch as JSON. */
+/* What each node is, read bottom up, because what a node is depends on what
+   hangs under it: a paragraph is a paragraph, a leaf is a bullet, anything with
+   a paragraph or a heading under it is a heading, and anything with only
+   bullets under it stays a bullet. The kinds are then levelled per row, so one
+   heading in a row makes the whole row headings and a section does not turn
+   into a list half way down. */
+function mdKinds(root,kidsOf){
+  var kind={};
+  (function walk(id){
+    var ks=kidsOf(id);
+    ks.forEach(walk);
+    if(N(id).prose){ kind[id]="p"; return; }
+    if(!ks.length){ kind[id]="b"; return; }
+    kind[id]=ks.some(function(c){ return kind[c]==="p"||kind[c]==="h"; }) ? "h" : "b";
+  })(root);
+  (function rows(id){
+    var ks=kidsOf(id);
+    if(ks.some(function(c){ return kind[c]==="h"; }))
+      ks.forEach(function(c){ if(kind[c]==="b") kind[c]="h"; });
+    ks.forEach(rows);
+  })(root);
+  kind[root]="h";   /* the copied node is the title */
+  return kind;
+}
+function markdownOf(root,kidsOf){
+  kidsOf=kidsOf||function(id){ return N(id).children; };
+  var kind=mdKinds(root,kidsOf), out=[];
+  (function walk(id,level,bul){
+    var n=N(id), k=kind[id], lab=numLabel(id);
+    var txt=(n.mark==="flag"?"! ":"")+(n.text||"").replace(/\n/g," ");
+    if(lab) txt=lab+" "+txt;
+    /* level 6 is as deep as markdown headings go; below that a section is a
+       bullet list, which is what a document would have done anyway */
+    var head=(k==="h" && level<=6);
+    if(k==="p") out.push("",txt,"");
+    else if(head) out.push("","#".repeat(level)+" "+txt,"");
+    else out.push("  ".repeat(Math.max(0,bul))+"- "+txt);
+    kidsOf(id).forEach(function(c){ walk(c, head?level+1:level, head?0:bul+1); });
+  })(root,1,0);
+  return out.join("\n").replace(/\n{3,}/g,"\n\n").trim();
+}
+/* The branch as JSON, the shape the whole-map export uses, cut down to the
+   copied branch and the ties inside it. */
+function branchJson(root){
+  var ids=subtree(root), has={}, nodes={};
+  ids.forEach(function(i){ has[i]=1; });
+  ids.forEach(function(i){
+    var o=Object.assign({},N(i));
+    o.parent=(i===root)?null:o.parent;
+    o.children=o.children.filter(function(c){ return has[c]; });
+    nodes[i]=o;
+  });
+  var links=(state.links||[]).filter(function(l){ return has[l.a]&&has[l.b]; })
+    .map(function(l){ var o={a:l.a,b:l.b}; if(l.branch) o.branch=true; return o; });
+  return JSON.stringify({v:5, state:{rootId:root, nodes:nodes, frames:[], links:links}, cfg:CFG});
+}
+/* What the two rows copy, in whichever view the menu was opened from: the told
+   story in a talk, the network in a network, the selected branch on the map. */
+function mdScope(){
+  if(pres && !pres.arrange){
+    var sc=presScope();
+    return {root:VR(), kids:function(id){ var ks=storyChildren(id); return sc==="sofar"?ks.filter(function(k){ return pres.shown[k]; }):ks; }};
+  }
+  if(pres) return {root:VR(), kids:storyChildren};
+  if(lensOne){
+    var r=lensReach(lensOne), kk={};
+    r.order.forEach(function(id){ var q=r.from[id]; if(q!=null) (kk[q]=kk[q]||[]).push(id); });
+    return {root:lensOne, kids:function(id){ return kk[id]||[]; }};
+  }
+  var root=(N(selected)?selected:VR());
+  return {root:root, kids:function(id){ return N(id).children; }};
+}
 function copyItems(){
   if(pres && !pres.arrange) return [
     ["Outline so far","⌘C",function(){ storyOutline("sofar"); }],
     ["Image so far","⇧⌘C",function(){ storyImage("sofar"); }],
     ["Whole story outline","",function(){ storyOutline("all"); }],
-    ["Whole story image","",function(){ storyImage("all"); }]];
+    ["Whole story image","",function(){ storyImage("all"); }]].concat(copyAsItems());
   if(pres) return [
     ["Story outline","⌘C",function(){ storyOutline("all"); }],
-    ["Story image","⇧⌘C",function(){ storyImage("all"); }]];
+    ["Story image","⇧⌘C",function(){ storyImage("all"); }]].concat(copyAsItems());
   if(lensOne) return [
     ["Network outline","⌘C",function(){ var o=netOutlineOf(); copyText(o.txt,"network copied as an outline",o.html); }],
-    ["Network image","⇧⌘C",function(){ doExport("png-copy"); }]];
-  return [];
+    ["Network image","⇧⌘C",function(){ doExport("png-copy"); }]].concat(copyAsItems());
+  return [
+    ["Copy as an outline","⌘C",function(){ document.execCommand("copy"); }],
+    ["Copy as an image","⇧⌘C",function(){ doExport("png-copy"); }]].concat(copyAsItems());
+}
+function copyAsItems(){
+  return [
+    ["Copy as markdown","",function(){ doExport("markdown"); }],
+    ["Copy as JSON","",function(){ doExport("json-copy"); }]];
 }
 function copyMenu(anchor){
   if(elSMenu){ var was=elSMenu.dataset.kind; storyMenuClose(); if(was==="copy") return; }
@@ -2526,6 +2652,8 @@ function applyCss(){
   s.setProperty("--font-node","var(--font-"+CFG.font+")");
   s.setProperty("--node-size",SIZES[CFG.size]+"px");
   s.setProperty("--node-max",MAXW[CFG.nodew]+"px");
+  s.setProperty("--prose-size",Math.round(SIZES[CFG.size]*15/17)+"px");
+  s.setProperty("--prose-max",Math.round(MAXW[CFG.nodew]*1.08)+"px");
   s.setProperty("--node-align",ALIGN[CFG.align]);
   s.setProperty("--node-text-align",TALIGN[CFG.align]);
   s.setProperty("--node-valign",CFG.valign);
@@ -2619,6 +2747,7 @@ function render(keepView,lead){
        the element's style, and doing that to every node made each render
        restyle and lay out the whole map (~30ms at 1500 nodes) */
     var cls="node"+(isVR(n)?" root":"")+(id===editing?" editing":"")+
+      (n.prose?" prose":"")+
       (n.mark==="done"?" done":"")+(n.mark==="flag"?" flag":"")+
       (ghosts && !ghosts[id] && !isVR(n) ? " ghost" : "")+
       (solo && !solo[id] ? " lenshide" : "")+
@@ -2646,16 +2775,23 @@ function render(keepView,lead){
     if(m && m.k===k && id!==editing) box[id]={w:m.w,h:m.h};
     else { stale.push(id); box[id]=null; }
   });
+  reMeasured=stale.length;
   stale.forEach(function(id){
     var el=els[id], w=el.offsetWidth, h=el.offsetHeight;
     box[id]={w:w,h:h};
-    meas[id]={k:el.className+"\u0001"+el.textContent, w:w, h:h};
+    /* The key stored here has to be the key looked up above, dataset.num
+       included. Without the figure it could never match on a numbered node,
+       so every numbered node re-measured on every render. */
+    meas[id]={k:el.className+"\u0001"+el.textContent+"\u0001"+(el.dataset.num||""), w:w, h:h};
   });
 
   layout(); lensLayout(); reposition(); paint(); drawBadges(); drawFrameTitles(); drawCrumbs(); drawFrameBar(); drawStartHint(); drawHere(true);
   if(!keepView && CFG.follow) cameraTo(selected,lead);
   applyView();
 }
+/* how many nodes the last render had to measure again. The bench reads it:
+   a cache that is working leaves this at nothing on an ordinary keystroke. */
+var reMeasured=0;
 var wrapTop={}, nodeMoves=0;
 function reposition(){
   /* each wrapper sits at its branch root; a branch root with no position (hidden
@@ -3041,6 +3177,7 @@ function shapes(ids, opt){
     var b=box[id], p=pos[id], out=[], def="";
     if(cache){
       key=id+"|"+SC.gen+"|"+size(id)+"|"+P.line+"|"+(P.fill||"")+"|"+(n.mark||"")+"|"+(numLabel(id)||"")+dirOf(id)+"|"+(isVR(n)?1:0)+
+          "|"+(n.prose?CFG.prose:"0")+
           "|"+((lensQuiet && !lensGhosts[id] && !isVR(n))?1:0)+"|"+(presFade(id)?1:0)+
           "|"+(n.link?CFG.linkStyle+(linkInfo(n.link).missing?"m":""):"");
       var hit=SC.body[key];
@@ -3048,6 +3185,32 @@ function shapes(ids, opt){
     }
     var x=p.cx-b.w/2, y=p.cy-b.h/2;
     var rad=CFG.edges==="round"?(isVR(n)?14:11):1;
+    /* A paragraph has no box. "rule" draws a hand-drawn line down the side
+       that faces the parent, so a column of paragraphs reads as one margin;
+       "dotted" keeps the shape as a rough rect with a barely there stroke
+       and a pale fill. Both are cached shapes like any other, drawn with the
+       node's own seed so they sit in the same hand as the boxes, and the
+       selection ring in paint() is the only box a rule paragraph ever gets. */
+    if(n.prose){
+      var pr=rngFrom(seedOf(id+"pr"));
+      if(CFG.prose==="dotted"){
+        if(P.fill) out.push('<path d="'+smoothRect(x,y,b.w,b.h,rad)+'" fill="'+P.fill+'" opacity=".55" stroke="none"/>');
+        out.push('<path d="'+(amp?roughRect(x,y,b.w,b.h,rad,pr,amp):smoothRect(x,y,b.w,b.h,rad))+
+          '" fill="none" stroke="'+P.line+'" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="0.01 5"/>');
+      } else {
+        var rx=(dirOf(id)==="L") ? x+b.w-2 : x+2;
+        out.push('<path d="'+wline(rx,y+4,rx,y+b.h-4,pr,amp)+'" fill="none" stroke="'+P.line+
+          '" stroke-width="2.6" stroke-linecap="round"/>');
+      }
+      if(n.mark==="flag") out.push(flagMark(id,x,y,b.w,b.h,amp));
+      var pbody=out.join("");
+      if(lensQuiet && !lensGhosts[id] && !isVR(n)) pbody='<g opacity=".17">'+pbody+'</g>';
+      else if(presFade(id)) pbody='<g opacity=".38">'+pbody+'</g>';
+      var prec={b:pbody, d:"", x:p.cx, y:p.cy};
+      if(cache) nBody[key]=prec;
+      emit(key,prec.b,0,0,wrapTop[id]);
+      return;
+    }
     var lk=n.link ? (dark()?"#66d9e8":"#0c8599") : null;
     if(lk && linkInfo(n.link).missing) lk=dark()?"#ff8b7a":"#c0392b";
     if(lk){ P={line:lk, fill:P.fill}; }
@@ -3861,6 +4024,9 @@ function doSibling(){
   var made;
   if(isVR(node)) made=addNode(node.id,isRoot(node)?"R":dirOf(node.id),null);
   else { var p=N(node.parent); made=addNode(p.id,dirOf(node.id),p.children.indexOf(node.id)+1); }
+  /* Enter on a paragraph writes the next paragraph. Cmd+Enter still makes a
+     plain node under it, which is how a document goes back to being a map. */
+  if(node.prose) made.prose=true;
   netTie(node.id,made);
   clearMarks(); selected=made.id; render(false,made.dir);
   startNew(made.id); saveSoon();
@@ -4044,6 +4210,8 @@ function ctxItems(id,from){
     sep();
     add("Copy the network as an outline","\u2318C",function(){ document.execCommand("copy"); });
     add("Copy the network as an image","\u21e7\u2318C",function(){ doExport("png-copy"); });
+    add("Copy as markdown","",function(){ doExport("markdown"); });
+    add("Copy as JSON","",function(){ doExport("json-copy"); });
     sep();
     add("Back to the map","\u23181",function(){ lensOff(); });
     return it;
@@ -4064,6 +4232,7 @@ function ctxItems(id,from){
   sep();
   if(!t.link) add("Retype","Space",function(){ beginEdit(id,true); });
   add(t.mark==="done"?"Not done":"Done","\u2325X",function(){ toggleMark("done"); });
+  if(!centre && !t.link) add(t.prose?(many?"Back to nodes":"Back to a node"):(many?"Make them paragraphs":"Make it a paragraph"),"\u2318\u21e79",function(){ toggleProse(); });
   add(t.mark==="flag"?"Unflag":"Flag",IS_FF?"\u2325F":"\u2318\u21e7F",function(){ toggleMark("flag"); });
   add((t.parent?N(t.parent).num:t.num)?(many?"Unnumber the selection":"Unnumber this row"):(many?"Number the selection":"Number this row"),"\u2318\u21e77",function(){ toggleNumber(); });
   if(!centre) add(many?"Duplicate the selection":"Duplicate","\u2318D",function(){ duplicateBranch(); });
@@ -4075,6 +4244,8 @@ function ctxItems(id,from){
   sep();
   add(many?"Copy the selection as an outline":"Copy as an outline","\u2318C",function(){ document.execCommand("copy"); });
   add("Copy as an image",IS_FF?"\u2325C":"\u21e7\u2318C",function(){ doExport("png-copy"); });
+  add("Copy as markdown","",function(){ doExport("markdown"); });
+  add("Copy as JSON","",function(){ doExport("json-copy"); });
   sep();
   if(!centre){
     add(many?"Delete the selection":"Delete, keep its children","\u232b",function(){ doDelete(false); },"danger");
@@ -4281,11 +4452,11 @@ function splitNode(asKids){
     var n=N(i), lines=splitLines(n.text), d=dirOf(i);
     n.text=lines[0];
     if(asKids){
-      lines.slice(1).reverse().forEach(function(t){ var k=addNode(i,isRoot(n)?"R":d,0); k.text=t; made++; });
+      lines.slice(1).reverse().forEach(function(t){ var k=addNode(i,isRoot(n)?"R":d,0); k.text=t; if(n.prose) k.prose=true; made++; });
       n.collapsed=false;
     } else {
       var p=N(n.parent), at=p.children.indexOf(i)+1;
-      lines.slice(1).forEach(function(t){ var k=addNode(p.id,d,at++); k.text=t; made++; if(!first) first=k.id; });
+      lines.slice(1).forEach(function(t){ var k=addNode(p.id,d,at++); k.text=t; if(n.prose) k.prose=true; made++; if(!first) first=k.id; });
     }
   });
   clearMarks(); render(); saveSoon();
@@ -4601,6 +4772,7 @@ function cloneBranch(sid,parentId,map){
   var o=N(sid);
   var n={id:nid(),parent:parentId,children:[],text:o.text,dir:o.dir,collapsed:o.collapsed,mark:o.mark};
   if(o.link) n.link=o.link;
+  if(o.prose) n.prose=true;
   state.nodes[n.id]=n;
   if(map) map[sid]=n.id;
   o.children.forEach(function(c){ n.children.push(cloneBranch(c,n.id,map).id); });
@@ -4659,6 +4831,15 @@ function selectAllVisible(){
    ============================================================ */
 /* one line of an outline: the number, then the flag, then the text, so a
    copied outline reads "1. ! Terms review" and comes back the same */
+/* A line of the text flavour at its depth. A node is a bullet; a paragraph
+   is the bare text at the same indent, which is already a paragraph in
+   markdown and reads back as one. "flat" is the selection copy's own
+   convention, where even the top line carries its bullet. */
+function outLine(id,d,flat){
+  var pad="  ".repeat(flat?d:Math.max(0,d-1)), t=lineOf(id);
+  if(N(id).prose) return pad+t;
+  return (!flat&&d===0) ? t : pad+"- "+t;
+}
 function lineOf(id,opt){ var n=N(id), l=(opt&&opt.noNum)?null:numLabel(id); return (l?l+" ":"")+(n.mark==="flag"?"! ":"")+(n.text||"").replace(/\n/g," "); }
 /* The figure belongs to the text only where the receiving side has no list of
    its own to count with. An html writer that has just opened a real <ol> says
@@ -4686,6 +4867,14 @@ function listOpen(parentId,ids){
   var p=(parentId!=null)?N(parentId):null;
   if(!p||!p.num||!ids||!ids.length) return null;
   if(CFG.numScheme==="legal") return null;
+  /* Third exception: a numbered row with a paragraph in it keeps <ul> and
+     its figures in the text. A document's ordered list has no way to hold a
+     paragraph between two numbered items without either counting it or
+     breaking the list in two, and a row that is half document and half list
+     is not worth either. Tested here rather than left to the run check below:
+     since numSibs skips prose the run check would fail on its own, silently,
+     and a later change to numSibs could turn that into an accident. */
+  if(p.children.some(function(c){ var q=N(c); return !!(q&&q.prose); })) return null;
   var row=numSibs(parentId), s=row.indexOf(ids[0]);
   if(s<0) return null;
   for(var i=1;i<ids.length;i++) if(row[s+i]!==ids[i]) return null;
@@ -4706,8 +4895,7 @@ function toOutline(rootIds){
   var lines=[];
   (rootIds||[VR()]).forEach(function(rid,i){
     (function walk(id,d){
-      var t=lineOf(id);
-      lines.push(d===0?t:"  ".repeat(d-1)+"- "+t);
+      lines.push(outLine(id,d));
       N(id).children.forEach(function(c){ walk(c,d+1); });
     })(rid,0);
     if(i<(rootIds||[]).length-1) lines.push("");
@@ -4839,9 +5027,9 @@ function parseOutline(text){
     if(!raw.trim()) return;
     var lead=raw.match(LEAD)[0], indent=0;
     for(var i=0;i<lead.length;i++) indent+=(lead[i]==="\t")?4:1;
-    var t=raw.slice(lead.length), glyph=null;
+    var t=raw.slice(lead.length), glyph=null, heading=false;
     var h=t.match(/^(#{1,6})\s+(.*)$/);
-    if(h){ indent=(h[1].length-1)*10; t=h[2]; }
+    if(h){ indent=(h[1].length-1)*10; t=h[2]; heading=true; }
     else {
       var m=t.match(BULLET);
       if(m){ glyph=m[1]; t=t.slice(m[0].length); indent=indent*10+1; }
@@ -4858,7 +5046,7 @@ function parseOutline(text){
     /* a leading "! " is a flag, the way the outline writes one */
     var fm=t.match(/^!\s+(.*)$/), flagged=false;
     if(fm){ t=fm[1]; flagged=true; }
-    if(t) rows.push({indent:indent,text:t,glyph:glyph,marker:marker,mark:flagged?"flag":null,num:numbered});
+    if(t) rows.push({indent:indent,text:t,glyph:glyph,heading:heading,marker:marker,mark:flagged?"flag":null,num:numbered});
   });
 
   /* A copy that lost its indentation leaves every bullet on one level with the
@@ -4878,7 +5066,28 @@ function parseOutline(text){
       r.indent=((known?BULLET_RANK[r.glyph]:seen[r.glyph])+1)*10;
     });
   }
-  return rowFlavour(rows.map(function(r){ return {indent:r.indent,text:r.text,marker:r.marker||null,mark:r.mark||null,num:!!r.num}; }));
+  proseRows(rows);
+  return rowFlavour(rows.map(function(r){ return {indent:r.indent,text:r.text,marker:r.marker||null,mark:r.mark||null,num:!!r.num,prose:!!r.prose}; }));
+}
+/* Which bare lines of a paste are paragraphs. The one judgement call in
+   1.4.0, and deliberately the only place it is made, so phase 3 can widen it
+   for markdown in without unpicking it.
+
+   A bare line is a paragraph when the paste has any heading or any list line
+   in it and the bare line is not the first. A paste that is bare lines only
+   is plain text and comes in as plain nodes, exactly as it did before. The
+   first line is never a paragraph: it is the top node, the way the outline
+   writer emits it.
+
+   The indent gains the same 1 a bullet line gains at its lead, so a paragraph
+   and a bullet written at the same depth come back as siblings rather than
+   one inside the other, and a paragraph under a heading still lands under
+   it. */
+function proseRows(rows){
+  var listy=function(r){ return !!(r.heading||r.glyph||r.marker); };
+  if(!rows.some(listy)) return rows;
+  rows.forEach(function(r,i){ if(i===0||listy(r)) return; r.prose=true; r.indent+=1; });
+  return rows;
 }
 /* A map you have not touched yet is a placeholder, not content: one root node
    still carrying the default label, nothing hanging off it. */
@@ -4933,6 +5142,7 @@ function insertOutline(items,opt){
     var n=addNode(parent.id,dir,at);
     n.text=it.text; made++; last=n.id; madeIds.push(n.id);
     if(it.mark) n.mark=it.mark;
+    if(it.prose) n.prose=true;
     if(it.num) N(parent.id).num=true;
     if(it.collapsed) n.collapsed=true;
     /* a copied link is a second link to the same map; only from Mappr's own
@@ -5036,10 +5246,10 @@ function selectionCopy(){
   order.forEach(function(id,k){
     var p=N(id).parent; while(p && !has[p]) p=N(p).parent;
     var d=p?depth[p]+1:0; depth[id]=d; idx[id]=k;
-    var n=N(id), t=(n.text||"").replace(/\n/g," "), tf=lineOf(id);
-    items.push({indent:d, text:t, mark:n.mark||null, link:n.link||null, num:!!(n.parent&&N(n.parent).num),
+    var n=N(id), t=(n.text||"").replace(/\n/g," ");
+    items.push({indent:d, text:t, mark:n.mark||null, link:n.link||null, prose:!!n.prose, num:!!(n.parent&&N(n.parent).num),
       collapsed:!!n.collapsed && n.children.length>0 && n.children.every(function(c){ return has[c]; })});
-    lines.push("  ".repeat(d)+"- "+tf);
+    lines.push(outLine(id,d,true));
   });
   var kidsOf={}, tops=[];
   order.forEach(function(id){ var p=N(id).parent; while(p && !has[p]) p=N(p).parent; if(p) (kidsOf[p]=kidsOf[p]||[]).push(id); else tops.push(id); });
@@ -5250,6 +5460,15 @@ function doExport(kind){
     if(pres){ storyOutline(presScope()); return; }
     if(lensOne){ var no=netOutlineOf(); copyText(no.txt,"network copied as an outline",no.html); return; }
     copyText(currentOutline(), selFrame?"frame outline copied":"outline copied", currentOutlineHtml()); return;
+  }
+  if(kind==="markdown"){
+    var m=mdScope();
+    copyText(markdownOf(m.root,m.kids),"copied as markdown"); return;
+  }
+  if(kind==="json-copy"){
+    var mj=mdScope();
+    lastJson=branchJson(mj.root);
+    copyText(lastJson,"copied as JSON"); return;
   }
   if(pres && kind==="png-copy"){ storyImage(presScope()); return; }
   var t=exportTargets();
@@ -6464,6 +6683,8 @@ var I={
   ngut:svg('<path d="M8 6h9v8H8z"/><path d="M3.5 8.5h1.5v3M3.2 11.5h2.2" stroke-width="1.2"/>'),
   nbox:svg('<path d="M3 6h14v8H3z"/><path d="M5.5 8.5h1.5v3M5.2 11.5h2.2M10 10h4.5" stroke-width="1.2"/>'),
   nedge:svg('<path d="M6 6h11v8H6z"/><circle cx="6" cy="10" r="2.6" fill="var(--panel)"/><path d="M5.4 9.2h1v1.8" stroke-width="1.1"/>'),
+  prule:svg('<path d="M4.5 5.2v9.6" stroke-width="2.2"/><path d="M8.5 7h8M8.5 10h8M8.5 13h5" stroke-width="1.2"/>'),
+  pdot:svg('<path d="M3.5 5.5h13v9h-13z" stroke-dasharray="0.01 3" stroke-linecap="round"/><path d="M6 8.6h8M6 11.4h5" stroke-width="1.2"/>'),
   frib:svg('<path d="M6 3h8v13l-4-3.6L6 16z"/>'),
   fring:svg('<circle cx="10" cy="10" r="6.5"/><path d="M10 6.5v4.2"/><circle cx="10" cy="13.4" r=".9" fill="currentColor" stroke="none"/>'),
   fstar:svg('<path d="M10 4v12M4.8 7l10.4 6M4.8 13l10.4-6"/>'),
@@ -6533,6 +6754,7 @@ var PANEL=[
   {h:"Flags",key:"flagStyle",opts:[["pennant",I.fpen,"Pennant"],["ribbon",I.frib,"Ribbon"],["ring",I.fring,"Ring"],["star",I.fstar,"Asterisk"]]},
   {h:"Numbers",key:"numStyle",opts:[["gutter",I.ngut,"In the gutter"],["box",I.nbox,"In the box"],["edge",I.nedge,"On the edge"]]},
   {h:"Number scheme",key:"numScheme",opts:[["docs",lt("1a"),"1. a. i."],["legal",lt("1.1"),"1.1.1"],["formal",lt("IA"),"I. A. 1."]]},
+  {h:"Paragraphs",key:"prose",opts:[["rule",I.prule,"A rule down the side"],["dotted",I.pdot,"A dotted box"]]},
   {h:"navi",key:"hereStyle",opts:[["rail",I.hrail,"The rail: the way up, then your row"],["strip",I.hstrip,"A pill, with the siblings as chips"],["sketch",I.hsketch,"A drawn sketch of the same"]]},
   {h:"Show it",key:"hereShow",opts:[["always",I.halways,"Always"],["auto",I.hauto,"Only when the centre is out of view"],["never",I.hnever,"Never (\u2325\u21e7W cycles these)"]]},
   {h:"Your row",key:"hereSibs",opts:[["window",I.hwin,"Three either side, the rest folded"],["scroll",I.hscroll,"The whole row, in a box that scrolls"],["count",I.hcount,"Just the one you are on, and the count"],["chips",I.hchips,"The row as chips, ten and a plus"]],when:function(){ return CFG.hereStyle!=="sketch"; }},
@@ -6696,6 +6918,8 @@ document.addEventListener("keydown",function(e){
     if(e.code==="KeyD" && !e.shiftKey){ e.preventDefault(); toggleMark("done"); return; }
     /* Option+7 is the twin of Cmd+Shift+7, numbering, for the browsers and the iPad that keep the chord */
     if(e.code==="Digit7" && !e.shiftKey){ e.preventDefault(); toggleNumber(); return; }
+    /* Option+9 is the twin of Cmd+Shift+9, for the browsers and the iPad that keep the chord */
+    if(e.code==="Digit9" && !e.shiftKey){ e.preventDefault(); toggleProse(); return; }
     if(e.code==="KeyG" && !e.shiftKey){ e.preventDefault(); ungroup(); return; }
     if(e.code==="KeyC" && !e.shiftKey){ e.preventDefault(); doExport("png-copy"); return; }
     if(e.code==="KeyB" && !e.shiftKey){ e.preventDefault(); breakOut(); return; }
@@ -6812,6 +7036,12 @@ document.addEventListener("keydown",function(e){
   if(mod&&e.shiftKey&&(e.key==="f"||e.key==="F")){ e.preventDefault(); if(editing) commitEdit(); toggleMark("flag"); return; }
   /* Cmd+Shift+7 numbers, as it does in Docs; by physical key, since Shift turns the 7 into & */
   if(mod&&e.shiftKey&&e.code==="Digit7"){ e.preventDefault(); toggleNumber(); return; }
+  /* Cmd+Shift+9 turns a node into a paragraph. By e.key, since the whole
+     point is that it works while typing and a layout that puts a ( on Shift+9
+     still sends the 9; the e.code twin is there for the layouts that do not.
+     Cmd+M was considered and rejected: it is the map switcher, and macOS
+     minimises the window with it. */
+  if(mod&&e.shiftKey&&(e.key==="9"||e.key==="("||e.code==="Digit9")){ e.preventDefault(); toggleProse(); return; }
   if(mod&&e.key==="/"){
     e.preventDefault(); if(editing) commitEdit();
     /* With any lens up, Focus on a tied node means "this node and its whole
@@ -7485,7 +7715,7 @@ window.__mf={
   png:function(cb){ var t=exportTargets(); svgToPng(buildSvg(t.ids,t.frame),2,cb); },
   panel:function(on){ toggleStyle(on); },
   boxes:function(){ return box; }, pos:function(){ return pos; }, fit:fit,
-  get nodeMoves(){ return nodeMoves; }, get lastJson(){ return lastJson; }, importJson:importJsonText, exportJson:function(){ doExport("json"); return lastJson; }, libTree:function(){ return libTree(); }, detach:detachMap, get doc(){ return curDoc; }, get undoBytes(){ return undoBytes; }, get lastSvg(){ return lastSvg; }, get focusTrail(){ return focusTrail.length; }, copyMenu:function(){ var b=document.querySelector('#crumbs [data-cmenu]'); if(b) copyMenu(b); return !!elSMenu; }, get undoSteps(){ return undoStack.length; },
+  get nodeMoves(){ return nodeMoves; }, get reMeasured(){ return reMeasured; }, get lastJson(){ return lastJson; }, prose:function(id){ var x=N(id||selected); return !!(x&&x.prose); }, markdown:function(id){ return markdownOf(id||selected); }, branchJson:function(id){ return branchJson(id||selected); }, importJson:importJsonText, exportJson:function(){ doExport("json"); return lastJson; }, libTree:function(){ return libTree(); }, detach:detachMap, get doc(){ return curDoc; }, get undoBytes(){ return undoBytes; }, get lastSvg(){ return lastSvg; }, get focusTrail(){ return focusTrail.length; }, copyMenu:function(){ var b=document.querySelector('#crumbs [data-cmenu]'); if(b) copyMenu(b); return !!elSMenu; }, get undoSteps(){ return undoStack.length; },
   bounds:function(f){ return frameBounds(f); },
   onScreen:function(id){
     var p=pos[id],b=box[id]; if(!p||!b) return false;
