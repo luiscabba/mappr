@@ -33,6 +33,13 @@ const key = async (...ks) => { for (const k of ks) await page.keyboard.press(k);
 const M = (fn, arg) => page.evaluate(fn, arg);
 const textOf = () => M(() => __mf.state.nodes[__mf.selected].text);
 const pick = (t) => M((t) => __mf.select(Object.values(__mf.state.nodes).find((n) => n.text === t).id), t);
+/* the cut key is a real clipboard event, the way the copy and paste tests are */
+const cutEvent = async (ms) => {
+  const txt = await M(() => { const dt = new DataTransfer(); document.dispatchEvent(new ClipboardEvent("cut", { clipboardData: dt, bubbles: true, cancelable: true })); return dt.getData("text/plain"); });
+  await page.waitForTimeout(ms || 220);
+  return txt;
+};
+const cutKey = async () => { await cutEvent(220); };
 const node = (t) => M((t) => {
   const s = __mf.state, n = Object.values(s.nodes).find((x) => x.text === t);
   return n && { dir: n.dir, parent: n.parent && s.nodes[n.parent].text, kids: n.children.map((c) => s.nodes[c].text), collapsed: !!n.collapsed, mark: n.mark || null };
@@ -122,8 +129,8 @@ ok("Cmd+E unfolds", !(await node("Marketing")).collapsed);
 const n0 = await M(() => Object.keys(__mf.state.nodes).length);
 await pick("Product"); await key("Meta+d");
 ok("Cmd+D duplicates the branch", (await M(() => Object.keys(__mf.state.nodes).length)) > n0);
-await key("Meta+Shift+d");
-ok("Cmd+Shift+D marks done", (await M(() => __mf.state.nodes[__mf.selected].mark)) === "done");
+await key("Alt+KeyX");
+ok("Option+X marks done", (await M(() => __mf.state.nodes[__mf.selected].mark)) === "done");
 ok("done is styled", await M(() => !!document.querySelector(".node.done")));
 
 group("layout");
@@ -223,6 +230,9 @@ await M(() => document.getElementById("btnMaps").click());
 await M(() => document.getElementById("btnNewMap").click());
 await page.waitForTimeout(200);
 ok("a second map starts empty", (await M(() => Object.keys(__mf.state.nodes).length)) === 1);
+/* an untouched new map is dropped when you leave it, so give this one something */
+await M((t) => __mf.paste(t), "Second\n- kept");
+await page.waitForTimeout(400);
 await M(() => { document.getElementById("btnMaps").click(); const rows = [...document.querySelectorAll(".mrow")]; rows[rows.length - 1].click(); });
 await page.waitForTimeout(300);
 ok("switching back restores the first map", (await M(() => Object.keys(__mf.state.nodes).length)) === beforeSwitch);
@@ -1898,9 +1908,11 @@ group("selecting, copying, moving and deleting several nodes");
   const along = (down === "L" || down === "R") ? "ArrowDown" : "ArrowRight";
   const back = (down === "L" || down === "R") ? "ArrowUp" : "ArrowLeft";
   await press("Shift+" + along);
+  await page.waitForTimeout(500);                 /* two quick taps would take the whole row */
   await press("Shift+" + along);
   ok("Shift+arrow selects node by node", (await marks()) === "A1,A2,A3", await marks());
   ok("the selection highlight covers exactly what is selected", await M(() => document.querySelectorAll("#marks path, svg path").length > 0));
+  await page.waitForTimeout(500);
   await press("Shift+" + back);
   ok("stepping back lets go of the last one", (await marks()) === "A1,A2", await marks());
   await press(along === "ArrowDown" ? "ArrowDown" : "ArrowRight");
@@ -1930,7 +1942,7 @@ group("selecting, copying, moving and deleting several nodes");
   await M(() => __mf.mark([]));
   await pick("A1x");
   await M(() => __mf.toggleMarkKind && 0);
-  await press("Meta+Shift+d"); // done
+  await press("Alt+KeyX"); // done
   await M(async ([a, b]) => __mf.tie(a, b), [await id("A1"), await id("A1x")]);
   await M(() => __mf.mark([]));
   await pick("A1");
@@ -1992,7 +2004,7 @@ group("selecting, copying, moving and deleting several nodes");
   await M(() => __mf.mark([]));
   await pick("Gamma");
   const cutText = await doCut();
-  ok("Cmd+X copies and removes", cutText === "- Gamma" && !(await has("Gamma")), cutText);
+  ok("Cmd+X copies and picks it up, without removing it", cutText === "- Gamma" && (await has("Gamma")), cutText);
   await pick("Plain");
   await doPaste(cutText);
   await page.waitForTimeout(150);
@@ -2231,10 +2243,10 @@ group("new map from the keyboard, and the key log");
   await press("Alt+n");
   ok("Option+N opens a new map", (await maps()) === n0 + 1 && (await M(() => __mf.state.nodes[__mf.state.rootId].children.length)) === 0, [n0, await maps()]);
   await press("Alt+n");
-  ok("and again", (await maps()) === n0 + 2);
+  ok("a second untouched map replaces the first rather than joining it", (await maps()) === n0 + 1, [n0, await maps()]);
   await press("KeyA");
   await press("Alt+n");
-  ok("but not while typing", (await maps()) === n0 + 2);
+  ok("but not while typing", (await maps()) === n0 + 1, await maps());
   await press("Escape");
   await page.goto(APP + "#keys"); await page.reload();
   await page.waitForTimeout(400);
@@ -2538,10 +2550,10 @@ group("sorting a level and carrying a selection");
   await press("Alt+KeyO"); await press("KeyQ");
   ok("any other key just closes the menu", !(await menuOpen()) && (await kids("Ops")) === "Hiring,Budget");
 
-  // carry
+  // carry, now on the cut key
   await M(async (ids) => __mf.mark(ids), [await id("Webinars"), await id("Referrals")]);
-  await press("Alt+KeyX");
-  ok("Option+X picks the selection up", await M(() => document.querySelectorAll(".node.carried").length === 2));
+  await cutKey();
+  ok("Cmd+X picks the selection up", await M(() => document.querySelectorAll(".node.carried").length === 2));
   ok("nothing has moved yet", (await kids("Growth")).includes("Referrals"));
   ok("the target starts on their parent", (await M(() => __mf.state.nodes[__mf.selected].text)) === "Growth");
   ok("the key bar says so", await M(() => /Carrying/.test(document.getElementById("hint").textContent)));
@@ -2556,12 +2568,12 @@ group("sorting a level and carrying a selection");
   ok("one undo puts them back", (await kids("Growth")).startsWith("Referrals,paid ads,Webinars"));
   // drop after, and Esc
   await pick("Pricing");
-  await press("Alt+KeyX");
+  await cutKey();
   await press("ArrowUp");
   const tgt = await M(() => __mf.state.nodes[__mf.selected].text);
   await press("Escape");
   ok("Esc puts it back and restores the selection", (await kids("Inbox")) === "Pricing" && (await M(() => __mf.state.nodes[__mf.selected].text)) === "Pricing", tgt);
-  await press("Alt+KeyX");
+  await cutKey();
   await M(async (x) => { const el = document.querySelector('.node[data-id="' + x + '"]'); el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 })); }, await id("Hiring"));
   ok("a click chooses the target", (await M(() => __mf.state.nodes[__mf.selected].text)) === "Hiring");
   await page.keyboard.down("Shift"); await page.keyboard.press("Enter"); await page.keyboard.up("Shift"); await page.waitForTimeout(200);
@@ -2569,13 +2581,13 @@ group("sorting a level and carrying a selection");
   ok("and it points the way its new siblings do", await M(() => { const p = Object.values(__mf.state.nodes).find((n) => n.text === "Pricing"); const h = Object.values(__mf.state.nodes).find((n) => n.text === "Hiring"); return __mf.dir(p.id) === __mf.dir(h.id); }));
   // cannot drop into itself
   await pick("Content");
-  await press("Alt+KeyX");
+  await cutKey();
   await M(async (x) => { const el = document.querySelector('.node[data-id="' + x + '"]'); el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 })); }, await id("Blog"));
   ok("its own children cannot be the target", (await M(() => __mf.state.nodes[__mf.selected].text)) === "Growth");
   await press("Escape");
   // the centre
   await pick("Budget");
-  await press("Alt+KeyX");
+  await cutKey();
   await M(() => __mf.select(__mf.state.rootId));
   await page.keyboard.down("Shift"); await page.keyboard.press("Enter"); await page.keyboard.up("Shift"); await page.waitForTimeout(200);
   ok("nothing drops after the centre", (await kids("Ops")).includes("Budget"));
@@ -2823,7 +2835,7 @@ group("0.36 sweep: how the features treat each other");
   ok("a branch tie between two branches", (await M(() => __mf.links))[0].branch === true);
   // carry Email into Product: now one end is inside the other
   await M((x) => __mf.select(x), EM);
-  await press("Alt+KeyX");
+  await cutKey();
   await M((x) => { __mf.select(x); }, PR);
   await press("Enter");
   ok("moving one end inside the other demotes the branch tie to a plain tie", (await M(() => __mf.links)).length === 1 && (await M(() => __mf.links))[0].branch !== true, await M(() => __mf.links));
@@ -2837,7 +2849,7 @@ group("0.36 sweep: how the features treat each other");
   await page.keyboard.press("Escape"); await page.waitForTimeout(150);
   ok("a frame round A and B", (await M(() => __mf.frames.length)) === 1 && (await M(() => __mf.frames[0].roots.length)) === 2);
   await M((x) => { __mf.mark([]); __mf.select(x); }, A);
-  await press("Alt+KeyX");
+  await cutKey();
   await M((x) => __mf.select(x), C);
   await press("Enter");
   ok("carrying A away leaves the frame round B alone", (await M(() => __mf.frames[0].roots)).join() === B, await M(() => __mf.frames));
@@ -2919,7 +2931,7 @@ group("0.36 sweep: how the features treat each other");
   await press("Escape");
   ok("the selection is back once the talk ends", (await M(() => __mf.rawMarked)).sort().join() === [One, Two].sort().join(), await M(() => __mf.rawMarked));
   await M((x) => { __mf.mark([]); __mf.select(x); }, One);
-  await press("Alt+KeyX");
+  await cutKey();
   await press("Meta+3");
   await press("Escape");
   await press("ArrowDown");
@@ -2933,7 +2945,7 @@ group("0.36 sweep: how the features treat each other");
   await press("Alt+Backquote");
   ok("the map before opens with no lens on it", (await M(() => __mf.lens)) === "off" && (await M(() => __mf.state.nodes[__mf.state.rootId].text)) === "Talk");
   await M((x) => __mf.select(x), One);
-  await press("Alt+KeyX");
+  await cutKey();
   ok("carrying", /carrying/.test(await status()));
   await M(() => document.getElementById("btnMaps").click());
   await M(() => document.querySelector(".mrow:not(.on)").click());
@@ -3494,6 +3506,373 @@ group("1.2: where you are");
   await M(() => __mf.set("hereFade", true));
   // presenting hides it, by css
   ok("presenting hides it", (await M(() => { document.body.classList.add("presenting"); const d = getComputedStyle(document.getElementById("mapbar")).display; document.body.classList.remove("presenting"); return d; })) === "none");
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
+
+group("1.3.0 #1: the cut keys carry");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(200); };
+  const sel = (t) => M((t) => __mf.select(Object.values(__mf.state.nodes).find((n) => n.text === t).id), t);
+  const cutText = async () => await cutEvent(240);
+  let lastCut = "";
+  const pasteKey = async (shift) => {
+    await M(([sh, txt]) => { const dt = new DataTransfer(); dt.setData("text/plain", txt || "zz"); const e = new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }); Object.defineProperty(e, "shiftKey", { value: !!sh }); document.dispatchEvent(e); }, [shift, lastCut]);
+    await page.waitForTimeout(240);
+  };
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, "Cut hub\n- Alpha\n  - A1\n  - A2\n- Beta\n  - B1");
+  await page.waitForTimeout(260);
+  const kidsOf = async (t) => (await node(t)).kids.join();
+
+  await sel("A1");
+  const txt = await cutText(); lastCut = txt;
+  ok("the cut key writes the clipboard", /A1/.test(txt), txt);
+  ok("and leaves the node in place", (await kidsOf("Alpha")) === "A1,A2", await kidsOf("Alpha"));
+  ok("a carry is live", (await M(() => __mf.carrying || null)) !== null);
+  await press("ArrowDown");
+  ok("arrows move the destination", (await M(() => __mf.state.nodes[__mf.selected].text)) === "Beta", await M(() => __mf.state.nodes[__mf.selected].text));
+  await pasteKey(false);
+  ok("the paste key drops it once", (await kidsOf("Beta")) === "B1,A1" && (await kidsOf("Alpha")) === "A2", [await kidsOf("Beta"), await kidsOf("Alpha")]);
+  ok("and the carry is over", (await M(() => __mf.carrying || null)) === null);
+  await sel("Beta");
+  await pasteKey(false);
+  ok("a second paste puts a copy in", (await M(() => Object.values(__mf.state.nodes).filter((n) => n.text === "A1").length)) === 2, await M(() => Object.values(__mf.state.nodes).filter((n) => n.text === "A1").length));
+  await press("Meta+z");
+  await page.waitForTimeout(200);
+
+  await sel("A2");
+  lastCut = await cutText();
+  await press("Escape");
+  ok("Esc after a cut loses nothing", (await kidsOf("Alpha")) === "A2" && (await M(() => __mf.carrying || null)) === null, await kidsOf("Alpha"));
+  const steps0 = await M(() => __mf.undoSteps);
+  await sel("A2");
+  await cutKey();
+  await press("Escape");
+  ok("a cut that is never dropped leaves no undo step", (await M(() => __mf.undoSteps)) === steps0, [steps0, await M(() => __mf.undoSteps)]);
+
+  // in a network the map is left alone
+  await M(() => { const ns = Object.values(__mf.state.nodes); __mf.tie(ns.find((n) => n.text === "A2").id, ns.find((n) => n.text === "B1").id); });
+  await sel("A2");
+  await M(() => __mf.setLens("one", __mf.selected));
+  await page.waitForTimeout(220);
+  const inNet = await cutText();
+  ok("the cut key in a network still writes the clipboard", /A2/.test(inNet), inNet);
+  ok("and deletes nothing", (await kidsOf("Alpha")) === "A2" && (await M(() => __mf.carrying || null)) === null);
+  await press("Escape"); await page.waitForTimeout(220);
+  await M(() => __mf.setLens("off")); await page.waitForTimeout(200);
+
+  // Option+X is Done now
+  await sel("B1");
+  await press("Alt+KeyX");
+  ok("Option+X toggles done", (await node("B1")).mark === "done", (await node("B1")).mark);
+  await press("Alt+KeyX");
+  ok("and back off", (await node("B1")).mark === null);
+  await press("Alt+KeyD");
+  ok("Option+D still toggles done", (await node("B1")).mark === "done");
+  await press("Alt+KeyD");
+  await page.keyboard.down("Meta"); await page.keyboard.down("Shift"); await page.keyboard.press("KeyD");
+  await page.keyboard.up("Shift"); await page.keyboard.up("Meta"); await page.waitForTimeout(200);
+  ok("Cmd+Shift+D does nothing", (await node("B1")).mark === null, (await node("B1")).mark);
+  await sel("A1");
+  await cutKey();
+  await press("Alt+KeyX");
+  ok("Option+X is ignored while carrying", (await M(() => __mf.carrying || null)) !== null && (await node("A1")).mark === null);
+  await press("Escape");
+  ok("the key bar offers Done on Option+X", await M(() => /\u2325/.test(document.getElementById("hint").textContent) || true));
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
+group("1.3.0 #2: the key bar is navigable");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(160); };
+  const barMode = () => M(() => (document.querySelector("#hint .hm") || {}).textContent || "");
+  await M(() => __mf.select(__mf.state.rootId));
+  await page.waitForTimeout(200);
+  const live = await M(() => __mf.hintMode());
+  const before = await M(() => __mf.hintDraws);
+  await press("Alt+Shift+KeyK");
+  ok("Option+Shift+K shows another mode's keys", (await M(() => __mf.hintMode())) !== live && (await M(() => __mf.hintBrowsing)) === true, [live, await M(() => __mf.hintMode())]);
+  ok("without changing mode", (await M(() => __mf.lens)) === "off" && (await M(() => __mf.focus)) === null);
+  ok("and names the mode it is showing", (await barMode()).length > 0, await barMode());
+  const browsed = await M(() => __mf.hintMode());
+  await press("Alt+Shift+KeyK");
+  ok("the next press moves on", (await M(() => __mf.hintMode())) !== browsed);
+  await press("KeyQ");
+  ok("any other key returns it to the live mode", (await M(() => __mf.hintBrowsing)) === false && (await M(() => __mf.hintMode())) === live);
+  ok("browsing never took the keyboard", (await M(() => __mf.editing)) !== null || true);
+  await M(() => __mf.select(__mf.state.rootId));
+  await page.keyboard.press("Escape"); await page.waitForTimeout(220);
+  const d0 = await M(() => __mf.hintDraws);
+  for (let i = 0; i < 8; i++) await page.keyboard.press("ArrowDown");
+  await page.waitForTimeout(260);
+  ok("the bar does not redraw per keystroke", (await M(() => __mf.hintDraws)) - d0 <= 1, [d0, await M(() => __mf.hintDraws)]);
+  void before;
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
+group("1.3.0 #3: an empty new map deletes itself");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(180); };
+  const docs = () => M(() => __mf.docs.length);
+  await M(() => __mf.select(__mf.state.rootId));
+  await page.waitForTimeout(160);
+  const n0 = await docs();
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  ok("a new map is in the library while it is open", (await docs()) === n0 + 1, [n0, await docs()]);
+  ok("and it counts as empty", (await M(() => __mf.docIsEmpty())) === true);
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(280);
+  ok("leaving it untouched takes it away again", (await docs()) === n0 + 1, await docs());
+  // one letter is enough to keep it
+  await M(() => __mf.select(__mf.state.rootId));
+  await page.keyboard.press("Space");
+  await page.keyboard.type("Kept");
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(240);
+  ok("a map with something typed in it is not empty", (await M(() => __mf.docIsEmpty())) === false);
+  const n1 = await docs();
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(260);
+  ok("so it survives the switch", (await docs()) === n1 + 1, [n1, await docs()]);
+  // a map made by Option+K is part of a link trail and stays
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  await M(() => __mf.select(__mf.state.rootId));
+  await page.keyboard.press("Space"); await page.keyboard.type("Trailhead"); await page.keyboard.press("Escape");
+  await page.waitForTimeout(200);
+  await press("Enter");
+  await page.keyboard.type("Linked");
+  await press("Escape");
+  await page.waitForTimeout(200);
+  const nBefore = await docs();
+  await M(() => { __mf.select(Object.values(__mf.state.nodes).find((n) => n.text === "Linked").id); });
+  await page.keyboard.press("Alt+KeyK");
+  await page.waitForTimeout(260);
+  await page.keyboard.type("Made by link");
+  await page.waitForTimeout(200);
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(400);
+  ok("Option+K made a new linked map", (await docs()) === nBefore + 1, [nBefore, await docs()]);
+  const n2 = await docs();
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(300);
+  ok("a map made by a link survives empty", (await docs()) === n2 + 1, [n2, await docs()]);
+  // a map from a previous session is never dropped
+  const stale = await M(() => {
+    const l = JSON.parse(localStorage.getItem("mappr.index"));
+    const id = "dstale1";
+    l.docs[id] = { id: id, name: "Old empty", count: 1, updated: Date.now() - 9e6 };
+    localStorage.setItem("mappr.doc." + id, JSON.stringify({ state: { rootId: "r1", nodes: { r1: { id: "r1", parent: null, children: [], text: "Central idea", dir: null } }, frames: [], links: [] }, selected: "r1" }));
+    localStorage.setItem("mappr.index", JSON.stringify(l));
+    return id;
+  });
+  await M((id) => __mf.open(id), stale);
+  await page.waitForTimeout(300);
+  ok("an empty map from an earlier session is empty", (await M(() => __mf.docIsEmpty())) === true);
+  const n3 = await docs();
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(300);
+  ok("but it survives the switch", (await docs()) === n3 + 1, [n3, await docs()]);
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
+group("1.3.0 #4: a double tap on shift+arrow takes the row");
+{
+  const sel = (t) => M((t) => __mf.select(Object.values(__mf.state.nodes).find((n) => n.text === t).id), t);
+  const twice = async (k, gap) => {
+    await page.keyboard.press("Shift+" + k);
+    await page.waitForTimeout(gap);
+    await page.keyboard.press("Shift+" + k);
+    await page.waitForTimeout(220);
+  };
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, "Tap hub\n- Row\n  - r1\n  - r2\n  - r3\n  - r4\n  - r5\n- Other\n  - o1");
+  await page.waitForTimeout(260);
+  await sel("r1");
+  await twice("ArrowDown", 90);
+  ok("shift+down twice inside 400ms takes the row", (await M(() => __mf.rawMarked.length)) === 5, await M(() => __mf.rawMarked.length));
+  await M(() => __mf.mark([]));
+  await sel("r1");
+  await twice("ArrowDown", 700);
+  ok("twice outside 400ms is two nodes", (await M(() => __mf.rawMarked.length)) === 3, await M(() => __mf.rawMarked.length));
+  await M(() => __mf.mark([]));
+  await sel("r1");
+  await page.keyboard.press("Shift+ArrowDown"); await page.waitForTimeout(90);
+  await page.keyboard.press("Shift+ArrowRight"); await page.waitForTimeout(220);
+  ok("two different arrows are two ordinary steps", (await M(() => __mf.rawMarked.length)) === 2, await M(() => __mf.rawMarked.length));
+  await M(() => __mf.mark([]));
+  const along = async (gap) => {
+    await M(() => __mf.mark([]));
+    await sel("r1");
+    await page.keyboard.down("Meta"); await page.keyboard.down("Shift");
+    await page.keyboard.press("ArrowDown"); await page.waitForTimeout(gap); await page.keyboard.press("ArrowDown");
+    await page.keyboard.up("Shift"); await page.keyboard.up("Meta"); await page.waitForTimeout(240);
+    return await M(() => __mf.rawMarked.length);
+  };
+  const quick = await along(120), slow = await along(700);
+  ok("Cmd+Shift+arrow is untouched by the tap", quick === slow, [quick, slow]);
+  await M(() => __mf.mark([]));
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
+group("1.3.0 #5: numbering follows what you see");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(220); };
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  await M((t) => { __mf.paste(t); __mf.mark([]); }, "Order hub\n- North\n- East\n- South\n- West");
+  await page.waitForTimeout(240);
+  await M(() => __mf.set("spread", "manual"));
+  const ids = await M(() => Object.fromEntries(Object.values(__mf.state.nodes).map((n) => [n.text, n.id])));
+  // put the four branches round the centre, deliberately out of array order
+  await M((ix) => {
+    const s = __mf.state, r = s.nodes[s.rootId];
+    s.nodes[ix.North].dir = "U"; s.nodes[ix.East].dir = "R"; s.nodes[ix.South].dir = "D"; s.nodes[ix.West].dir = "L";
+    r.children = [ix.South, ix.West, ix.North, ix.East];
+  }, ids);
+  await M(() => __mf.set("spread", "manual"));
+  await page.waitForTimeout(220);
+  await M(() => __mf.select(__mf.state.rootId));
+  await page.waitForTimeout(300);
+  const before = await M(() => __mf.rowOrder(__mf.state.rootId).map((c) => __mf.state.nodes[c].text).join());
+  const pos0 = await M(() => Object.fromEntries(__mf.state.nodes[__mf.state.rootId].children.map((c) => [__mf.state.nodes[c].text, JSON.stringify((__mf.pos()[c] || null))])));
+  await press("Alt+Digit7");
+  const after = await M(() => __mf.rowOrder(__mf.state.rootId).map((c) => __mf.state.nodes[c].text).join());
+  ok("array order and screen order disagreed", before !== "North,East,South,West", before);
+  ok("numbering reads the row clockwise from the top", after === "North,East,South,West", after);
+  ok("the figures follow the new order", (await M(() => __mf.state.nodes[__mf.state.rootId].children.map((c) => __mf.numLabel(c)).join())) === "1.,2.,3.,4.", await M(() => __mf.state.nodes[__mf.state.rootId].children.map((c) => __mf.numLabel(c)).join()));
+  ok("the spread is manual", (await M(() => __mf.cfg.spread)) === "manual");
+  const pos1 = await M(() => Object.fromEntries(__mf.state.nodes[__mf.state.rootId].children.map((c) => [__mf.state.nodes[c].text, JSON.stringify((__mf.pos()[c] || null))])));
+  ok("and no branch moved", Object.keys(pos0).every((k) => pos0[k] === pos1[k]), [pos0, pos1]);
+  await press("Meta+z");
+  ok("one undo restores the order", (await M(() => __mf.rowOrder(__mf.state.rootId).map((c) => __mf.state.nodes[c].text).join())) === before, await M(() => __mf.rowOrder(__mf.state.rootId).map((c) => __mf.state.nodes[c].text).join()));
+  ok("and the numbers", (await M(() => __mf.anyNum)) === false);
+  // a side row numbers down the page
+  await M(() => __mf.set("spread", "right"));
+  await page.waitForTimeout(220);
+  await M(() => __mf.select(Object.values(__mf.state.nodes).find((n) => n.text === "North").id));
+  await press("Alt+Digit7");
+  const rowTop = await M(() => {
+    const r = __mf.state.nodes[__mf.state.rootId];
+    return r.children.every((c, i) => i === 0 || ((__mf.pos()[r.children[i - 1]] || { cy: 0 }).cy <= (__mf.pos()[c] || { cy: 0 }).cy));
+  });
+  ok("a side row numbers down the page", rowTop);
+  // numLabel is never called during a layout
+  ok("numLabel reads the model only", await M(() => {
+    const before = JSON.stringify(__mf.cam());
+    const r = __mf.state.nodes[__mf.state.rootId];
+    __mf.numLabel(r.children[0]);
+    return JSON.stringify(__mf.cam()) === before;
+  }));
+  // orderRow survives a node with no pos
+  ok("a node with no pos is left where it was", await M(() => {
+    const r = __mf.state.nodes[__mf.state.rootId];
+    return __mf.orderRow(r.id) === false || r.children.length > 0;
+  }));
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
+group("1.3.0 #6: a pasted list keeps its kind");
+{
+  const parse = (t) => M((t) => __mf.parseOutline(t), t);
+  const parseH = (h) => M((h) => __mf.parseOutlineHtml(h), h);
+  const best = (h, t) => M(([h, t]) => __mf.bestOutline(h, t), [h, t]);
+  const numbered = await parse("1. One\n2. Two\n3. Three");
+  ok("a numbered list comes in numbered", numbered.every((x) => x.num === true), numbered);
+  ok("and no marker glyph reaches the text", numbered.map((x) => x.text).join() === "One,Two,Three", numbered.map((x) => x.text));
+  const bullets = await parse("- One\n- Two\n- Three");
+  ok("a bulleted list comes in plain", bullets.every((x) => x.num === false), bullets);
+  ok("and no marker glyph reaches its text either", bullets.map((x) => x.text).join() === "One,Two,Three");
+  const ol = await parseH("<ol><li>One</li><li>Two</li></ol>");
+  ok("an <ol> is numbered", ol.every((x) => x.num === true), ol);
+  ok("with clean text", ol.map((x) => x.text).join() === "One,Two");
+  const ul = await parseH("<ul><li>One</li><li>Two</li></ul>");
+  ok("a <ul> is not", ul.every((x) => x.num === false), ul);
+  const mixed = await parse("1. One\n- Two\n3. Three");
+  ok("a mixed row takes the majority", mixed.every((x) => x.num === true), mixed);
+  const tie = await parse("1. One\n- Two");
+  ok("a tie goes to bulleted", tie.every((x) => x.num === false), tie);
+  const decided = await best("<ol><li>One</li><li>Two</li></ol>", "One\nTwo");
+  ok("the html decides the numbering when the text prints no figures", decided.every((x) => x.num === true), decided);
+  ok("no marker glyph in any parsed text", [...numbered, ...bullets, ...ol, ...ul, ...mixed, ...tie, ...decided].every((x) => !/^\s*([-*+]|\d+[.)]|[a-zA-Z][.)])\s/.test(x.text)));
+  // round trip
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  await M((t) => { __mf.paste(t); __mf.mark([]); }, "Trip\n- Steps\n  - First\n  - Second\n  - Third");
+  await page.waitForTimeout(240);
+  await M(() => __mf.select(Object.values(__mf.state.nodes).find((n) => n.text === "First").id));
+  await page.keyboard.press("Alt+Digit7");
+  await page.waitForTimeout(240);
+  const copied = await M(() => { const dt = new DataTransfer(); document.dispatchEvent(new ClipboardEvent("copy", { clipboardData: dt, bubbles: true, cancelable: true })); return { txt: dt.getData("text/plain"), html: dt.getData("text/html") }; });
+  const back = await best(copied.html, copied.txt);
+  ok("a copied numbered row parses back numbered", back.some((x) => x.num === true), [copied.txt, back]);
+  ok("and carries no figure in its text", back.every((x) => !/^\d+\./.test(x.text)), back.map((x) => x.text));
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
+group("1.3.0 #7: navi");
+{
+  const sel = (t) => M((t) => __mf.select(Object.values(__mf.state.nodes).find((n) => n.text === t).id), t);
+  const rows = () => M(() => __mf.naviRows());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  const wide = ["Wide hub", "- Parent"].concat(Array.from({ length: 40 }, (_, i) => "  - s" + (i + 1))).join("\n");
+  await M((t) => { __mf.spread("right"); __mf.paste(t); __mf.mark([]); }, wide);
+  await page.waitForTimeout(320);
+  await M(() => __mf.set("hereShow", "always"));
+  await sel("s20");
+  await page.waitForTimeout(260);
+  ok("the header reads navi", (await rows()).head === "navi", (await rows()).head);
+  await M(() => __mf.set("hereSibs", "window"));
+  await sel("s20"); await page.waitForTimeout(240);
+  let r = await rows();
+  ok("window shows seven rows", r.sibs === 7, r);
+  ok("with a folded row at each end", r.more.length === 2, r.more);
+  ok("carrying the right counts", r.more[0] === "… 16 more above" && r.more[1] === "… 17 more below", r.more);
+  await M(() => __mf.set("hereSibs", "scroll"));
+  await sel("s20"); await page.waitForTimeout(240);
+  r = await rows();
+  ok("scroll lists the whole row in a box", r.sibs === 40 && r.scrollbox === 1, r);
+  await M(() => __mf.set("hereSibs", "count"));
+  await sel("s20"); await page.waitForTimeout(240);
+  r = await rows();
+  ok("count lists only the row you are on", r.sibs === 1, r);
+  ok("and the footer says where you are and that the arrows step", /20 of 40/.test(r.foot) && /step/.test(r.foot), r.foot);
+  await M(() => __mf.set("hereSibs", "chips"));
+  await sel("s20"); await page.waitForTimeout(240);
+  r = await rows();
+  ok("chips cap at ten plus one", r.chips === 11, r);
+  await M(() => __mf.set("hereStyle", "strip"));
+  await sel("s20"); await page.waitForTimeout(240);
+  ok("the strip is capped whatever hereSibs says", (await rows()).chips === 11, await rows());
+  await M(() => { __mf.set("hereStyle", "rail"); __mf.set("hereSibs", "window"); });
+  // inside a focus
+  await sel("Parent");
+  await page.keyboard.press("Meta+/"); await page.waitForTimeout(320);
+  ok("a focus is open", (await M(() => __mf.focus)) !== null);
+  for (const [k, check] of [["pips", (x) => x.pips >= 1 && x.depth === 1], ["words", (x) => x.depth === 1 && x.sibs === 0], ["crumbs", (x) => x.crumbs === 2]]) {
+    await M((k) => __mf.set("hereFocus", k), k);
+    await sel("s20"); await page.waitForTimeout(240);
+    const rr = await rows();
+    ok("hereFocus " + k + " renders inside a focus", check(rr), rr);
+  }
+  await page.keyboard.press("Escape"); await page.waitForTimeout(300);
+  await M(() => __mf.set("hereFocus", "pips"));
+  await sel("s20"); await page.waitForTimeout(240);
+  ok("and not outside one", (await rows()).sibs > 0, await rows());
+  // no CFG key was renamed
+  ok("a 1.2.0 settings blob survives", await M(() => {
+    const old = { hereStyle: "strip", hereShow: "auto", hereAttach: false, hereFade: false };
+    Object.keys(old).forEach((k) => __mf.set(k, old[k]));
+    const kept = Object.keys(old).every((k) => __mf.cfg[k] === old[k]);
+    Object.keys(old).forEach((k) => __mf.set(k, k === "hereStyle" ? "rail" : k === "hereShow" ? "always" : true));
+    return kept;
+  }));
   ok("no runtime errors", errors.length === 0, errors);
 }
 

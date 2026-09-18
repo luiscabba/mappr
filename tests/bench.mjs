@@ -199,6 +199,37 @@ for (const size of [600, 1500]) {
   row("an arrow, in a " + r.nodes + "-node map", r.move);
 }
 
+/* ---------- 3b. navi on a wide row ----------
+   The rail used to build one row per sibling on every selection change, so a
+   forty-wide row cost forty rows built and written. Capped, it should cost
+   less than it did. */
+console.log("\nnavi on a 40-sibling row (median of 20 selection changes, 1500-node map)");
+{
+  const page = await build(1500);
+  const r = await page.evaluate(() => {
+    __mf.mark([]);
+    __mf.set("hereShow", "always");
+    const s = __mf.state, root = s.nodes[s.rootId];
+    const host = s.nodes[root.children[0]];
+    /* build the wide row straight into the model, then lay it out once */
+    let n = host.children.length, guard = 0;
+    while (host.children.length < 40 && guard++ < 200) {
+      const id = "wb" + guard;
+      s.nodes[id] = { id: id, parent: host.id, children: [], text: "sib " + (n++), dir: host.dir };
+      host.children.push(id);
+    }
+    __mf.select(host.id);
+    const row = host.children.slice(0, 40);
+    const t = [];
+    for (let i = 0; i < 20; i++) { const a = performance.now(); __mf.select(row[i % row.length]); t.push(performance.now() - a); }
+    t.sort((x, y) => x - y);
+    return { nodes: Object.keys(s.nodes).length, sel: Math.round(t[10] * 100) / 100, rows: (__mf.naviRows && __mf.naviRows()) ? __mf.naviRows().sibs : -1 };
+  });
+  results.navi = { sel: r.sel, rows: r.rows };
+  row("a selection change, " + r.nodes + " nodes", r.sel);
+  row("rail rows built per change", String(r.rows), "");
+}
+
 /* ---------- 4. undo stack memory ---------- */
 console.log("\nundo stack");
 {

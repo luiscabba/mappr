@@ -168,7 +168,7 @@
   #rail .rr .also{color:var(--muted);font-size:10.5px;font-style:italic;white-space:nowrap}
   #rail .rr.d1{padding-left:22px}#rail .rr.d2{padding-left:36px}#rail .rr.d3{padding-left:50px}#rail .rr.d4{padding-left:64px}
   #rail .rf{padding:6px 8px 0;color:var(--muted);font-size:10.5px}
-  /* Where you are (1.2): the way up and the row you are on, never children */
+  /* navi (1.2): the way up and the row you are on, never children */
   #here{font:12.5px var(--font-ui);transition:opacity .4s}
   #here[hidden]{display:none}
   #mapbar #here.sec{border-top:1px solid var(--panel-line)}
@@ -196,6 +196,12 @@
   #here .rr.sib::before{content:"";position:absolute;left:calc(var(--sd) * 12px - 3px);top:0;bottom:0;border-left:1.5px solid var(--panel-line)}
   #here .rr.sib.on::before{border-color:var(--sel)}
   #here .rr.more{color:var(--muted);font-size:11px;cursor:default}
+  #here .sibwrap{max-height:168px;overflow:auto;scrollbar-width:thin}
+  #here .pips{display:flex;gap:3px;align-items:center;padding:4px 8px 2px}
+  #here .pips i{width:5px;height:14px;border-radius:2px;background:var(--panel-line);display:block}
+  #here .pips i.on{background:var(--sel)}
+  #here .depth{padding:3px 8px;font-family:var(--font-sketch);font-size:13.5px;color:var(--ink)}
+  #here .depth b{color:var(--sel)}
   #here .rf{padding:6px 8px 0;color:var(--muted);font-size:10.5px;display:flex;gap:8px;align-items:center}
   /* pill and strip */
   #here .hstrip{padding:6px 8px 8px;width:max-content;max-width:calc(100vw - 28px)}
@@ -533,6 +539,8 @@
   #hint{flex-wrap:nowrap;overflow:hidden;gap:4px 14px}
   #hint > span{white-space:nowrap}
   #hint .hm{font-weight:700;color:var(--sel);text-transform:uppercase;font-size:10px;letter-spacing:.05em}
+  #hint.browsing{border-style:dashed}
+  #hint.browsing .hm{color:var(--muted)}
   #hint .hx{border:0;background:none;color:var(--muted);cursor:pointer;font:13px var(--font-ui);padding:0 2px;margin-left:2px}
   #hint .hx:hover{color:var(--ink)}
   #hint.min{padding:6px 10px;gap:6px}
@@ -628,7 +636,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v1.2.0">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
+  <span class="brand" id="brand" title="Mappr v1.3.0">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -713,7 +721,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.2.0</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.3.0</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <div id="helpBody">
@@ -752,11 +760,11 @@
       <tr><td><kbd>⌥</kbd><kbd>J</kbd></td><td><b>Merge</b> the selected nodes into one. The first in map order keeps its place; its text becomes all of theirs, one per line, and it takes every child they had. Links and frames follow it. Also on the selection bar.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>S</kbd> / <kbd>⌥</kbd><kbd>⇧</kbd><kbd>S</kbd></td><td><b>Split</b> a node with several lines into one node per line: as siblings right after it, or with <kbd>⇧</kbd> as its children. It keeps the first line and its own children, and leading bullets or numbers are dropped. Works on every selected node at once.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>O</kbd></td><td><b>Sort.</b> A small menu, a number picks: A to Z, Z to A, reverse, biggest branch first, done last, or back to how it was. It sorts the selected siblings among the places they already hold, or with one node selected, that node's children. On the centre each side is sorted on its own.</td></tr>
-      <tr><td><kbd>⌥</kbd><kbd>X</kbd></td><td><b>Carry.</b> Picks up the selection (or the selected node): it goes faint where it is, and the arrows, or a click, choose where it goes. <kbd>⏎</kbd> drops it inside the ringed node, <kbd>⇧</kbd><kbd>⏎</kbd> right after it, <kbd>Esc</kbd> puts it back. Nothing changes until the drop, and one <kbd>⌘</kbd><kbd>Z</kbd> undoes it.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>X</kbd></td><td><b>Carry.</b> Picks up the selection (or the selected node): it goes faint where it is, and the arrows, or a click, choose where it goes. <kbd>⏎</kbd> drops it inside the ringed node, <kbd>⇧</kbd><kbd>⏎</kbd> right after it, <kbd>Esc</kbd> puts it back. Nothing changes until the drop, and one <kbd>⌘</kbd><kbd>Z</kbd> undoes it. <kbd>⌘</kbd><kbd>V</kbd> puts it down as well as <kbd>⏎</kbd> does, and the clipboard still holds what you picked up, so you can paste a copy of it anywhere else.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself. With a selection up, every selected branch is duplicated and the copies come out selected.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd><br><kbd>⌥</kbd><kbd>D</kbd> / <kbd>⌥</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag. Firefox and Zen keep <kbd>⌘</kbd><kbd>⇧</kbd><kbd>D</kbd> and <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd> for themselves, so <kbd>⌥</kbd><kbd>D</kbd> and <kbd>⌥</kbd><kbd>F</kbd> do the same; likewise <kbd>⌥</kbd><kbd>G</kbd> ungroups and <kbd>⌥</kbd><kbd>C</kbd> copies as an image. <kbd>⌃</kbd> works as <kbd>⌘</kbd> everywhere, which is the key to use on an iPad. A flag is a hand-drawn pennant on the box; the Style panel has a ribbon, a ring and an asterisk instead. <kbd>⌘</kbd><kbd>4</kbd> dims the map to its flags and <kbd>Tab</kbd> steps through them; in <kbd>⌘</kbd><kbd>K</kbd>, type <kbd>!</kbd> first to list only flagged nodes. Sort has <em>Flagged first</em>, and a copied outline writes <kbd>!</kbd> before a flagged line, which flags it again when pasted back.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>X</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd><br><kbd>⌥</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag. <kbd>⌥</kbd><kbd>D</kbd> still marks done, the older key. Firefox and Zen keep <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd> for themselves, so <kbd>⌥</kbd><kbd>F</kbd> does the same; likewise <kbd>⌥</kbd><kbd>G</kbd> ungroups and <kbd>⌥</kbd><kbd>C</kbd> copies as an image. <kbd>⌃</kbd> works as <kbd>⌘</kbd> everywhere, which is the key to use on an iPad. A flag is a hand-drawn pennant on the box; the Style panel has a ribbon, a ring and an asterisk instead. <kbd>⌘</kbd><kbd>4</kbd> dims the map to its flags and <kbd>Tab</kbd> steps through them; in <kbd>⌘</kbd><kbd>K</kbd>, type <kbd>!</kbd> first to list only flagged nodes. Sort has <em>Flagged first</em>, and a copied outline writes <kbd>!</kbd> before a flagged line, which flags it again when pasted back.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>7</kbd><br><kbd>⌥</kbd><kbd>7</kbd></td><td><b>Number.</b> Docs' own key. Numbers the row the node is on, its siblings in order; with a selection up, every row that has a selected node in it, so <kbd>⌘</kbd><kbd>⇧</kbd><kbd>→</kbd> then <kbd>⌘</kbd><kbd>⇧</kbd><kbd>7</kbd> numbers a whole branch as an outline. On the centre alone it numbers the branches. Pressed on rows already numbered, it takes the numbers off. A number belongs to the row, not the node: nothing is typed into the text, and a move, a sort, a delete or a paste renumbers on its own. Rows nest 1. then a. then i.; the Style panel has 1.1.1 and I. A. 1. instead, and draws the number in the gutter, in the box or on the edge. A copied outline writes the number before the line and a pasted <kbd>1.</kbd> or <kbd>a.</kbd> line comes in numbered.</td></tr>
-      <tr><td><kbd>⌥</kbd><kbd>⇧</kbd><kbd>W</kbd></td><td><b>Where you are.</b> The rail top left follows the selection and shows only the way up and the row you are on: ancestors as a muted spine, the siblings under the parent with yours lit, children as a count. When the centre is off screen a small arrow points to where it is. Click a row to go there. The key cycles always, only when the centre is out of view, and off; the Style panel has the same, plus a pill with the siblings as chips or a drawn sketch instead of the rail, whether it fades when idle, and whether it joins the maps rail in one panel.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>⇧</kbd><kbd>W</kbd></td><td><b>navi.</b> The rail top left follows the selection and shows only the way up and the row you are on: ancestors as a muted spine, the siblings under the parent with yours lit, children as a count. When the centre is off screen a small arrow points to where it is. Click a row to go there. A long row is capped: three siblings either side and a folded row at each end, with the whole row in a scrolling box, just the count, or the row as chips as the alternatives in Style. Inside a focus it shows how deep you are instead of the spine, as pips, in words or as two crumbs. The key cycles always, only when the centre is out of view, and off; the Style panel has the same, plus a pill with the siblings as chips or a drawn sketch instead of the rail, whether it fades when idle, and whether it joins the maps rail in one panel.</td></tr>
     </table></section>
     <section class="hpane" data-tab="frames"><h3>Select and frames</h3>
     <table class="keys">
@@ -768,7 +776,7 @@
       <tr><td><kbd>⌘</kbd><kbd>G</kbd></td><td>Wrap the selection in a frame and name it. Frames resize themselves as the map underneath grows.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>G</kbd></td><td>Ungroup the selected frame.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>C</kbd></td><td>Copy as an indented bullet list: exactly what is selected, each node under its nearest selected parent. With nothing selected, the selected node's branch (on the centre, the whole map), or the selected frame. Copies made here also keep done and flag marks, folds, and links between the copied nodes.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>X</kbd></td><td>Cut: copy, then delete what was copied.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>X</kbd></td><td>Cut: copies to the clipboard and picks the branch up, so nothing leaves the map until <kbd>⌘</kbd><kbd>V</kbd> or <kbd>⏎</kbd> puts it down. <kbd>Esc</kbd> puts it back where it was. In a network or during a talk the clipboard is written and the map is left alone.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>V</kbd> / <kbd>⇧</kbd><kbd>⌘</kbd><kbd>V</kbd></td><td>Paste as children of the selected node, or as siblings right after it. The pasted nodes come in selected, and point the way their new parent does. Pasting onto a blank node you just made puts the paste in its place, and one undo takes both back.</td></tr>
       <tr><td><kbd>⇧</kbd><kbd>⌘</kbd><kbd>C</kbd></td><td>Copy as an image, ready to paste into a deck or a doc.</td></tr>
       <tr><td>Double-click a frame name</td><td>Rename it.</td></tr>
@@ -820,6 +828,7 @@
       <tr><td>Drag / scroll</td><td>Pan. <kbd>⌘</kbd>+scroll zooms.</td></tr>
       <tr><td>Right-click</td><td>Mappr's own menu. On a node: everything that can be done to it, each row with its key beside it, so the menu teaches the keys. On empty canvas: the views, the camera and the maps. Any key closes it and still does what it does.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>,</kbd></td><td>Style panel. It never takes the keyboard, so shortcuts keep working while it is open.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>⇧</kbd><kbd>K</kbd></td><td>Walk the key bar through the other modes without leaving the one you are in, so you can read the selection keys while you are on the map. Any other key, or five seconds, brings your own keys back, and the key you pressed still does what it does.</td></tr>
     </table></section>
       </div>
     </div>
@@ -832,9 +841,9 @@
      panel cannot drift from the record of what actually shipped. -->
 <div id="notes">
   <div id="notesCard">
-    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.2.0</span></h2>
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.3.0</span></h2>
     <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
-    <div id="notesBody"><h3 class="rel">1.2.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Where you are.</b> A rail top left that follows the selection and shows only the way up and the row you are on: the ancestors as a muted spine, the siblings under the parent with yours lit, children as a count and never listed, flags with their <code>!</code> and numbers with their figures. A deep trail folds its middle. When the centre has gone off screen a small arrow points to where it is. Click a row to go there. It joins the maps rail in one panel, so the two read as one place; the Style panel can give it its own bar instead, swap the rail for a pill with the siblings as chips or for a drawn sketch of the same, stop it fading when you leave it alone, and set when it shows: always, only when the centre is out of view, or never. <code>⌥⇧W</code> cycles those three.</li></ul><h3 class="rel">1.1.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Numbers, like a list in Docs.</b> <code>⌘⇧7</code> (or <code>⌥7</code>) numbers the row the selected node is on, its siblings in order. With a selection up it numbers every row that has a selected node in it, so <code>⌘⇧→</code> then <code>⌘⇧7</code> turns a whole branch into an outline, and <code>⌘A</code> then <code>⌘⇧7</code> the whole map. On the centre alone it numbers the branches. Pressed on rows already numbered, it takes the numbers off. A number belongs to the row, not the node: nothing is typed into the text, and a move, a sort, a delete or a paste renumbers on its own. Rows nest 1. then a. then i., as Docs does; the Style panel has 1.1.1 and I. A. 1. instead, and draws the number in the gutter (a bare figure outside the box, so a long node never wraps earlier), in the box, or as a pill on the edge that faces the parent. Numbers export with the map. A copied outline writes the number before each line, and a pasted <code>1.</code> or <code>a.</code> line, or a numbered list from Docs, comes in numbered. The right-click menu has the row.</li></ul><h3 class="rel">1.0.2 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Keys on an iPad.</b> iPadOS hands hardware-keyboard events and paste to a page only while something editable has the cursor; with nothing focused, Safari keeps the keys for itself. That is why every shortcut and <code>⌘V</code> only worked after tapping into a node. Mappr now keeps an invisible editable focused whenever no node, frame title or box has the keyboard, so the keys always have somewhere to land: arrows, <code>⌘</code>/<code>⌃</code> chords, <code>⏎</code>, typing and paste work straight away, and the on-screen keyboard stays out of the way. On for iPads and iPhones, and for anyone who adds <code>#sink</code> to the address.</li></ul><h3 class="rel">1.0.1 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Keys the browser keeps.</b> Firefox and Zen hold <code>⌘⇧D</code>, <code>⌘⇧F</code>, <code>⌘⇧G</code> and <code>⌘⇧C</code> for themselves, so done, flag, ungroup and copy as an image never reached Mappr there. Each now has an Option twin by physical key: <code>⌥D</code>, <code>⌥F</code>, <code>⌥G</code>, <code>⌥C</code>. The menu shows the twin on those browsers. <code>⌃</code> has always stood in for <code>⌘</code>, which is the key to use on an iPad, where Safari keeps <code>⌘</code> with the arrows and the number row.</li><li><b>The Flags view is always on the mode bar</b>, muted until the map has a flag, with a hint saying how to make one. It used to be hidden, which read as missing.</li><li><b>Long press opens the menu.</b> On a node or the canvas, a touch held for half a second opens the same menu as a right-click, so every action is reachable on a tablet with no chord at all.</li></ul><h3 class="rel">1.0.0 <span>2026-09-17</span></h3><h4>Changed</h4><ul><li><b>Maps live under their root map.</b> A map that a link opens is kept under the map that links to it, up to a root that nothing links to. The Maps menu and the switcher list each root with the maps under it, indented, and a root row says how many. Copy on a root copies the whole tree with the links pointed at the copies; Delete on a root takes the tree to <em>Recently deleted</em>, each map on its own so any one can come back; the bin holds twelve now. Export as JSON bundles the maps under the one you export, and Import rebuilds them with fresh ids. A map is listed once, under the first map found linking to it.</li><li><b>Detach.</b> A map under another can be made its own again from the Maps menu: every link to it, in any map, becomes a plain node carrying its name, and it moves up to the roots. The part in the open map is one undo step.</li><li><b>A reload keeps your place.</b> Every map opens at the zoom and place you left it, whether you switch to it or reopen the app; only a map never opened is fitted. The last few undo steps are kept with the map (as many of the most recent as fit a small budget, since each is a whole snapshot), so <code>⌘Z</code> works after a reload too.</li></ul><h4>Fixed</h4><ul><li>Deleting the map you were on wrote it straight back into the library on the way out. It stays deleted.</li><li>Closing a tab, switching apps on a phone and a tab going to the background all flush the map and its undo steps now; before, only a full close did.</li><li>Two tabs of Mappr on the same store: the listings in each refresh when the other writes. A map open in both is still last writer wins.</li></ul><h3 class="rel">0.39.0 <span>2026-09-17</span></h3><h4>Added</h4><ul><li><b>The maps rail.</b> Top left, every map under the root map as a tree, with the one you are on lit and each map&#x27;s size beside it. Click a name to open it, <code>⌥[</code> and <code>⌥]</code> walk them, a twist folds a branch of maps. A map linked from two places is listed under the first and marked under the second. <code>⌥⇧M</code> folds the rail to one line that says where you are, root to here, with the count; the choice is remembered. It replaces the trail bar and <em>Linked from</em>: the lit row is the trail, and a map that something links to hangs under it. Nothing shows until the map has a link.</li><li><b>Flags, drawn by hand.</b> The flag is a pennant on a pole in the same hand as the boxes, seeded on its node so it is the same every render, and it exports. The Style panel offers a ribbon, a ring and an asterisk instead.</li><li><b>Flags you can find.</b> <code>⌘4</code> (or <code>⌥4</code>) is a view on the number row, offered while the map has a flag: everything without one drops to a ghost, <code>Tab</code> and the arrows step flag to flag, <code>Esc</code> puts you back. In <code>⌘K</code>, <code>!</code> first lists only flagged nodes. Sort has <em>Flagged first</em>. A copied outline writes <code>!</code> before a flagged line, and a pasted <code>!</code> line comes in flagged. The end of a story counts the flags in it.</li></ul></div>
+    <div id="notesBody"><h3 class="rel">1.3.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Cut picks the branch up instead of taking it away.</b> <code>⌘X</code> now copies to the clipboard and lifts the selection off the map: it goes faint where it was, the arrows walk a ring round the map to choose where it lands, and <code>⌘V</code> or <code>⏎</code> puts it down, <code>⇧⏎</code> right after the ringed node. Nothing leaves the map until you put it down, and <code>Esc</code> puts it back exactly where it was. The clipboard still holds what you picked up, so a second <code>⌘V</code> pastes a copy of it. In a network or during a talk the clipboard is written and the map is left alone. <code>⌥X</code> is now Done, which is the mark you reach for most; <code>⌥D</code> still does the same, and <code>⌘⇧D</code> is gone, since Firefox kept it anyway.</li><li><b>Read another mode&#x27;s keys without leaving the one you are in.</b> <code>⌥⇧K</code> walks the key bar through the modes: Map, Focus, Connections, Flags, Network, Story, Selection, Carrying, one press each. The bar says which mode it is showing and never takes the keyboard, so the next key you press does what it always does and brings your own keys back. Five seconds does the same.</li><li><b>Tap a selection key twice to take the whole row.</b> Two presses of the same <code>⇧</code>+arrow inside four tenths of a second select every node in the row, the way <code>⇧</code>+click does. One press is still one more node, and <code>⌘⇧</code>+arrow still takes whole branches.</li><li><b>navi, and a row that stops growing.</b> Where you are is now called navi. A long row used to be listed in full, so a row forty wide ran off the bottom of the window. It now shows the node you are on with three either side and a folded row at each end saying how many more are above and below, the same shape the way up already used. The Style panel has three alternatives: the whole row in a small box that scrolls, just the one you are on with the count, or the row as chips. The chips are capped at ten and a plus whichever you pick. Inside a focus, navi shows how deep you are rather than a spine you cannot leave: six pips by default, or the depth in words, or the focus root and where you are in it.</li></ul><h4>Changed</h4><ul><li><b>Numbering a row also settles its order.</b> Numbering used to count the branches in the order they were made, which on a row that spans both sides of the centre had nothing to do with what you were looking at. It now reads the row off the picture: down the page on a side row, clockwise from the top for the branches round the centre. Numbering the centre&#x27;s row also fixes the branches where they are, so they stop rearranging themselves as you add to them. One <code>⌘Z</code> puts both the order and the numbers back.</li><li><b>A pasted list keeps the kind of list it was.</b> A numbered list pastes in numbered and a bulleted list pastes in plain, with no marker left in the text. A list that mixes its markers comes in as one kind of row, whichever most of its lines used. A list copied out of a page keeps its numbering even where the page printed no figures.</li><li><b>A new map you never wrote in no longer joins the library.</b> Make a map, look at it, leave it untouched and it goes with you rather than sitting in the list. A map you typed even one letter into stays, so does a map you made earlier and came back to, and so does a map something links to.</li></ul><h3 class="rel">1.2.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Where you are.</b> A rail top left that follows the selection and shows only the way up and the row you are on: the ancestors as a muted spine, the siblings under the parent with yours lit, children as a count and never listed, flags with their <code>!</code> and numbers with their figures. A deep trail folds its middle. When the centre has gone off screen a small arrow points to where it is. Click a row to go there. It joins the maps rail in one panel, so the two read as one place; the Style panel can give it its own bar instead, swap the rail for a pill with the siblings as chips or for a drawn sketch of the same, stop it fading when you leave it alone, and set when it shows: always, only when the centre is out of view, or never. <code>⌥⇧W</code> cycles those three.</li></ul><h3 class="rel">1.1.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Numbers, like a list in Docs.</b> <code>⌘⇧7</code> (or <code>⌥7</code>) numbers the row the selected node is on, its siblings in order. With a selection up it numbers every row that has a selected node in it, so <code>⌘⇧→</code> then <code>⌘⇧7</code> turns a whole branch into an outline, and <code>⌘A</code> then <code>⌘⇧7</code> the whole map. On the centre alone it numbers the branches. Pressed on rows already numbered, it takes the numbers off. A number belongs to the row, not the node: nothing is typed into the text, and a move, a sort, a delete or a paste renumbers on its own. Rows nest 1. then a. then i., as Docs does; the Style panel has 1.1.1 and I. A. 1. instead, and draws the number in the gutter (a bare figure outside the box, so a long node never wraps earlier), in the box, or as a pill on the edge that faces the parent. Numbers export with the map. A copied outline writes the number before each line, and a pasted <code>1.</code> or <code>a.</code> line, or a numbered list from Docs, comes in numbered. The right-click menu has the row.</li></ul><h3 class="rel">1.0.2 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Keys on an iPad.</b> iPadOS hands hardware-keyboard events and paste to a page only while something editable has the cursor; with nothing focused, Safari keeps the keys for itself. That is why every shortcut and <code>⌘V</code> only worked after tapping into a node. Mappr now keeps an invisible editable focused whenever no node, frame title or box has the keyboard, so the keys always have somewhere to land: arrows, <code>⌘</code>/<code>⌃</code> chords, <code>⏎</code>, typing and paste work straight away, and the on-screen keyboard stays out of the way. On for iPads and iPhones, and for anyone who adds <code>#sink</code> to the address.</li></ul><h3 class="rel">1.0.1 <span>2026-09-17</span></h3><h4>Fixed</h4><ul><li><b>Keys the browser keeps.</b> Firefox and Zen hold <code>⌘⇧D</code>, <code>⌘⇧F</code>, <code>⌘⇧G</code> and <code>⌘⇧C</code> for themselves, so done, flag, ungroup and copy as an image never reached Mappr there. Each now has an Option twin by physical key: <code>⌥D</code>, <code>⌥F</code>, <code>⌥G</code>, <code>⌥C</code>. The menu shows the twin on those browsers. <code>⌃</code> has always stood in for <code>⌘</code>, which is the key to use on an iPad, where Safari keeps <code>⌘</code> with the arrows and the number row.</li><li><b>The Flags view is always on the mode bar</b>, muted until the map has a flag, with a hint saying how to make one. It used to be hidden, which read as missing.</li><li><b>Long press opens the menu.</b> On a node or the canvas, a touch held for half a second opens the same menu as a right-click, so every action is reachable on a tablet with no chord at all.</li></ul><h3 class="rel">1.0.0 <span>2026-09-17</span></h3><h4>Changed</h4><ul><li><b>Maps live under their root map.</b> A map that a link opens is kept under the map that links to it, up to a root that nothing links to. The Maps menu and the switcher list each root with the maps under it, indented, and a root row says how many. Copy on a root copies the whole tree with the links pointed at the copies; Delete on a root takes the tree to <em>Recently deleted</em>, each map on its own so any one can come back; the bin holds twelve now. Export as JSON bundles the maps under the one you export, and Import rebuilds them with fresh ids. A map is listed once, under the first map found linking to it.</li><li><b>Detach.</b> A map under another can be made its own again from the Maps menu: every link to it, in any map, becomes a plain node carrying its name, and it moves up to the roots. The part in the open map is one undo step.</li><li><b>A reload keeps your place.</b> Every map opens at the zoom and place you left it, whether you switch to it or reopen the app; only a map never opened is fitted. The last few undo steps are kept with the map (as many of the most recent as fit a small budget, since each is a whole snapshot), so <code>⌘Z</code> works after a reload too.</li></ul><h4>Fixed</h4><ul><li>Deleting the map you were on wrote it straight back into the library on the way out. It stays deleted.</li><li>Closing a tab, switching apps on a phone and a tab going to the background all flush the map and its undo steps now; before, only a full close did.</li><li>Two tabs of Mappr on the same store: the listings in each refresh when the other writes. A map open in both is still last writer wins.</li></ul></div>
     <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
 </div>
@@ -848,11 +857,12 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="1.2.0";
+var VERSION="1.3.0";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid", flagStyle:"pennant",
   numStyle:"gutter", numScheme:"docs",
   hereStyle:"rail", hereShow:"always", hereFade:true, hereAttach:true,
+  hereSibs:"window", hereFocus:"pips",
   width:2, dash:"solid", slop:1, edges:"round",
   arrow:"curve", head:"arrow", font:"sketch", size:"m",
   align:"center", valign:"center", nodew:"m", minSize:false,
@@ -907,9 +917,10 @@ var undoStack=[], redoStack=[], undoBytes=0, UNDO_STEPS=140, UNDO_BYTES=6e6;
 var OPP={L:"R",R:"L",U:"D",D:"U"}, KEYDIR={ArrowLeft:"L",ArrowRight:"R",ArrowUp:"U",ArrowDown:"D"};
 function horiz(d){ return d==="L"||d==="R"; }
 
+var FRESH_TEXT="Central idea";
 function freshState(){
   var rid=nid(), s={rootId:rid, nodes:{}, frames:[], links:[]};
-  s.nodes[rid]={id:rid,parent:null,children:[],text:"Central idea",dir:null};
+  s.nodes[rid]={id:rid,parent:null,children:[],text:FRESH_TEXT,dir:null};
   return s;
 }
 function N(id){ return state.nodes[id]; }
@@ -1109,17 +1120,67 @@ function numFmt(st,i){
   if(st==="I") return numRoman(i).toUpperCase();
   return String(i);
 }
+/* The row a figure counts within. One place, so that what does and does not
+   count as a sibling is decided once. */
+function numSibs(parentId){ var p=N(parentId); return p?p.children:[]; }
+function numAt(parentId,id){ return numSibs(parentId).indexOf(id)+1; }
+/* Pure, and O(siblings). It reads the model and nothing else: no layout, no
+   camera, no allocation past the string it returns. */
 function numLabel(id){
   var n=N(id); if(!n||!n.parent||!N(n.parent).num) return null;
   if(CFG.numScheme==="legal"){
     var parts=[], p=n;
-    while(p.parent && N(p.parent).num){ parts.unshift(N(p.parent).children.indexOf(p.id)+1); p=N(p.parent); }
+    while(p.parent && N(p.parent).num){ parts.unshift(numAt(p.parent,p.id)); p=N(p.parent); }
     return parts.join(".");
   }
   var k=0, q=N(n.parent);
   while(q.parent){ if(N(q.parent).num) k++; q=N(q.parent); }
   var seq=NUM_SEQ[CFG.numScheme]||NUM_SEQ.docs;
-  return numFmt(seq[k%seq.length], N(n.parent).children.indexOf(id)+1)+".";
+  return numFmt(seq[k%seq.length], numAt(n.parent,id))+".";
+}
+/* Numbering a row also settles its order. A row that spans both sides of the
+   centre is numbered in creation order otherwise, which has nothing to do with
+   the picture. This sorts the children array by where the branches actually
+   are, once, at the moment you number, and never during a render.
+
+   The catch is that an automatic spread hands each branch its side from its
+   index in that array, so reordering the array would move the branches and
+   change what "in order" means. Numbering the centre's own row therefore takes
+   the spread over first: the picture does not move and the sides stop chasing
+   the array. Same trade the app already makes when you hand-place a branch. */
+function orderRow(parentId,dirOrder){
+  var p=N(parentId); if(!p || p.children.length<2) return false;
+  if(parentId===VR() && CFG.spread!=="manual") takeOverSpread();
+  var order=dirOrder||["U","R","D","L"];
+  var at=function(id){ return pos[id]||null; };
+  /* a node with no pos (hidden, folded away, off in a lens) keeps the place it
+     already had rather than being swept to one end */
+  var seen={}, missing=p.children.filter(function(c){ return !at(c); });
+  var placed=p.children.filter(function(c){ return !!at(c); });
+  if(placed.length<2) return false;
+  var byDir={}; order.forEach(function(d){ byDir[d]=[]; });
+  var loose=[];
+  placed.forEach(function(c){ var d=dirOf(c); (byDir[d]||loose).push(c); });
+  var cross=function(d){ return d==="R"||d==="L"; };
+  var sortIn=function(list,d){
+    list.sort(function(a,b){
+      var A=at(a), B=at(b);
+      return cross(d) ? (A.cy-B.cy)||(A.cx-B.cx) : (A.cx-B.cx)||(A.cy-B.cy);
+    });
+    return list;
+  };
+  var out=[];
+  order.forEach(function(d){ if(byDir[d].length) out=out.concat(sortIn(byDir[d],d)); });
+  if(loose.length) out=out.concat(loose);
+  out.forEach(function(c){ seen[c]=1; });
+  /* the nodes that had no position go back in their old places */
+  var res=[], k=0;
+  p.children.forEach(function(c){ res.push(seen[c]?out[k++]:c); });
+  var same=res.every(function(c,i){ return c===p.children[i]; });
+  void missing;
+  if(same) return false;
+  p.children=res;
+  return true;
 }
 function anyNum(){ return Object.keys(state.nodes).some(function(i){ return state.nodes[i].num; }); }
 /* Cmd+Shift+7, Docs' own key. Numbers the level of every selected node: one
@@ -1135,6 +1196,8 @@ function toggleNumber(){
   if(!L.length){ flash(selected); flashSave("nothing to number yet"); return; }
   var allOn=L.every(function(p){ return N(p).num; });
   snap();
+  /* the order and the figures are one undo step, so one ⌘Z puts both back */
+  if(!allOn) L.forEach(function(p){ orderRow(p); });
   L.forEach(function(p){ if(allOn) delete N(p).num; else N(p).num=true; });
   render(true); saveSoon();
   flashSave(allOn ? "numbers off" : (L.length===1 ? "row numbered" : L.length+" rows numbered")+" · the Style panel has the scheme");
@@ -1225,6 +1288,7 @@ function lensClear(){
 }
 /* Turn every lens off and go back to where you were before it came up. */
 function lensOff(){
+  shiftTapReset(); hintBrowseEnd();
   var h=lensHome; lensHome=null;
   if(!lensClear()) return false;
   if(h && h.focus && N(h.focus)) focusId=h.focus;
@@ -1241,6 +1305,7 @@ var lensWasSolo=false;
    network from there, otherwise out of the lens altogether. */
 var netBack="dim";
 function lensSet(l,one,kind){
+  shiftTapReset(); hintBrowseEnd();
   lensKind = one ? "links" : (kind||"links");
   lensWasSolo=lensSolo();
   if(one && !lensOne) netBack=lens?"dim":"off";
@@ -1658,6 +1723,7 @@ function presSkip(id){ return !!pres && pres.arrange && !!pres.walkSet && !pres.
    long as it is the same branch told in the same order. */
 var presLast=null;
 function presStart(){
+  shiftTapReset(); hintBrowseEnd();
   if(editing) commitEdit();
   if(lensActive()) lensOff();
   if(carry) carryEnd();                     /* a talk is no place to be holding something */
@@ -3305,17 +3371,42 @@ function esc(t){ return String(t).replace(/[&<>"]/g,function(c){ return {"&":"&a
 /* The bottom bar: a handful of keys for the mode you are in, not all of them.
    ? has the rest. It folds to a small pill and remembers that. */
 var HINTS={
-  map:[["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Child","⌘","⏎"],["Retype","Space"],["Fold","⌘","E"],["Focus","⌘","/"],["Jump","⌘","K"]],
+  map:[["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Child","⌘","⏎"],["Retype","Space"],["Fold","⌘","E"],["Focus","⌘","/"],["Jump","⌘","K"],["Done","⌥","X"]],
   focus:[["Next branch","Tab"],["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Fold","⌘","E"],["Out","Esc"]],
   dim:[["Tie","⌘","+click"],["Next network","Tab"],["Open it","⌘","/"],["Clear links","⇧","+double-click"],["Fit","⌘","0"],["Map","⌘","1"]],
   flags:[["Next flag","Tab"],["Unflag","⌘","⇧","F"],["Focus","⌘","/"],["Fit","⌘","0"],["Map","⌘","1"]],
   net:[["Move","←↑→↓"],["Walk","Tab"],["Fold beyond","⌘","E"],["New linked node","⏎"],["Back","Esc"]],
   carry:[["Choose where","←↑→↓"],["Drop inside","⏎"],["Drop after","⇧","⏎"],["Put back","Esc"]],
   sort:[],
-  sel:[["Grow","⇧","←↑→↓"],["Branches","⌘","⇧","←↑→↓"],["Move","⌥","←↑→↓"],["Carry","⌥","X"],["Sort","⌥","O"],["Merge","⌥","J"],["Break out","⌥","B"],["Copy","⌘","C"],["Cut","⌘","X"],["Delete","⌫"],["Frame","⌘","G"],["Clear","Esc"]],
+  sel:[["Grow","⇧","←↑→↓"],["Branches","⌘","⇧","←↑→↓"],["Move","⌥","←↑→↓"],["Carry","⌘","X"],["Done","⌥","X"],["Sort","⌥","O"],["Merge","⌥","J"],["Break out","⌥","B"],["Copy","⌘","C"],["Delete","⌫"],["Frame","⌘","G"],["Clear","Esc"]],
   arrange:[["Pick next","⌘","+click"],["Pick up / drop","Space"],["Unpick","⌫"],["Story","[","]"],["Present","R"]]
 };
 var hintMin=false, hintSig="";
+/* ⌥⇧K walks the key bar through the other modes without changing mode. The
+   bar is a reference, not a control: browsing never takes the keyboard, and
+   any other key, or five seconds, puts the live mode back. */
+var HINT_MODES=["map","focus","dim","flags","net","arrange","sel","carry"];
+var hintBrowse=null, hintBrowseT=null, hintDraws=0;
+function hintLive(){
+  return pres ? (pres.arrange?"arrange":null) : carry ? "carry" :
+    (Object.keys(marked).length?"sel":(lensOne?"net":(lensFlags()?"flags":(lens?"dim":(focusId?"focus":"map")))));
+}
+function hintBrowseStep(){
+  var live=hintLive();
+  var i=HINT_MODES.indexOf(hintBrowse==null?live:hintBrowse);
+  var next=HINT_MODES[(i+1)%HINT_MODES.length];
+  if(next===live) next=HINT_MODES[(i+2)%HINT_MODES.length];
+  hintBrowse=next;
+  if(hintBrowseT) clearTimeout(hintBrowseT);
+  hintBrowseT=setTimeout(hintBrowseEnd,5000);
+  drawHint();
+}
+function hintBrowseEnd(){
+  if(hintBrowse==null) return;
+  hintBrowse=null;
+  if(hintBrowseT){ clearTimeout(hintBrowseT); hintBrowseT=null; }
+  drawHint();
+}
 try{ hintMin=localStorage.getItem("mappr.hint")==="min"; }catch(e){}
 function drawSelChip(){
   var el=document.getElementById("selChip"); if(!el) return;
@@ -3326,22 +3417,25 @@ function drawSelChip(){
 function drawHint(){
   drawSelChip();
   var el=document.getElementById("hint"); if(!el) return;
-  var mode = pres ? (pres.arrange?"arrange":null) : carry ? "carry" : (Object.keys(marked).length?"sel":(lensOne?"net":(lensFlags()?"flags":(lens?"dim":(focusId?"focus":"map")))));
-  var sig=(mode||"")+"|"+hintMin;
-  if(sig===hintSig) return; hintSig=sig;
+  var live=hintLive(), mode=hintBrowse||live;
+  var sig=(mode||"")+"|"+hintMin+"|"+(hintBrowse?"b":"");
+  if(sig===hintSig) return;
+  hintSig=sig;
+  hintDraws++;
   if(!mode){ el.innerHTML=""; return; }
   var names={map:"Map",focus:"Focus",dim:"Connections",flags:"Flags",net:"Network",arrange:"Story",sel:"Selection",carry:"Carrying"};
   var h;
   if(hintMin){
-    h='<span class="hm">'+names[mode]+'</span><span><b>Keys</b> <kbd>?</kbd></span><button class="hx" data-hint="1" title="Show key hints">\u25b4</button>';
+    h='<span class="hm">'+names[mode]+'</span>'+(hintBrowse?'<span><b>Next mode</b> <kbd>\u2325</kbd><kbd>\u21e7</kbd><kbd>K</kbd></span>':'')+'<span><b>Keys</b> <kbd>?</kbd></span><button class="hx" data-hint="1" title="Show key hints">\u25b4</button>';
   } else {
     h='<span class="hm">'+names[mode]+'</span>';
     HINTS[mode].forEach(function(x){
       h+='<span><b>'+x[0]+'</b> '+x.slice(1).map(function(k){ return k.charAt(0)==="+"?k:'<kbd>'+k+'</kbd>'; }).join("")+'</span>';
     });
-    h+='<span><b>All</b> <kbd>?</kbd></span><button class="hx" data-hint="1" title="Hide key hints">\u00d7</button>';
+    h+=hintBrowse?'<span><b>Next mode</b> <kbd>\u2325</kbd><kbd>\u21e7</kbd><kbd>K</kbd></span>'
+                 :'<span><b>All</b> <kbd>?</kbd></span><button class="hx" data-hint="1" title="Hide key hints">\u00d7</button>';
   }
-  el.className="bar"+(hintMin?" min":"");
+  el.className="bar"+(hintMin?" min":"")+(hintBrowse?" browsing":"");
   el.innerHTML=IS_MAC?h:keyWords(h);
 }
 document.getElementById("hint").addEventListener("mousedown",function(e){ e.preventDefault(); });
@@ -3533,6 +3627,7 @@ function focusBack(){
 }
 function focusTrailMove(to){ var t=focusTrail[focusTrail.length-1]; if(t) t.at=to; }
 function enterFocus(){
+  shiftTapReset(); hintBrowseEnd();
   var n=N(selected);
   if(!n.children.length){ flash(selected); return; }
   if(!isRoot(n) && n.id!==focusId) focusTrail.push({f:focusId, cam:followBefore||camNow(), at:n.id});
@@ -3682,8 +3777,18 @@ function markSiblings(id){
    stepping back onto the node you just came from lets go of the one you left.
    Cmd+Shift+arrow takes whole branches that way. */
 var shiftTrail=null;
+/* Two taps of the same shift+arrow, quickly, mean "the whole row" rather than
+   "one more". One timestamp and one key, so a keystroke allocates nothing. */
+var SHIFT_TAP=400, shiftTapKey="", shiftTapAt=0;
+function shiftTapReset(){ shiftTapKey=""; shiftTapAt=0; }
 function extendSel(pressed){
   if(editing) commitEdit();
+  var now=Date.now();
+  if(shiftTapKey===pressed && now-shiftTapAt<SHIFT_TAP){
+    shiftTapReset(); shiftTrail=null;
+    markSiblings(selected); return;
+  }
+  shiftTapKey=pressed; shiftTapAt=now;
   if(!shiftTrail || shiftTrail[shiftTrail.length-1]!==selected || !marked[selected]){ shiftTrail=[selected]; marked[selected]=1; }
   var to=lensOne ? netArrow(pressed) : navigate(N(selected),pressed);
   if(!to){ flash(selected); return; }
@@ -3720,6 +3825,7 @@ function selectAlong(pressed){
 }
 function select(id){
   if(!id||!N(id)) return;
+  shiftTapReset();          /* a click moves the selection: the tap starts over */
   if(editing&&editing!==id) commitEdit();
   if(fresh && fresh!==id) dropFresh();
   clearMarks(); selected=id; render();
@@ -3945,14 +4051,14 @@ function ctxItems(id,from){
   else if(!centre) add("Link to a map","\u2325K",function(){ openLinkPicker(); });
   sep();
   if(!t.link) add("Retype","Space",function(){ beginEdit(id,true); });
-  add(t.mark==="done"?"Not done":"Done",IS_FF?"\u2325D":"\u2318\u21e7D",function(){ toggleMark("done"); });
+  add(t.mark==="done"?"Not done":"Done","\u2325X",function(){ toggleMark("done"); });
   add(t.mark==="flag"?"Unflag":"Flag",IS_FF?"\u2325F":"\u2318\u21e7F",function(){ toggleMark("flag"); });
   add((t.parent?N(t.parent).num:t.num)?(many?"Unnumber the selection":"Unnumber this row"):(many?"Number the selection":"Number this row"),"\u2318\u21e77",function(){ toggleNumber(); });
   if(!centre) add(many?"Duplicate the selection":"Duplicate","\u2318D",function(){ duplicateBranch(); });
   if(splitLines(t.text).length>1 && !centre) add("Split into one node per line","\u2325S",function(){ splitNode(false); });
   if(many) add("Merge the selection into one","\u2325J",function(){ mergeMarked(); });
   if(t.children.length>1 || many) add(many?"Sort the selection":"Sort its children","\u2325O",function(){ sortMenu(); });
-  if(!centre) add(many?"Carry the selection":"Carry","\u2325X",function(){ carryStart(); });
+  if(!centre) add(many?"Carry the selection":"Carry","\u2318X",function(){ carryStart(); });
   add(many?"Frame the selection":"Frame","\u2318G",function(){ makeFrame(); });
   sep();
   add(many?"Copy the selection as an outline":"Copy as an outline","\u2318C",function(){ document.execCommand("copy"); });
@@ -4022,18 +4128,19 @@ function ctxMenuKey(e){
    one undo step. */
 var carry=null;
 function carryStart(){
-  if(pres || lensOne){ flash(selected); flashSave("carry works on the map view"); return; }
+  if(pres || lensOne){ flash(selected); flashSave("carry works on the map view"); return false; }
   if(editing) commitEdit();
   var tree=[]; (function w(id){ tree.push(id); N(id).children.forEach(w); })(state.rootId);
   var roots=Object.keys(marked).length ? markedRoots() : [selected];
   roots=roots.filter(function(i){ var n=N(i); return n && !isRoot(n) && !isVR(n) && visible(i); });
   roots.sort(function(a,b){ return tree.indexOf(a)-tree.indexOf(b); });
-  if(!roots.length){ flash(selected); flashSave("nothing to carry"); return; }
+  if(!roots.length){ flash(selected); flashSave("nothing to carry"); return false; }
   var set={}; roots.forEach(function(r){ subtree(r).forEach(function(x){ set[x]=1; }); });
   carry={ids:roots, set:set, from:selected, marks:Object.assign({},marked)};
   selected=N(roots[0]).parent;
   clearMarks(); render();
   flashSave("carrying "+roots.length+" \u00b7 arrows to choose where");
+  return true;
 }
 function carryEnd(){ var c=carry; carry=null; return c; }
 function carryKey(e){
@@ -4590,7 +4697,7 @@ function parseOutlineHtml(html){
         if(nm) t=t.slice(nm[0].length);
         var fm=t.match(/^!\s+(.*)$/);
         if(fm) t=fm[1];
-        if(t) items.push({indent:depth*10,text:t,mark:fm?"flag":null,num:!!(inOl||nm)});
+        if(t) items.push({indent:depth*10,text:t,mark:fm?"flag":null,marker:(inOl||nm)?"num":"bul",num:!!(inOl||nm)});
         Array.prototype.forEach.call(ch.children,function(k){
           var kt=(k.tagName||"").toLowerCase();
           if(kt==="ul"||kt==="ol") walk(k,depth+1);
@@ -4611,7 +4718,48 @@ function parseOutlineHtml(html){
     });
   }
   walk(doc.body,0);
+  if(items.length) rowFlavour(items);
   return items.length?items:null;
+}
+/* One row, one flavour. A pasted list that mixes its markers still comes in as
+   one kind of row, because a row is either numbered or it is not; the majority
+   of its lines decides and a tie goes to bulleted. Lines with no marker at all
+   do not vote and are never turned into a numbered row on their own. */
+function rowFlavour(items){
+  var tally={};
+  items.forEach(function(x){
+    if(!x.marker) return;
+    var L=Math.floor(x.indent/10);
+    var t=tally[L]||(tally[L]={n:0,b:0});
+    if(x.marker==="num") t.n++; else t.b++;
+  });
+  items.forEach(function(x){
+    if(!x.marker) return;
+    var t=tally[Math.floor(x.indent/10)];
+    x.num=!!(t && t.n>t.b);
+  });
+  return items;
+}
+/* The html flavour knows an <ol> from a <ul>; the text flavour only knows what
+   glyph a page chose to print. So when both parse, the html decides whether a
+   row is numbered even where the text won on structure. */
+function levelsOf(items){
+  var order=[], seen={};
+  (items||[]).forEach(function(x){ var L=Math.floor(x.indent/10); if(!seen[L]){ seen[L]=1; order.push(L); } });
+  return order;
+}
+function applyNumFrom(src,dst){
+  var sl=levelsOf(src), dl=levelsOf(dst), by={};
+  sl.forEach(function(L,i){
+    var num=false;
+    src.forEach(function(x){ if(Math.floor(x.indent/10)===L && x.num) num=true; });
+    by[i]=num;
+  });
+  dl.forEach(function(L,i){
+    if(by[i]===undefined) return;
+    dst.forEach(function(x){ if(Math.floor(x.indent/10)===L) x.num=by[i]; });
+  });
+  return dst;
 }
 /* Whichever flavour recovered more structure wins. A copy with real nesting in
    its html beats flattened text; a plain-text copy with no html beats nothing. */
@@ -4623,6 +4771,7 @@ function bestOutline(html,text){
   var t=parseOutline(text||"");
   var h=(html&&/<li|<ul|<ol/i.test(html))?parseOutlineHtml(html):null;
   if(h && h.length>1 && levelCount(h)>levelCount(t)) return h;
+  if(h && h.length) applyNumFrom(h,t);
   return t;
 }
 function parseOutline(text){
@@ -4643,13 +4792,14 @@ function parseOutline(text){
     /* a number before the text, "1. " or "a. " or "1.2 ", says this row's
        level is numbered, as the outline writes one and as Docs pastes one; a
        "1." that stood as the bullet says the same */
-    var numbered=!!(glyph && /^\d+[.)]$/.test(glyph));
+    var marker=glyph ? (/^\d+[.)]$/.test(glyph)?"num":"bul") : null;
+    var numbered=(marker==="num");
     var nm=t.match(NUMLEAD);
-    if(nm){ t=t.slice(nm[0].length); numbered=true; }
+    if(nm){ t=t.slice(nm[0].length); numbered=true; marker="num"; }
     /* a leading "! " is a flag, the way the outline writes one */
     var fm=t.match(/^!\s+(.*)$/), flagged=false;
     if(fm){ t=fm[1]; flagged=true; }
-    if(t) rows.push({indent:indent,text:t,glyph:glyph,mark:flagged?"flag":null,num:numbered});
+    if(t) rows.push({indent:indent,text:t,glyph:glyph,marker:marker,mark:flagged?"flag":null,num:numbered});
   });
 
   /* A copy that lost its indentation leaves every bullet on one level with the
@@ -4657,7 +4807,7 @@ function parseOutline(text){
      documented order when it is the Word/Docs set, otherwise the order they
      first appear in. Only when indentation says nothing, so a properly indented
      outline is never second-guessed. */
-  var bul=rows.filter(function(r){ return r.glyph; });
+  var bul=rows.filter(function(r){ return r.glyph && r.marker!=="num"; });
   var oneLevel={}, kinds={};
   bul.forEach(function(r){ oneLevel[r.indent]=1; kinds[r.glyph]=1; });
   if(bul.length>1 && Object.keys(oneLevel).length===1 && Object.keys(kinds).length>1){
@@ -4669,7 +4819,7 @@ function parseOutline(text){
       r.indent=((known?BULLET_RANK[r.glyph]:seen[r.glyph])+1)*10;
     });
   }
-  return rows.map(function(r){ return {indent:r.indent,text:r.text,mark:r.mark||null,num:!!r.num}; });
+  return rowFlavour(rows.map(function(r){ return {indent:r.indent,text:r.text,marker:r.marker||null,mark:r.mark||null,num:!!r.num}; }));
 }
 /* A map you have not touched yet is a placeholder, not content: one root node
    still carrying the default label, nothing hanging off it. */
@@ -4846,16 +4996,19 @@ var pasteSibling=false;
 document.addEventListener("cut",function(e){
   if(editing||editFrame||pres) return;
   if(e.target && e.target.tagName==="INPUT") return;
+  if(carry){ e.preventDefault(); return; }        /* already carrying; ⌘V puts it down */
   var c=selectionCopy(); if(!c){ e.preventDefault(); flash(selected); return; }
   e.preventDefault();
   e.clipboardData.setData("text/plain",c.txt);
   e.clipboardData.setData("text/html",c.html);
   clip=c;
-  var n=c.ids.length;
-  if(Object.keys(marked).length) doDelete(false); else doDelete(true);
-  flashSave("cut "+n);
+  /* the cut key picks the branch up: nothing leaves the map until ⌘V puts it
+     down, and Esc puts it back. Where a carry cannot start, the clipboard is
+     still written and the map is left alone. */
+  carryStart();
 });
 document.addEventListener("paste",function(e){
+  if(carry){ e.preventDefault(); carryDrop(selected,e.shiftKey); return; }
   var cd=e.clipboardData||window.clipboardData;
   var txt=cd.getData("text/plain")||"", html="";
   try{ html=cd.getData("text/html")||""; }catch(err){ html=""; }
@@ -5183,6 +5336,37 @@ function docRead(id){
   try{ return JSON.parse(localStorage.getItem(DOCP+id))||null; }catch(e){ return null; }
 }
 function docDrop(id){ try{ localStorage.removeItem(DOCP+id); }catch(e){} undoDrop(id); }
+/* A map you opened, looked at and left without putting anything in it is not
+   worth a row in the library. It has one node, that node is the centre, its
+   text is the one it was born with, and nothing else has been added. */
+function docIsEmpty(st){
+  if(!st || !st.nodes) return false;
+  if(Object.keys(st.nodes).length!==1) return false;
+  var r=st.nodes[st.rootId];
+  if(!r || r.parent!==null || (r.text||"")!==FRESH_TEXT) return false;
+  if((st.frames||[]).length || (st.links||[]).length) return false;
+  /* every map is handed a first story on its first render, so an untold one
+     does not count as something in the map */
+  if(!(st.stories||[]).every(function(x){ return !x || !x.flow || !Object.keys(x.flow).length; })) return false;
+  return true;
+}
+/* Only a map this session made, and never one that is part of a link trail:
+   a map made by ⌥K or by a break out is reached from a node somewhere and
+   has to stay even while it is empty. */
+function leavingEmpty(toId){
+  if(!curDoc || curDoc===toId) return null;
+  if(!madeThisSession[curDoc] || madeByBreak[curDoc]) return null;
+  return docIsEmpty(state) ? curDoc : null;
+}
+function dropEmpty(lib,id){
+  docDrop(id);
+  delete lib.docs[id];
+  if(lib.linksFrom) delete lib.linksFrom[id];
+  if(lib.tags) delete lib.tags[id];
+  if(lib.pins) lib.pins=lib.pins.filter(function(x){ return x!==id; });
+  if(lib.prev===id) delete lib.prev;
+  delete viewByDoc[id]; delete undoByDoc[id]; delete madeThisSession[id];
+}
 /* Kept for the call sites that only ever wanted the list of maps. */
 function libRead(){ return idxRead(); }
 function libWrite(l){ return idxWrite(l); }
@@ -5383,7 +5567,7 @@ function drawPinMark(){
    back in as a branch. Maps opened through links leave a trail in the top bar,
    and Option+Enter walks back up it. The index keeps, per map, the maps it links
    to, so any map can say which maps link to it. */
-var linkTrail=[], madeByBreak={};
+var linkTrail=[], madeByBreak={}, madeThisSession={};
 function linkInfo(id){
   var lib=idxCached(), d=lib.docs[id];
   if(d) return {name:d.name||"Untitled", count:d.count||0, missing:false,
@@ -5543,7 +5727,7 @@ function placeMapbar(){
   if(hb){ hb.style.top=(mb.hidden ? top : mb.getBoundingClientRect().bottom+8)+"px"; }
 }
 
-/* ---------- Where you are (1.2) ----------
+/* ---------- navi (1.2, capped in 1.3) ----------
    The rail follows the selection and shows only the way up and the row you
    are on: ancestors as a muted spine, the siblings under the parent with the
    selected one lit, children as a count and never listed. It answers "saan
@@ -5585,24 +5769,70 @@ function hereAnc(trail){
   else anc.forEach(function(id){ rows.push({id:id}); });
   return rows;
 }
+function hereHead(){
+  var kw=IS_MAC?"\u2325\u21e7W":"Alt+Shift+W";
+  return '<div class="rh">navi'+hereCompass()+'<span class="k">'+kw+'</span></div>';
+}
+function hereSibRow(sid,sel,sd){
+  var k=N(sid).children.length;
+  return '<div class="rr sib'+(sid===sel?' on':'')+'" style="--sd:'+sd+'" data-go="'+sid+'"><span class="tw"></span>'+hereName(sid)+(k?'<span class="n">\u25b8 '+k+'</span>':'')+'</div>';
+}
+function hereMore(n,which,sd){
+  return '<div class="rr more sib" style="--sd:'+sd+'"><span class="tw"></span><span class="nm">\u2026 '+n+' more '+which+'</span></div>';
+}
+/* Inside a focus the spine above you is the focus root and nothing else, so
+   the rail answers the only question left: how deep in it you are. */
+function hereDepth(){
+  var sel=selected, n=N(sel), rootId=VR();
+  var deep=0, q=n; while(q && q.id!==rootId && q.parent){ q=N(q.parent); deep++; }
+  var ss=n.parent?sibGroup(n):[sel], at=(ss.indexOf(sel)+1)+' of '+ss.length;
+  var rootName=esc(trunc(hereFirst(rootId)));
+  if(CFG.hereFocus==="crumbs")
+    return '<div class="hstrip"><div class="trail"><button class="par" data-go="'+rootId+'">'+rootName+'</button><i>\u25b8</i>'+
+      '<button class="par" data-go="'+sel+'">'+esc(trunc(hereFirst(sel)))+'</button>'+
+      '<span class="cnt">depth '+deep+hereCompass()+'</span></div></div>';
+  if(CFG.hereFocus==="words")
+    return '<div class="hlist">'+hereHead()+'<div class="depth">depth <b>'+deep+'</b> \u00b7 '+at+'</div>'+
+      '<div class="rf">Esc to leave the focus</div></div>';
+  var h='<div class="hlist">'+hereHead()+'<div class="pips">';
+  for(var i=0;i<6;i++) h+='<i class="'+(i<deep?"on":"")+'"></i>';
+  h+='</div><div class="depth" data-go="'+sel+'"><b>'+esc(trunc(hereFirst(sel)))+'</b></div>';
+  return h+'<div class="rf">'+deep+' deep in '+rootName+' \u00b7 '+at+'</div></div>';
+}
 function hereRail(){
-  var sel=selected, n=N(sel), trail=pathTo(sel), kw=IS_MAC?"\u2325\u21e7W":"Alt+Shift+W";
-  var h='<div class="hlist"><div class="rh">Where you are'+hereCompass()+'<span class="k">'+kw+'</span></div>';
+  if(focusId!=null && N(focusId)) return hereDepth();
+  if(CFG.hereSibs==="chips") return hereStrip();
+  var sel=selected, n=N(sel), trail=pathTo(sel);
+  var h='<div class="hlist">'+hereHead();
   if(!n.parent){
     h+='<div class="rr on" data-go="'+sel+'"><span class="tw">\u25cf</span>'+hereName(sel)+'<span class="n">the centre \u00b7 '+n.children.length+(n.children.length===1?' branch':' branches')+'</span></div></div>';
     return h;
   }
-  var rows=hereAnc(trail), sd=rows.length, ss=sibGroup(n);
+  var rows=hereAnc(trail), sd=rows.length, ss=sibGroup(n), at=ss.indexOf(sel);
   rows.forEach(function(r,i){
     if(r.more){ h+='<div class="rr more d'+i+'"><span class="tw"></span><span class="nm">\u2026 '+r.more+' more up</span></div>'; return; }
     h+='<div class="rr anc d'+i+'" data-go="'+r.id+'"><span class="tw">'+(N(r.id).parent?'\u2514':'\u25cf')+'</span>'+hereName(r.id)+
       (r.id===n.parent?'<span class="n">'+ss.length+' under</span>':'')+'</div>';
   });
-  ss.forEach(function(sid){
-    var k=N(sid).children.length;
-    h+='<div class="rr sib'+(sid===sel?' on':'')+'" style="--sd:'+sd+'" data-go="'+sid+'"><span class="tw"></span>'+hereName(sid)+(k?'<span class="n">\u25b8 '+k+'</span>':'')+'</div>';
-  });
-  h+='<div class="rf">'+(ss.indexOf(sel)+1)+' of '+ss.length+' \u00b7 depth '+(trail.length-1)+'</div></div>';
+  /* the row you are on, capped: a forty-wide row used to build forty rows and
+     write them all on every selection change */
+  if(CFG.hereSibs==="count"){
+    h+=hereSibRow(sel,sel,sd);
+    h+='<div class="rf">'+(at+1)+' of '+ss.length+' \u00b7 \u2191\u2193 to step \u00b7 depth '+(trail.length-1)+'</div></div>';
+    return h;
+  }
+  if(CFG.hereSibs==="scroll"){
+    h+='<div class="sibwrap">';
+    ss.forEach(function(sid){ h+=hereSibRow(sid,sel,sd); });
+    h+='</div>';
+  } else {
+    var pad=3, lo=Math.max(0,at-pad), hi=Math.min(ss.length-1,at+pad);
+    if(at<0){ lo=0; hi=Math.min(ss.length-1,pad*2); }
+    if(lo>0) h+=hereMore(lo,"above",sd);
+    for(var i=lo;i<=hi;i++) h+=hereSibRow(ss[i],sel,sd);
+    if(hi<ss.length-1) h+=hereMore(ss.length-1-hi,"below",sd);
+  }
+  h+='<div class="rf">'+(at+1)+' of '+ss.length+' \u00b7 depth '+(trail.length-1)+'</div></div>';
   return h;
 }
 function hereStrip(){
@@ -5614,9 +5844,14 @@ function hereStrip(){
     if(id===null){ h+='<button class="more" title="'+(anc.length-2)+' more up">\u2026</button>'; return; }
     h+='<button class="'+(i===shown.length-1?'par':'')+'" data-go="'+id+'">'+esc(trunc(hereFirst(id)))+'</button>';
   });
-  var ss=sibGroup(n);
-  h+='<span class="cnt">'+(ss.indexOf(sel)+1)+' of '+ss.length+hereCompass()+'</span></div><div class="sibs">';
-  ss.forEach(function(sid){ var k=N(sid).children.length; h+='<button class="'+(sid===sel?'on':'')+'" data-go="'+sid+'">'+hereName(sid)+(k?'<span class="n">\u25b8'+k+'</span>':'')+'</button>'; });
+  var ss=sibGroup(n), at=ss.indexOf(sel);
+  h+='<span class="cnt">'+(at+1)+' of '+ss.length+hereCompass()+'</span></div><div class="sibs">';
+  /* ten chips and a plus: an uncapped chip row runs off the side of the window
+     the way an uncapped rail runs off the bottom */
+  var lim=10, lo=0;
+  if(ss.length>lim && at>=lim) lo=Math.min(ss.length-lim, at-lim+1);
+  ss.slice(lo,lo+lim).forEach(function(sid){ var k=N(sid).children.length; h+='<button class="'+(sid===sel?'on':'')+'" data-go="'+sid+'">'+hereName(sid)+(k?'<span class="n">\u25b8'+k+'</span>':'')+'</button>'; });
+  if(ss.length>lim) h+='<button class="more" title="'+(ss.length-lim)+' more in this row">+'+(ss.length-lim)+'</button>';
   return h+'</div></div>';
 }
 function hereTw(t,px){
@@ -5659,8 +5894,20 @@ function drawHere(wake){
   if(he.parentNode!==home) home.appendChild(he);
   he.className=CFG.hereAttach?"sec":"";
   if(show){
-    var h=CFG.hereStyle==="strip"?hereStrip():CFG.hereStyle==="sketch"?hereSketch():hereRail();
-    if(h!==hereHtml){ he.innerHTML=h; hereHtml=h; }
+    var h=CFG.hereStyle==="sketch" ? hereSketch()
+          : (focusId!=null && N(focusId)) ? hereDepth()
+          : CFG.hereStyle==="strip" ? hereStrip() : hereRail();
+    if(h!==hereHtml){
+      he.innerHTML=h; hereHtml=h;
+      /* only the scrolling box needs the selected row brought into view, and
+         only when the rows actually changed: reading scrollHeight forces a
+         layout, so it must not happen on every render */
+      if(CFG.hereSibs==="scroll"){
+        var sw=he.querySelector(".sibwrap>.rr.on");
+        if(sw && sw.parentNode.scrollHeight>sw.parentNode.clientHeight)
+          sw.parentNode.scrollTop=Math.max(0, sw.offsetTop-(sw.parentNode.clientHeight-sw.offsetHeight)/2);
+      }
+    }
   }
   he.hidden=!show;
   var pill=document.getElementById("pill"), rail=document.getElementById("rail");
@@ -5686,7 +5933,7 @@ function hereCycle(){
   var order=["always","auto","never"], i=order.indexOf(CFG.hereShow);
   CFG.hereShow=order[(i+1)%3];
   drawPanel(); drawHere(true); save();
-  flashSave(CFG.hereShow==="always"?"where you are: always":CFG.hereShow==="auto"?"where you are: only when the centre is out of view":"where you are: off");
+  flashSave(CFG.hereShow==="always"?"navi: always":CFG.hereShow==="auto"?"navi: only when the centre is out of view":"navi: off");
 }
 function linkNodeTo(nodeId,target,newName){
   var n=N(nodeId); if(!n) return;
@@ -6016,14 +6263,21 @@ function toggleMaps(on){
 function leaveViews(){
   if(pres) presEnd();
   if(carry) carryEnd();
+  shiftTapReset(); hintBrowseEnd();
   storyMenuClose();
   lens=false; lensOne=null; lensFold={}; lensHome=null; lensMoved=false;
   followBefore=null; camBefore=null;
 }
 function switchDoc(id){
-  save();
-  var lib=idxRead(); if(!lib||!lib.docs[id]) return;
-  var d=docRead(id); if(!d) return;
+  /* an empty map made this session is not saved on the way out, it is dropped:
+     the index write below is the only storage this costs */
+  var drop=leavingEmpty(id);
+  if(!drop) save();
+  var lib=idxRead();
+  if(!lib||!lib.docs[id]){ if(drop) save(); return; }
+  var d=docRead(id);
+  if(!d){ if(drop) save(); return; }
+  if(drop) dropEmpty(lib,drop);
   if(curDoc!==id) leaveViews();
   if(curDoc && curDoc!==id && lib.docs[curDoc]) lib.prev=curDoc;
   if(!linkSwitch){
@@ -6051,9 +6305,12 @@ function switchDoc(id){
   flashSave("opened \u201c"+trunc(docName(state))+"\u201d");
 }
 function newDoc(st){
-  save();
+  var drop=leavingEmpty(null);
+  if(!drop) save();
   var lib=idxRead()||{current:null,docs:{}};
+  if(drop) dropEmpty(lib,drop);
   var id=docId();
+  madeThisSession[id]=1;
   leaveViews();
   state=st||freshState(); state.frames=state.frames||[];
   uid=1; selected=state.rootId; focusId=null; editing=null; clearMarks();
@@ -6132,6 +6389,13 @@ var I={
   hrail:svg('<path d="M4 5h5M6 9h6M8 13h8M8 17h8" /><path d="M8 11v7" stroke-width="1"/>'),
   hstrip:svg('<path d="M3 6h14"/><rect x="3" y="10" width="4" height="4" rx="1.2"/><rect x="9" y="10" width="4" height="4" rx="1.2" fill="currentColor" opacity=".4"/><rect x="15" y="10" width="2.5" height="4" rx="1"/>'),
   hsketch:svg('<rect x="7" y="3" width="6" height="4" rx="1"/><path d="M10 7v3M10 10L5 13M10 10v3M10 10l5 3"/><rect x="2.5" y="13" width="5" height="4" rx="1"/><rect x="7.5" y="13" width="5" height="4" rx="1" fill="currentColor" opacity=".4"/><rect x="12.5" y="13" width="5" height="4" rx="1"/>'),
+  hwin:svg('<path d="M3 4h14" opacity=".35"/><path d="M4 8h12M4 11h12"/><rect x="3.2" y="12.6" width="13.6" height="3.2" rx="1.2" fill="currentColor" opacity=".35" stroke="none"/><path d="M3 18h14" opacity=".35"/>'),
+  hscroll:svg('<rect x="3" y="4" width="11" height="12" rx="1.5"/><path d="M5 7h7M5 10h7M5 13h7" stroke-width="1"/><path d="M16.5 5v10" stroke-width="2.4" opacity=".5"/>'),
+  hcount:svg('<rect x="3" y="8" width="14" height="4" rx="1.5" fill="currentColor" opacity=".35" stroke="none"/><rect x="3" y="8" width="14" height="4" rx="1.5"/><path d="M6 15h8" stroke-width="1" opacity=".6"/>'),
+  hchips:svg('<rect x="2.5" y="8" width="4" height="4" rx="1.2"/><rect x="8" y="8" width="4" height="4" rx="1.2" fill="currentColor" opacity=".4"/><rect x="13.5" y="8" width="4" height="4" rx="1.2"/><path d="M3 5h14" opacity=".4"/>'),
+  hpips:svg('<rect x="3" y="6" width="2" height="8" rx="1" fill="currentColor" stroke="none"/><rect x="6.5" y="6" width="2" height="8" rx="1" fill="currentColor" stroke="none"/><rect x="10" y="6" width="2" height="8" rx="1" opacity=".3" fill="currentColor" stroke="none"/><rect x="13.5" y="6" width="2" height="8" rx="1" opacity=".3" fill="currentColor" stroke="none"/>'),
+  hwords:svg('<path d="M3 7h6M3 10h10M3 13h4"/>'),
+  hcrumbs:svg('<rect x="2.5" y="8" width="5.5" height="4" rx="1.2"/><path d="M9.2 10h1.6"/><rect x="11.8" y="8" width="5.5" height="4" rx="1.2" fill="currentColor" opacity=".4"/>'),
   halways:svg('<path d="M2.5 10s3-5 7.5-5 7.5 5 7.5 5-3 5-7.5 5-7.5-5-7.5-5z"/><circle cx="10" cy="10" r="2.2"/>'),
   hauto:svg('<path d="M2.5 10s3-5 7.5-5 7.5 5 7.5 5-3 5-7.5 5-7.5-5-7.5-5z" stroke-dasharray="2.5 2"/><circle cx="10" cy="10" r="2.2"/>'),
   hnever:svg('<path d="M2.5 10s3-5 7.5-5 7.5 5 7.5 5-3 5-7.5 5-7.5-5-7.5-5z"/><path d="M4 16L16 4"/>'),
@@ -6207,11 +6471,13 @@ var PANEL=[
   {h:"Flags",key:"flagStyle",opts:[["pennant",I.fpen,"Pennant"],["ribbon",I.frib,"Ribbon"],["ring",I.fring,"Ring"],["star",I.fstar,"Asterisk"]]},
   {h:"Numbers",key:"numStyle",opts:[["gutter",I.ngut,"In the gutter"],["box",I.nbox,"In the box"],["edge",I.nedge,"On the edge"]]},
   {h:"Number scheme",key:"numScheme",opts:[["docs",lt("1a"),"1. a. i."],["legal",lt("1.1"),"1.1.1"],["formal",lt("IA"),"I. A. 1."]]},
-  {h:"Where you are",key:"hereStyle",opts:[["rail",I.hrail,"The rail: the way up, then your row"],["strip",I.hstrip,"A pill, with the siblings as chips"],["sketch",I.hsketch,"A drawn sketch of the same"]]},
+  {h:"navi",key:"hereStyle",opts:[["rail",I.hrail,"The rail: the way up, then your row"],["strip",I.hstrip,"A pill, with the siblings as chips"],["sketch",I.hsketch,"A drawn sketch of the same"]]},
   {h:"Show it",key:"hereShow",opts:[["always",I.halways,"Always"],["auto",I.hauto,"Only when the centre is out of view"],["never",I.hnever,"Never (\u2325\u21e7W cycles these)"]]},
+  {h:"Your row",key:"hereSibs",opts:[["window",I.hwin,"Three either side, the rest folded"],["scroll",I.hscroll,"The whole row, in a box that scrolls"],["count",I.hcount,"Just the one you are on, and the count"],["chips",I.hchips,"The row as chips, ten and a plus"]],when:function(){ return CFG.hereStyle!=="sketch"; }},
+  {h:"In a focus",key:"hereFocus",opts:[["pips",I.hpips,"Pips for how deep you are"],["words",I.hwords,"Depth in words"],["crumbs",I.hcrumbs,"The focus root and where you are"]],when:function(){ return CFG.hereStyle!=="sketch"; }},
   {h:"Paper",key:"paper",opts:[["graph",I.pgraph,"Graph"],["lines",I.plines,"Ruled"],["dots",I.pdots,"Dots"],["blank",I.pblank,"Blank"]]},
   {h:"Theme",key:"theme",opts:[["light",I.tlight,"Light"],["dark",I.tdark,"Dark"]]},
-  {h:"Behaviour",toggles:[["minSize","Uniform node size"],["typeOnCreate","Cursor in new nodes"],["follow","Camera follows"],["hereFade","Where you are fades when idle"],["hereAttach","Where you are joins the maps rail"]]}
+  {h:"Behaviour",toggles:[["minSize","Uniform node size"],["typeOnCreate","Cursor in new nodes"],["follow","Camera follows"],["hereFade","navi fades when idle"],["hereAttach","navi joins the maps rail"]]}
 ];
 var elStyle=document.getElementById("style"), elScroll=document.getElementById("styleScroll");
 function drawPanel(){
@@ -6314,6 +6580,13 @@ addEventListener("keyup",function(e){
 })();
 document.addEventListener("keydown",function(e){
   var mod=e.metaKey||e.ctrlKey;
+  /* the browsing key bar is a reference: any key but its own puts it back,
+     and the key still does what it does */
+  if(hintBrowse!=null && !(e.altKey && e.shiftKey && e.code==="KeyK") &&
+     e.key!=="Alt" && e.key!=="Shift" && e.key!=="Meta" && e.key!=="Control") hintBrowseEnd();
+  /* the double tap only counts when the same shift+arrow comes twice in a row */
+  if(shiftTapKey && !(e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey && KEYDIR[e.key]===shiftTapKey) &&
+     e.key!=="Shift" && e.key!=="Meta" && e.key!=="Control" && e.key!=="Alt") shiftTapReset();
   /* a presentation owns the keyboard, except for the browser's own chords */
   if(pres){
     if(elJump.classList.contains("on")){
@@ -6364,6 +6637,7 @@ document.addEventListener("keydown",function(e){
     if(e.code==="KeyG" && !e.shiftKey){ e.preventDefault(); ungroup(); return; }
     if(e.code==="KeyC" && !e.shiftKey){ e.preventDefault(); doExport("png-copy"); return; }
     if(e.code==="KeyB" && !e.shiftKey){ e.preventDefault(); breakOut(); return; }
+    if(e.code==="KeyK" && e.shiftKey){ e.preventDefault(); hintBrowseStep(); return; }
     if(e.code==="KeyK" && !e.shiftKey){ e.preventDefault(); openLinkPicker(); return; }
     if(e.code==="KeyM" && e.shiftKey){ e.preventDefault(); railToggle(); return; }
     if(e.code==="KeyW" && e.shiftKey){ e.preventDefault(); hereCycle(); return; }
@@ -6376,7 +6650,7 @@ document.addEventListener("keydown",function(e){
     if(e.shiftKey && /^Digit[1-9]$/.test(e.code)){ e.preventDefault(); openPinned(+e.code.slice(5)); return; }
   }
   if(e.altKey && !mod && !editing && e.code==="KeyO"){ e.preventDefault(); sortMenu(); return; }
-  if(e.altKey && !mod && !editing && e.code==="KeyX"){ e.preventDefault(); carryStart(); return; }
+  if(e.altKey && !mod && !editing && e.code==="KeyX"){ e.preventDefault(); toggleMark("done"); return; }
   if(e.altKey && !mod && !editing && e.code==="KeyJ"){ e.preventDefault(); mergeMarked(); return; }
   if(e.altKey && !mod && !editing && e.code==="KeyS"){ e.preventDefault(); splitNode(e.shiftKey); return; }
   if(e.altKey && !mod && !editing && e.code==="KeyN"){
@@ -6471,8 +6745,8 @@ document.addEventListener("keydown",function(e){
     if(lensOne) toggleLensFold(selected); else toggleCollapse();
     return;
   }
-  if(mod&&e.shiftKey&&(e.key==="d"||e.key==="D")){ e.preventDefault(); if(editing) commitEdit(); toggleMark("done"); return; }
-  if(mod&&(e.key==="d"||e.key==="D")){ e.preventDefault(); if(editing) commitEdit(); duplicateBranch(); return; }
+  if(mod&&!e.shiftKey&&(e.key==="d"||e.key==="D")){ e.preventDefault(); if(editing) commitEdit(); duplicateBranch(); return; }
+  if(mod&&e.shiftKey&&(e.key==="d"||e.key==="D")) return;   /* ⌥X marks done now; Firefox keeps this chord anyway */
   if(mod&&e.shiftKey&&(e.key==="f"||e.key==="F")){ e.preventDefault(); if(editing) commitEdit(); toggleMark("flag"); return; }
   /* Cmd+Shift+7 numbers, as it does in Docs; by physical key, since Shift turns the 7 into & */
   if(mod&&e.shiftKey&&e.code==="Digit7"){ e.preventDefault(); toggleNumber(); return; }
@@ -7078,6 +7352,35 @@ window.__mf={
   mark:function(ids){ marked={}; ids.forEach(function(i){ marked[i]=1; }); render(true); },
   markSibs:markSiblings, fold:toggleCollapse,
   number:toggleNumber, numLabel:numLabel, get anyNum(){ return anyNum(); },
+  get carrying(){ return carry ? carry.ids.slice() : null; },
+  hintMode:function(){ return hintBrowse||hintLive(); },
+  get hintDraws(){ return hintDraws; },
+  get hintBrowsing(){ return hintBrowse!=null; },
+  hintBrowseStep:hintBrowseStep,
+  rowOrder:function(parentId){ var p=N(parentId); return p?p.children.slice():null; },
+  orderRow:orderRow,
+  naviRows:function(){
+    var he=document.getElementById("here");
+    if(!he||he.hidden) return null;
+    return {
+      head:(he.querySelector(".rh")||{textContent:""}).textContent.replace(/\s*(\u2325\u21e7W|Alt\+Shift\+W)\s*$/,"").trim(),
+      anc:he.querySelectorAll(".rr.anc").length,
+      sibs:he.querySelectorAll(".rr.sib:not(.more)").length,
+      more:[].map.call(he.querySelectorAll(".rr.more.sib"),function(x){ return x.textContent.trim(); }),
+      chips:he.querySelectorAll(".sibs>button").length,
+      scrollbox:he.querySelectorAll(".sibwrap").length,
+      pips:he.querySelectorAll(".pips i.on").length,
+      depth:he.querySelectorAll(".depth").length,
+      crumbs:he.querySelectorAll(".hstrip .trail>button").length,
+      foot:(he.querySelector(".rf")||{textContent:""}).textContent.trim()
+    };
+  },
+  docIsEmpty:function(){ return docIsEmpty(state); },
+  get docs(){ var l=idxRead()||{docs:{}}; return Object.keys(l.docs); },
+  parseOutline:function(t){ return parseOutline(t); },
+  parseOutlineHtml:function(h){ return parseOutlineHtml(h); },
+  bestOutline:function(h,t){ return bestOutline(h,t); },
+  open:function(id){ switchDoc(id); },
   hereGo:hereGo, hereCycle:hereCycle, get hereShown(){ return !document.getElementById("here").hidden; }, get view(){ return {x:view.x,y:view.y,z:view.z}; }, setView:function(x,y,z){ stopCam(); view.x=x; view.y=y; view.z=z; applyView(); },
   get links(){ return (state.links||[]).map(function(l){ return l.branch?{a:l.a,b:l.b,branch:true}:{a:l.a,b:l.b}; }); },
   branchTie:function(a,b){ var r=toggleBranchTie(a,b); if(r&&r!=="same"){ hardRender(); save(); } return r; },

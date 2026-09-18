@@ -3,6 +3,57 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.3.0] - 2026-09-18
+
+### Added
+- **Cut picks the branch up instead of taking it away.** `⌘X` now copies to
+  the clipboard and lifts the selection off the map: it goes faint where it
+  was, the arrows walk a ring round the map to choose where it lands, and
+  `⌘V` or `⏎` puts it down, `⇧⏎` right after the ringed node.
+  Nothing leaves the map until you put it down, and `Esc` puts it back exactly
+  where it was. The clipboard still holds what you picked up, so a second
+  `⌘V` pastes a copy of it. In a network or during a talk the clipboard is
+  written and the map is left alone. `⌥X` is now Done, which is the mark
+  you reach for most; `⌥D` still does the same, and `⌘⇧D` is gone,
+  since Firefox kept it anyway.
+- **Read another mode's keys without leaving the one you are in.** `⌥⇧K`
+  walks the key bar through the modes: Map, Focus, Connections, Flags, Network,
+  Story, Selection, Carrying, one press each. The bar says which mode it is
+  showing and never takes the keyboard, so the next key you press does what it
+  always does and brings your own keys back. Five seconds does the same.
+- **Tap a selection key twice to take the whole row.** Two presses of the same
+  `⇧`+arrow inside four tenths of a second select every node in the row,
+  the way `⇧`+click does. One press is still one more node, and
+  `⌘⇧`+arrow still takes whole branches.
+- **navi, and a row that stops growing.** Where you are is now called navi. A
+  long row used to be listed in full, so a row forty wide ran off the bottom of
+  the window. It now shows the node you are on with three either side and a
+  folded row at each end saying how many more are above and below, the same
+  shape the way up already used. The Style panel has three alternatives: the
+  whole row in a small box that scrolls, just the one you are on with the
+  count, or the row as chips. The chips are capped at ten and a plus whichever
+  you pick. Inside a focus, navi shows how deep you are rather than a spine you
+  cannot leave: six pips by default, or the depth in words, or the focus root
+  and where you are in it.
+
+### Changed
+- **Numbering a row also settles its order.** Numbering used to count the
+  branches in the order they were made, which on a row that spans both sides of
+  the centre had nothing to do with what you were looking at. It now reads the
+  row off the picture: down the page on a side row, clockwise from the top for
+  the branches round the centre. Numbering the centre's row also fixes the
+  branches where they are, so they stop rearranging themselves as you add to
+  them. One `⌘Z` puts both the order and the numbers back.
+- **A pasted list keeps the kind of list it was.** A numbered list pastes in
+  numbered and a bulleted list pastes in plain, with no marker left in the
+  text. A list that mixes its markers comes in as one kind of row, whichever
+  most of its lines used. A list copied out of a page keeps its numbering even
+  where the page printed no figures.
+- **A new map you never wrote in no longer joins the library.** Make a map,
+  look at it, leave it untouched and it goes with you rather than sitting in
+  the list. A map you typed even one letter into stays, so does a map you made
+  earlier and came back to, and so does a map something links to.
+
 ## [1.2.0] - 2026-09-18
 
 ### Added
