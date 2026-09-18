@@ -3,6 +3,40 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.5.0] - 2026-09-18
+
+### Added
+- **Markdown arrives as a shape, not as asterisks.** Paste a list out of a chat
+  or a document and the markdown written inside the lines comes off: bold,
+  italic, code, strikethrough and links all arrive as their words. When the
+  paste has no indentation left in it, which is what a chat answer and most
+  stripped copies give you, the markdown says what the shape was. A line that is
+  bold from end to end becomes a heading, a line that ends in a colon with
+  nothing after it introduces what follows, and everything after them hangs
+  underneath. A list that used to land as forty siblings in one column now lands
+  as the two or three levels it was written as.
+- **A term and its definition come in as two nodes.** A line like
+  **PTP (Promise to Pay):** the borrower commits to an amount and a date becomes
+  the term as a node with the sentence as a paragraph under it, so a definition
+  list becomes a map rather than a column of long boxes. The same two readings
+  work on a rich-text copy, where the bold arrives as real bold rather than
+  asterisks.
+- **Nothing is invented from a paste that already has a shape.** A paste that
+  carries any indentation of its own is taken exactly as it is, and a paste with
+  no bold anywhere in it is left flat, so a branch copied out of a map and
+  pasted back always comes home unchanged.
+
+### Fixed
+- **A paragraph's children are joined to something you can see.** A paragraph
+  has no box, so the lines to its children used to start at an edge nobody had
+  drawn and read as lines joined to nothing. A paragraph with children on screen
+  now carries a lighter rule down the side they leave from, and the lines meet
+  it.
+- **A row's numbering stays its own.** A bulleted line and a bare line written
+  at the same depth are two rows of the tree, but the paste was counting them as
+  one when it decided whether a row was numbered, so one row could take the
+  other's numbering.
+
 ## [1.4.0] - 2026-09-18
 
 ### Added

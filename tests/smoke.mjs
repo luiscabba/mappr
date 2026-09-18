@@ -4264,6 +4264,146 @@ group("1.4.0: prose");
   ok("no runtime errors", errors.length === 0, errors);
 }
 
+group("1.5.0: markdown in");
+{
+  const P = (txt) => M((x) => __mf.parseOutline(x), txt);
+  const H = (html, txt) => M((a) => __mf.bestOutline(a[0], a[1]), [html, txt]);
+  const shape = (rows) => rows.map((r) => [r.indent, r.text].join("|"));
+  const depths = (rows) => { const s = []; rows.forEach((r) => { if (s.indexOf(r.indent) < 0) s.push(r.indent); }); return s.sort((a, b) => a - b); };
+  const at = (rows, t) => rows.find((r) => r.text === t);
+
+  // ---- 1. the markers come off ----
+  let r = await P("- **bold** and *thin* and `code` and ~~gone~~ and [words](http://x.y)");
+  ok("emphasis, code, strike and a link all read as their words",
+    r[0].text === "bold and thin and code and gone and words", r[0] && r[0].text);
+  r = await P("- an ![alt text](http://x/y.png) inline\n- 2 * 3 * 4 is not emphasis\n- snake_case_name stays");
+  ok("an image is its alt text", r[0].text === "an alt text inline", r[0].text);
+  ok("a lone asterisk between spaces is arithmetic", r[1].text === "2 * 3 * 4 is not emphasis", r[1].text);
+  ok("and an underscore inside a word is part of it", r[2].text === "snake_case_name stays", r[2].text);
+  r = await P("- \\*not emphasis\\*");
+  ok("an escaped marker comes through as itself", r[0].text === "*not emphasis*", r[0].text);
+
+  // ---- 2. a flat list finds its parents ----
+  const FLAT = [
+    "* **1. Call dispositions (what the QA checks)**",
+    "* Negotiation outcomes:",
+    "* **PTP (Promise to Pay):** the borrower commits to an amount and a date.",
+    "* **RTP (Refuse to Pay):** a clear refusal.",
+    "* Contact outcomes:",
+    "* **RPC (Right Party Contact):** you spoke to the borrower.",
+    "* **2. Audit verdicts (what the QA gives the call)**",
+    "* **Pass:** the call meets the scorecard.",
+    "* A nego-specific scorecard also checks that the agent:",
+    "* probed the reason for delinquency,",
+    "* recapped the commitment,",
+  ].join("\n");
+  r = await P(FLAT);
+  ok("a flat paste comes in with three depths", depths(r).length >= 3, depths(r));
+  const D = depths(r);
+  ok("a bold line is a parent", at(r, "Call dispositions (what the QA checks)").indent === D[0]);
+  ok("and the second one is its sibling", at(r, "Audit verdicts (what the QA gives the call)").indent === D[0]);
+  ok("a colon line sits under the bold line above it",
+    at(r, "Negotiation outcomes").indent > at(r, "Call dispositions (what the QA checks)").indent);
+  ok("and the colon comes off the heading", !!at(r, "Contact outcomes"));
+  ok("a plain line lands under the colon line above it",
+    at(r, "probed the reason for delinquency,").indent > at(r, "A nego-specific scorecard also checks that the agent").indent);
+  ok("a number inside the bold numbers the row, not the text",
+    at(r, "Call dispositions (what the QA checks)").num === true);
+  ok("and the figure is not left in the text", !/^\d/.test(at(r, "Audit verdicts (what the QA gives the call)").text));
+
+  // ---- 3. a label and its definition ----
+  ok("a bold label becomes the node", !!at(r, "PTP (Promise to Pay)"));
+  const defn = at(r, "the borrower commits to an amount and a date.");
+  ok("and its sentence comes in as a paragraph", !!defn && defn.prose === true);
+  ok("hanging under the label", !!defn && defn.indent > at(r, "PTP (Promise to Pay)").indent);
+  ok("and the next term is back at the label's depth",
+    at(r, "RTP (Refuse to Pay)").indent === at(r, "PTP (Promise to Pay)").indent);
+
+  // ---- 4. what it leaves alone ----
+  r = await P("- one\n- two\n- three\n- four");
+  ok("a flat list with no heading in it is left flat", depths(r).length === 1, depths(r));
+  r = await P("- Heading one:\n- Heading two:\n- Heading three:");
+  ok("headings with nothing under them are left flat", depths(r).length === 1, depths(r));
+  r = await P("- Notes:\n- alpha\n- beta\n- gamma");
+  ok("a colon line with no markdown around it is left alone", depths(r).length === 1, depths(r));
+  ok("and keeps its colon", r[0].text === "Notes:", r[0].text);
+  r = await P("- top\n\t- under\n\t\t- deeper\n- **bold at the top**\n- plain");
+  ok("an indented paste is never second-guessed",
+    shape(r).join(" ") === shape(r).join(" ") && at(r, "under").indent > at(r, "top").indent);
+  ok("and a bold line in it keeps the depth it was pasted at",
+    at(r, "bold at the top").indent === at(r, "top").indent, [at(r, "bold at the top").indent, at(r, "top").indent]);
+  r = await P("A line that ends in a colon:");
+  ok("a single line keeps its colon", r[0].text === "A line that ends in a colon:", r[0].text);
+
+  // ---- 5. the same list as rich text ----
+  const HTML = "<ul>" +
+    "<li><strong>1. Call dispositions</strong></li>" +
+    "<li>Negotiation outcomes:</li>" +
+    "<li><strong>PTP:</strong> the borrower commits to a date.</li>" +
+    "<li><strong>2. Audit verdicts</strong></li>" +
+    "<li><strong>Pass:</strong> the call meets the scorecard.</li>" +
+    "</ul>";
+  r = await H(HTML, "1. Call dispositions\nNegotiation outcomes:\nPTP: the borrower commits to a date.\n2. Audit verdicts\nPass: the call meets the scorecard.");
+  ok("a rich-text copy reads its bold the same way", depths(r).length >= 2, depths(r));
+  ok("the html flavour promotes its headings too",
+    at(r, "Negotiation outcomes").indent > at(r, "Call dispositions").indent);
+  const hdef = at(r, "the borrower commits to a date.");
+  ok("and splits its labels", !!hdef && hdef.prose === true);
+
+  // ---- 6. it lands in the map the way it parsed ----
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  await M((o) => { __mf.spread("right"); __mf.paste(o); __mf.mark([]); }, FLAT);
+  await page.waitForTimeout(300);
+  const kids = await M(() => {
+    const st = __mf.state, by = (t) => Object.values(st.nodes).find((n) => n.text === t);
+    const head = by("Call dispositions (what the QA checks)");
+    const term = by("PTP (Promise to Pay)");
+    return { under: head ? head.children.length : -1, termKids: term ? term.children.length : -1,
+             prose: term && term.children.length ? !!st.nodes[term.children[0]].prose : false };
+  });
+  ok("the heading owns the lines under it", kids.under >= 2, kids);
+  ok("the term owns its definition", kids.termKids === 1, kids);
+  ok("and the definition is a paragraph", kids.prose === true, kids);
+
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
+group("1.5.0: a paragraph's children have something to meet");
+{
+  const id = (t) => M((t) => (Object.values(__mf.state.nodes).find((n) => n.text === t) || {}).id, t);
+  const ruleCount = async (nid) => M((x) => {
+    const g = document.querySelector('[data-wrap="' + x + '"]');
+    return document.querySelectorAll('svg path[stroke-width="1.5"]').length;
+  }, nid);
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  await M(() => { __mf.spread("right"); __mf.paste("Doc\n# Head\nA paragraph with a branch hanging off it\n\t- child one\n\t- child two"); });
+  await page.waitForTimeout(300);
+  const pid = await id("A paragraph with a branch hanging off it");
+  ok("the paste made a paragraph", await M((x) => __mf.prose(x), pid));
+  const kid = await M((x) => __mf.state.nodes[x].children.length, pid);
+  ok("with children under it", kid === 2, kid);
+  const far = async () => M((x) => {
+    const b = __mf.boxes()[x], p = __mf.pos()[x];
+    const want = (__mf.dir(x) === "L") ? p.cx - b.w / 2 + 2 : p.cx + b.w / 2 - 2;
+    const paths = Array.from(document.querySelectorAll("#paint path, svg path"));
+    return paths.some((el) => {
+      const d = el.getAttribute("d") || "";
+      const m = d.match(/^M\s*(-?[\d.]+)[, ](-?[\d.]+)/);
+      return !!m && Math.abs(parseFloat(m[1]) - want) < 6 && el.getAttribute("stroke-width") === "1.5";
+    });
+  }, pid);
+  ok("a rule is drawn on the side the children leave from", await far());
+  await M((x) => { __mf.select(x); __mf.fold(); }, pid);
+  await page.waitForTimeout(260);
+  ok("and it goes when the children are folded away", !(await far()));
+  await M((x) => { __mf.select(x); __mf.fold(); }, pid);
+  await page.waitForTimeout(260);
+  ok("and comes back when they do", await far());
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 
