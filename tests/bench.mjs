@@ -304,6 +304,27 @@ console.log("\nrender with 150 cross-links in a 1200-node map (median of 9 selec
   }
 }
 
+/* ---------- 6. a talk step, in reach "told" and reach "all" ---------- */
+console.log("\na talk step (__mf.presNext) in a 1500-node map (median of 9)");
+{
+  results.pres = {};
+  for (const reach of ["told", "all"]) {
+    const page = await build(1500);
+    const r = await page.evaluate((reach) => {
+      if (__mf.cfg.presReach !== undefined) __mf.set("presReach", reach);
+      else if (reach === "all") return null;
+      __mf.present();
+      const xs = [], d0 = __mf.drawn;
+      for (let i = 0; i < 9; i++) { const t0 = performance.now(); __mf.presNext(); xs.push(performance.now() - t0); }
+      const drawn = (__mf.drawn === undefined) ? null : Math.round((__mf.drawn - d0) / 9);
+      __mf.presEnd();
+      xs.sort((a, b) => a - b); return { ms: Math.round(xs[4] * 10) / 10, drawn };
+    }, reach);
+    if (r == null) { row("  reach " + reach, "n/a", "no presReach in this build"); continue; }
+    results.pres[reach] = r.ms; row("  reach " + reach, r.ms, r.drawn == null ? "" : r.drawn + " shapes drawn fresh per step");
+  }
+}
+
 await browser.close();
 if (jsonAt) { fs.writeFileSync(jsonAt, JSON.stringify(results, null, 2)); console.log("\nwrote " + jsonAt); }
 console.log("");

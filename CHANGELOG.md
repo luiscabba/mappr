@@ -3,6 +3,33 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.6.0] - 2026-09-19
+
+### Added
+- **A talk you can set up the way you talk.** The Style panel has a Presenting
+  section. The whole map can be up from the first second, dimmed, with the
+  path to what you are saying lit, so the room always sees where this bit sits
+  (On screen: All, with Behind you: Fade). What is behind you can stay as it
+  was, sit back, or go away again; "go away again" is not offered while the
+  whole map is on screen, because there is nothing for it to hide. A step can
+  reveal one node, a whole row or a whole branch, and a row at a time is also
+  the answer for tied nodes that sit at the same level, since they arrive
+  together because their row does. ⇧→ is always one step coarser than the
+  setting: a row when a step is a node, a branch when a step is a row. The
+  camera can follow you, hold the whole map, or hold the branch you are in.
+  With nothing set, a talk is exactly what it was.
+- **Present from here.** ⌘P starts a talk from whatever you have selected
+  rather than from the centre, so the rest of the map is never told, and
+  leaving and coming back resumes that talk and not the one from the centre.
+  ⌥⇧P does the same where the browser keeps ⌘P for print, and the right-click
+  menu has it too. On the centre it is ⌘3.
+- **Cards.** A talk can drop the map altogether and read as cards, one node to
+  a screen with its paragraphs as the body and its other children as chips,
+  which is what prose was for. A paragraph is read on its parent's card, lit,
+  and the ones told before it sit above it. The map is still there underneath,
+  so Esc puts you back exactly where you were; O and ⇧O have nothing to show
+  and say so.
+
 ## [1.5.1] - 2026-09-18
 
 ### Fixed

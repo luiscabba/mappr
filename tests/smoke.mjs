@@ -1197,13 +1197,13 @@ group("presentation");
   ok("a node lands exactly where the full layout puts it",
     await M(([s, full]) => JSON.stringify(__mf.pos()[s]) === JSON.stringify(JSON.parse(full)[s]), [Slow, fullPos]));
   ok("a link waits until both ends are on screen", await M(() => document.querySelectorAll("#paintLayer path.lk").length === 0));
-  ok("covered nodes step back", await M(() => document.querySelector(".node.past") !== null));
-  ok("but the path to here does not", await M((x) => !document.querySelector('.node[data-id="' + x + '"]').classList.contains("past"), Prob));
+  ok("the path to here does not step back", await M((x) => !document.querySelector('.node[data-id="' + x + '"]').classList.contains("past"), Prob));
 
   await press("Shift+ArrowRight");
   ok("Shift reveals the rest of the level at once", await M((x) => !!__mf.pos()[x], Lost));
   await press("ArrowRight");
   ok("then next carries on past them", (await P()).here === Bet, (await P()).here);
+  ok("covered nodes step back", await M((x) => document.querySelector('.node[data-id="' + x + '"]').classList.contains("past"), Slow));
   await press("Shift+ArrowRight");
   ok("Shift on a parent reveals all its children", await M((ids) => ids.every((i) => !!__mf.pos()[i]), [Keys, Lay, Cam]));
   ok("and the link appears once both ends are shown", await M(() => document.querySelectorAll("#paintLayer path.lk").length > 0));
@@ -1322,6 +1322,198 @@ group("presentation: the end, the whole story, jumping");
   await page.waitForTimeout(250);
   ok("the arrange bar copies the story as an outline", /story copied/.test(await M(() => document.getElementById("saveState").textContent)));
   await press("Escape");
+}
+
+group("presentation: a talk set up the way you talk (1.6.0)");
+{
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(200); };
+  const P = () => M(() => __mf.pres);
+  const cls = (id) => M((x) => { const el = document.querySelector('.node[data-id="' + x + '"]'); return el ? el.className : "gone"; }, id);
+  const has = async (id, c) => (await cls(id)).split(" ").includes(c);
+  const onScreen = (id) => M((x) => !!__mf.pos()[x], id);
+  const set = (k, v) => M(([k, v]) => __mf.set(k, v), [k, v]);
+  const reset = () => M(() => { ["presStyle","presReach","presBack","presStep","presCam"].forEach((k) => { __mf.cfg[k] = { presStyle:"map", presReach:"told", presBack:"fade", presStep:"node", presCam:"follow" }[k]; }); __mf.set("gap", __mf.cfg.gap); });
+  await M(() => __mf.paste("Pitch\n- Problem\n  - Slow\n  - Lost\n- Bet\n  - Keys\n    - Every control\n  - Layout\n  - Camera\n- Next"));
+  await page.waitForTimeout(280);
+  const root = await M(() => __mf.state.rootId);
+  const [Prob, Slow, Lost, Bet, Keys, Every, Lay, Cam, Next] = await Promise.all(["Problem","Slow","Lost","Bet","Keys","Every control","Layout","Camera","Next"].map(idOf));
+  const all = [Prob, Slow, Lost, Bet, Keys, Every, Lay, Cam, Next];
+  await M(([a, b]) => { __mf.select(a); }, [Slow]); await press("Meta+Shift+Digit9");
+  await M(([a, b]) => { __mf.select(a); }, [Lost]); await press("Meta+Shift+Digit9");
+  ok("two paragraphs for the cards to read", await M(([a, b]) => __mf.state.nodes[a].prose && __mf.state.nodes[b].prose, [Slow, Lost]));
+  await M((r) => __mf.select(r), root);
+
+  // ---- 1. the defaults are exactly the 1.5.1 talk ----
+  const defaults = await M(() => ({ s: __mf.cfg.presStyle, r: __mf.cfg.presReach, b: __mf.cfg.presBack, st: __mf.cfg.presStep, c: __mf.cfg.presCam }));
+  ok("the five settings default to the 1.5.1 talk", defaults.s === "map" && defaults.r === "told" && defaults.b === "fade" && defaults.st === "node" && defaults.c === "follow", defaults);
+  await press("Meta+3");
+  await press("ArrowRight"); await press("ArrowRight"); await press("ArrowRight");
+  ok("with nothing set, a talk hides the unreached", !(await onScreen(Bet)) && !(await onScreen(Next)) && (await has(Bet, "preshide")));
+  ok("and dims what is told but not on the path", (await has(Slow, "past")) && (await onScreen(Slow)));
+  ok("but never the path to here", !(await has(Prob, "past")) && !(await has(Lost, "past")));
+  ok("the body shapes fade the same way", await M(() => /opacity="\.38"/.test(document.getElementById("paintLayer").innerHTML) && !/opacity="\.16"/.test(document.getElementById("paintLayer").innerHTML)));
+
+  // ---- 2. reach, and what is behind you ----
+  await set("presReach", "all");
+  ok("reach all draws every node from the first step", (await Promise.all(all.map(onScreen))).every(Boolean));
+  ok("with the unreached fainter than the told", (await has(Bet, "far")) && (await has(Next, "far")) && (await has(Slow, "past")) && !(await has(Slow, "far")));
+  ok("in the shapes too", await M(() => /opacity="\.16"/.test(document.getElementById("paintLayer").innerHTML) && /opacity="\.38"/.test(document.getElementById("paintLayer").innerHTML)));
+  ok("and the path lit", !(await has(Prob, "past")) && !(await has(Lost, "past")) && !(await has(Lost, "far")));
+  await set("presBack", "keep");
+  ok("keep leaves told nodes undimmed", !(await has(Slow, "past")) && !(await has(Slow, "far")));
+  ok("while the unreached still sit far back", await has(Next, "far"));
+  await set("presReach", "told"); await set("presBack", "keep");
+  ok("keep with reach told dims nothing at all", await M(() => document.querySelectorAll(".node.past, .node:not(.preshide).far").length === 0));
+  await set("presBack", "hide");
+  ok("hide draws only the current path", (await onScreen(Prob)) && (await onScreen(Lost)) && !(await onScreen(Slow)) && (await has(Slow, "preshide")));
+  await press("ArrowRight");
+  ok("and the next step hides the last one behind you", (await P()).here === Bet && !(await onScreen(Lost)) && !(await onScreen(Prob)) && (await onScreen(Bet)));
+  await press("ArrowLeft");
+
+  // ---- 3. hide is not offered while reach is all ----
+  await set("presReach", "all");
+  ok("hide is not offered while reach is all", (await M(() => __mf.panelOpts.presBack)).join(",") === "keep,fade");
+  ok("the row's other options still are", (await M(() => __mf.panelOpts.presReach)).join(",") === "told,all");
+  await set("presBack", "hide");
+  const shownCount = await M(() => Object.keys(__mf.pos()).length);
+  ok("set through CFG anyway, the screen is not empty", shownCount === 10, shownCount);
+  await set("presReach", "told");
+  ok("back on reach told, hide is offered again", (await M(() => __mf.panelOpts.presBack)).join(",") === "keep,fade,hide");
+  await press("Escape");
+  await reset();
+
+  // ---- 4. what one step reveals ----
+  await M((r) => __mf.select(r), root);
+  await set("presStep", "row");
+  ok("presStepMode reads the setting, Shift one coarser", (await M(() => [__mf.presStepMode(false), __mf.presStepMode(true)])).join(",") === "row,branch");
+  await press("Meta+3");
+  await press("Home");
+  await press("ArrowRight");
+  ok("with row, a bare Right reveals a whole level", (await onScreen(Prob)) && (await onScreen(Bet)) && (await onScreen(Next)) && !(await onScreen(Slow)), (await P()));
+  ok("with the level's parent as the current node", (await P()).here === root);
+  await press("Shift+ArrowRight");
+  ok("and Shift+Right then reveals a branch", (await onScreen(Slow)) && (await onScreen(Lost)) && !(await onScreen(Keys)) && (await P()).here === Prob, (await P()));
+  await press("ArrowRight");
+  ok("the next row is the row the next untold node sits in", (await onScreen(Keys)) && (await onScreen(Lay)) && (await onScreen(Cam)) && !(await onScreen(Every)) && (await P()).here === Bet, (await P()));
+  await press("Escape");
+  await set("presStep", "node");
+  await M((r) => __mf.select(r), root);
+  await press("Meta+3"); await press("Home");
+  await press("ArrowRight"); await press("Shift+ArrowRight");
+  ok("with node, Shift+Right is still a row", (await onScreen(Slow)) && (await onScreen(Lost)) && !(await onScreen(Bet)), (await P()));
+  await press("Escape");
+  await set("presStep", "branch");
+  await M((r) => __mf.select(r), root);
+  await press("Meta+3"); await press("Home");
+  await press("ArrowRight");
+  ok("with branch, one step tells a whole branch", (await onScreen(Prob)) && (await onScreen(Slow)) && (await onScreen(Lost)) && !(await onScreen(Bet)) && (await P()).here === Prob, (await P()));
+  await press("Shift+ArrowRight");
+  ok("and Shift+Right does the same", (await onScreen(Bet)) && (await onScreen(Every)) && (await onScreen(Cam)) && !(await onScreen(Next)) && (await P()).here === Bet, (await P()));
+  ok("the branch is lit, the one before sits back", !(await has(Every, "past")) && (await has(Prob, "past")));
+  await press("ArrowLeft");
+  ok("back undoes the whole branch", !(await onScreen(Bet)) && (await P()).here === Prob);
+  await press("Escape");
+  await reset();
+
+  // ---- 5. the camera ----
+  await M((r) => __mf.select(r), root);
+  await press("Meta+3"); await press("Home");
+  await press("ArrowRight"); await press("ArrowRight");
+  const fr = (ids) => M((ids) => { const f = __mf.presFrameIds() || []; return ids.every((i) => f.includes(i)) && f.length === ids.length; }, ids);
+  ok("follow frames here and its parent", await fr([Slow, Prob]), await M(() => __mf.presFrameIds()));
+  await page.waitForTimeout(600);
+  const zFollow = (await M(() => __mf.cam())).z;
+  await set("presCam", "all");
+  await press("ArrowRight");
+  ok("all frames everything on screen", await M(() => { const f = __mf.presFrameIds(), p = Object.keys(__mf.pos()); return f.length === p.length && p.every((i) => f.includes(i)); }));
+  await page.waitForTimeout(600);
+  const zAll = (await M(() => __mf.cam())).z;
+  ok("and the camera stands further back for it", zAll <= zFollow, [zAll, zFollow]);
+  await set("presCam", "branch");
+  await press("ArrowRight");
+  ok("branch frames the branch you are in plus the root", (await P()).here === Bet && await fr([root, Bet, Keys, Every, Lay, Cam]), await M(() => __mf.presFrameIds()));
+  await press("ArrowRight");
+  ok("and the same branch on the next step inside it", (await P()).here === Keys && await fr([root, Bet, Keys, Every, Lay, Cam]));
+  await press("Escape");
+  await reset();
+
+  // ---- 6. present from the selection ----
+  await M((b) => __mf.select(b), Bet);
+  const camBefore = await M(() => JSON.stringify(__mf.cam()));
+  await press("Meta+p");
+  ok("Cmd+P starts a talk from the selection", (await P()) !== null && (await M(() => __mf.presRoot())) === Bet);
+  ok("the order begins at the selection", (await M(() => __mf.walk.map((i) => __mf.state.nodes[i].text).join(","))) === "Bet,Keys,Every control,Layout,Camera");
+  ok("the centre is not told", !(await onScreen(root)) && !(await onScreen(Prob)) && (await onScreen(Bet)));
+  await press("ArrowRight");
+  ok("and it steps inside the branch", (await P()).here === Keys);
+  await press("Escape");
+  ok("Esc restores the selection", (await M(() => __mf.selected)) === Bet);
+  await page.waitForTimeout(600);
+  ok("and the camera", (await M(() => JSON.stringify(__mf.cam()))) === camBefore);
+  await M((r) => __mf.select(r), root);
+  await press("Meta+3");
+  ok("a talk from the centre does not resume the one from the branch", (await M(() => __mf.presRoot())) === root && (await P()).shown === 1, await P());
+  await press("Escape");
+  await M((b) => __mf.select(b), Bet);
+  await press("Alt+Shift+KeyP");
+  ok("Alt+Shift+P is the twin", (await M(() => __mf.presRoot())) === Bet);
+  await press("ArrowRight");
+  await press("Escape");
+  await press("Meta+p");
+  ok("and a second talk from the same branch resumes it", (await P()).here === Keys, await P());
+  await press("Escape");
+  await M((r) => __mf.select(r), root);
+  await press("Meta+p");
+  ok("on the root, Cmd+P is Cmd+3", (await M(() => __mf.presRoot())) === root && (await M(() => __mf.walk.length)) === 10);
+  await press("Escape");
+  await M((b) => __mf.select(b), Bet);
+  await M(() => { document.querySelector('.node[data-id="' + __mf.selected + '"]').dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, cancelable: true, clientX: 400, clientY: 300, button: 2 })); });
+  await page.waitForTimeout(150);
+  const rows = await M(() => Array.from(document.querySelectorAll("#storyMenu .mi")).map((b) => b.textContent));
+  ok("the right-click menu has Present from here", rows.some((r) => /Present from here/.test(r)), rows);
+  await press("Escape");
+
+  // ---- 7. cards ----
+  await M((r) => __mf.select(r), root);
+  await set("presStyle", "cards");
+  await press("Meta+3"); await press("Home");
+  ok("cards: the body says so", await M(() => document.body.classList.contains("cards")));
+  ok("the map is still rendered underneath: every node has a box", await M(() => Object.keys(__mf.state.nodes).every((i) => !!__mf.boxes()[i])));
+  ok("but it is not shown", await M(() => getComputedStyle(document.getElementById("world")).visibility === "hidden"));
+  await press("ArrowRight"); await press("ArrowRight");
+  let c = await M(() => __mf.card());
+  ok("a paragraph is read on its parent's card", c.id === Prob && c.text === "Problem" && c.crumb.join(">") === "Pitch");
+  ok("with the paragraphs told so far as the body, in order", c.body.map((b) => b.text).join(",") === "Slow" && c.body[0].here, c.body);
+  await press("ArrowRight");
+  c = await M(() => __mf.card());
+  ok("the next paragraph joins the body", c.body.map((b) => b.text).join(",") === "Slow,Lost" && c.body[1].here && !c.body[0].here, c.body);
+  ok("and the card on screen carries them", await M(() => document.querySelectorAll("#card .cbody p").length === 2 && document.querySelector("#card .big").textContent === "Problem"));
+  await press("ArrowRight"); await press("Shift+ArrowRight");
+  c = await M(() => __mf.card());
+  ok("non-prose children are chips", c.id === Bet && c.kids.map((k) => k.text).join(",") === "Keys,Layout,Camera" && c.body.length === 0, c);
+  const camC = await M(() => JSON.stringify(__mf.cam()));
+  await press("KeyO");
+  ok("O flashes rather than acting", (await M(() => JSON.stringify(__mf.cam()))) === camC && (await P()) !== null && /overview/.test(await M(() => document.getElementById("saveState").textContent)));
+  await press("Shift+KeyO");
+  ok("and so does Shift+O", (await P()).shown === 8, await P());
+  await press("Escape");
+  ok("Esc ends it and the map comes back", (await P()) === null && await M(() => !document.body.classList.contains("cards") && getComputedStyle(document.getElementById("world")).visibility === "visible"));
+  await reset();
+
+  // ---- 8. a 1.5.1 settings blob loads with the new keys defaulted ----
+  await M(() => { __mf.cfg.slop = 3; __mf.set("gap", __mf.cfg.gap); });
+  await page.waitForTimeout(600);
+  const blob = await M(() => { const idx = JSON.parse(localStorage.getItem("mappr.index")); const d = JSON.parse(localStorage.getItem("mappr.doc." + idx.current)); ["presStyle","presReach","presBack","presStep","presCam"].forEach((k) => { delete d.cfg[k]; }); localStorage.setItem("mappr.doc." + idx.current, JSON.stringify(d)); return Object.keys(d.cfg).length; });
+  await page.reload(); await page.waitForTimeout(500);
+  const after = await M(() => ({ s: __mf.cfg.presStyle, r: __mf.cfg.presReach, b: __mf.cfg.presBack, st: __mf.cfg.presStep, c: __mf.cfg.presCam, slop: __mf.cfg.slop, nodes: Object.keys(__mf.state.nodes).length }));
+  ok("a 1.5.1 settings blob loads with all five keys defaulted", after.s === "map" && after.r === "told" && after.b === "fade" && after.st === "node" && after.c === "follow", after);
+  ok("and nothing else disturbed", after.slop === 3 && after.nodes === 10, after);
+  await M(() => { __mf.cfg.slop = 1; __mf.set("gap", __mf.cfg.gap); });
+  ok("no runtime errors", errors.length === 0, errors);
 }
 
 group("story order");
