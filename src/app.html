@@ -375,6 +375,20 @@
   .grp.hide{display:none}
   #styleScroll h3.sect{margin:18px 0 8px;padding-top:12px;border-top:1px solid var(--panel-line);font-size:10.5px;font-weight:700;color:var(--sel);text-transform:uppercase;letter-spacing:.7px}
   .grp > h4{margin:0 0 6px;font-size:10.5px;font-weight:600;color:var(--muted);letter-spacing:.2px}
+  /* worded options: sized to their word, with the picked one's meaning under the row */
+  .grp.txt .row{gap:4px}
+  .opt.txt{width:auto;height:27px;padding:0 9px;font-size:12px;font-weight:500;letter-spacing:.1px;border-color:var(--panel-line);background:transparent;color:var(--ink)}
+  html[data-theme="dark"] .opt.txt{background:transparent}
+  .opt.txt:hover{background:var(--panel-hover)}
+  .opt.txt.on{background:var(--sel-soft);border-color:var(--sel);color:var(--sel)}
+  .grp .desc{margin-top:6px;font-size:11px;line-height:1.45;color:var(--muted);min-height:1.45em}
+  /* the talk panel: the same rows, under the presenting bar, T opens it */
+  #talk{top:104px;left:14px;width:252px;padding:10px 14px 8px;display:none;z-index:31}
+  body.presenting:not(.arranging) #talk.on{display:block}
+  body.presenting.idle:not(.arranging) #talk{transition:opacity .5s;opacity:0}
+  #talk .tt{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px;font-size:11px;font-weight:700;color:var(--sel);text-transform:uppercase;letter-spacing:.7px}
+  #talk .tt kbd{font:11px var(--font-ui);color:var(--muted);border:1px solid var(--panel-line);border-radius:5px;padding:1px 6px}
+  #talk .grp:last-child{margin-bottom:4px}
   .row{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
   .opt{
     width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;
@@ -562,6 +576,7 @@
   #crumbs .c.here{color:var(--ink)}
   #crumbs .arrow{color:var(--panel-line);font-size:11px}
   #crumbs .out{font-size:11px;color:var(--sel);border:1px solid var(--sel-soft);background:var(--panel-hover);border-radius:7px;padding:3px 8px;margin-left:6px;cursor:pointer}
+  #crumbs .out.on{background:var(--sel-soft);border-color:var(--sel)}
 
   #hint{
     bottom:14px;left:14px;padding:10px 12px;font-size:11.5px;color:var(--muted);
@@ -735,6 +750,7 @@
 </div>
 
 <div id="crumbs" class="bar"></div>
+<div id="talk" class="bar"><div class="tt"><span>Set up the talk</span><kbd>T</kbd></div><div id="talkBody"></div></div>
 <div id="modebar" class="bar" role="tablist" aria-label="Views">
   <button data-mode="1" role="tab" title="Map (⌘1)"><span class="ml">Map</span><kbd>1</kbd></button>
   <button data-mode="2" role="tab" title="Connections (⌘2)"><span class="ml">Connections</span><kbd>2</kbd></button>
@@ -835,7 +851,7 @@
     <section class="hpane" data-tab="present"><h3>Present</h3>
     <table class="keys">
       <tr><td><kbd>⌘</kbd><kbd>4</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>4</kbd></td><td><b>Flags.</b> Everything without a flag drops to a ghost, <kbd>Tab</kbd> and the arrows step flag to flag, <kbd>Esc</kbd> puts you back. The view is offered only while the map has a flag.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>3</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>3</kbd></td><td><b>Present.</b> Walks the map (or the focused branch) one node at a time in reading order, showing nothing you have not reached yet. Each node lands where it will stay and the camera follows. <kbd>→</kbd> or <kbd>Space</kbd> next, <kbd>⇧</kbd><kbd>→</kbd> the whole level at once, <kbd>←</kbd> back, <kbd>O</kbd> a look at everything so far, <kbd>Home</kbd> from the top. <kbd>⇧</kbd><kbd>O</kbd> shows the whole story at once. After the last node, one more step lights the whole story and stands back. <kbd>⌘</kbd><kbd>K</kbd> jumps to any node in the story, telling everything before it. A click moves on too, and a right-click goes back. Leave and come back and it picks up where you were. The bar has a full screen button. <kbd>Esc</kbd>, <kbd>⌘</kbd><kbd>1</kbd> or <kbd>⌘</kbd><kbd>3</kbd> ends it and puts you back where you were. Folded branches stay folded. The Style panel's <b>Presenting</b> rows set up the talk: the whole map on screen from the first second with the path lit (On screen: All, Behind you: Fade), what is behind you kept, faded or hidden again, one step revealing a node, a row or a branch (<kbd>⇧</kbd><kbd>→</kbd> is always one step coarser), and a camera that follows, holds the whole map or holds the branch. A talk as <b>Cards</b> drops the map: one node to a screen, its paragraphs as the body, its children as chips, and <kbd>O</kbd> has nothing to show.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>3</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>3</kbd></td><td><b>Present.</b> Walks the map (or the focused branch) one node at a time in reading order, showing nothing you have not reached yet. Each node lands where it will stay and the camera follows. <kbd>→</kbd> or <kbd>Space</kbd> next, <kbd>⇧</kbd><kbd>→</kbd> the whole level at once, <kbd>←</kbd> back, <kbd>O</kbd> a look at everything so far, <kbd>Home</kbd> from the top. <kbd>⇧</kbd><kbd>O</kbd> shows the whole story at once. After the last node, one more step lights the whole story and stands back. <kbd>⌘</kbd><kbd>K</kbd> jumps to any node in the story, telling everything before it. A click moves on too, and a right-click goes back. Leave and come back and it picks up where you were. The bar has a full screen button. <kbd>Esc</kbd>, <kbd>⌘</kbd><kbd>1</kbd> or <kbd>⌘</kbd><kbd>3</kbd> ends it and puts you back where you were. Folded branches stay folded. <kbd>T</kbd> mid-talk (or the Set up button in the bar, or the Style panel's <b>Presenting</b> rows) sets up the talk, and a change takes effect on the step you are on: the whole map on screen from the first second with the path lit (On screen: All, Behind you: Fade), what is behind you kept, faded or hidden again, one step revealing a node, a row or a branch (<kbd>⇧</kbd><kbd>→</kbd> is always one step coarser), and a camera that follows, holds the whole map or holds the branch. A talk as <b>Cards</b> drops the map: one node to a screen, its paragraphs as the body, its children as chips, and <kbd>O</kbd> has nothing to show.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>P</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>⇧</kbd><kbd>P</kbd></td><td><b>Present from here.</b> The same talk, starting from the selected node instead of the centre, so the rest of the map is never told. On the centre it is <kbd>⌘</kbd><kbd>3</kbd>. Also in the right-click menu.</td></tr>
       <tr><td><kbd>R</kbd> while presenting</td><td><b>Arrange the story.</b> The whole walk comes up, numbered. <kbd>⌘</kbd>+click a sibling to say <em>this, then that</em>, or from a parent to one of its children to say which child that level opens with; the same pair again undoes. From the keyboard, <kbd>Space</kbd> picks a node up and <kbd>Space</kbd> on another puts the picked one before it. <kbd>⌫</kbd> unpicks a node and resets every arrangement underneath it; unlinking a node does the same. Order only ever changes things inside one level. A level you never touch is told in map order; once you pick any of its children, the ones you did not pick are skipped, and arrange mode marks them so nothing goes missing by accident. <kbd>R</kbd> again presents the new order from the top. It is saved with the map, and a map can hold several stories: the story menu in the bar switches between them (or <kbd>[</kbd> and <kbd>]</kbd>, or a number while it is open), adds, renames and deletes them. Delete asks twice, and <kbd>⌘</kbd><kbd>Z</kbd> brings one back.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>C</kbd> / <kbd>⇧</kbd><kbd>⌘</kbd><kbd>C</kbd></td><td><b>While presenting:</b> copy the story <em>so far</em> as an outline or an image, mid-talk. From the overview of the whole story, the finale or arrange mode, they copy the whole story. The <b>Copy</b> menu in the bar has all four, and a number picks while it is open. Images carry the story's frames and leave out what the story skips.</td></tr>
@@ -1885,7 +1901,7 @@ function presEnd(){
   var h=pres.home;
   if(!pres.arrange) presLast={ root:presRoot(), sig:storyCur().id+"|"+pres.order.join(","), shown:pres.shown, here:pres.here,
                                lit:pres.lit, hist:pres.hist, frame:pres.frame };
-  pres=null; stopCam();
+  pres=null; stopCam(); elTalk.classList.remove("on");
   try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){}
   document.body.classList.remove("presenting","arranging","idle","cards");
   clearTimeout(presIdleT);
@@ -1952,6 +1968,7 @@ function presNext(mode){
    frame; presFrame filters by pos. */
 function presCamIds(frame){
   if(!pres) return frame;
+  pres.step=frame;
   if(CFG.presCam==="all") return Object.keys(pos);
   if(CFG.presCam==="branch"){
     var r=presRoot(), b=presBranchOf(pres.here), ids=[r];
@@ -2236,7 +2253,9 @@ function presKey(e){
   if(mod && k==="0"){ e.preventDefault(); presFrame(Object.keys(pos),1); if(!pres.arrange && !pres.full && !pres.finale){ pres.over=true; } return; }
   /* the story menu closes on Esc, and R does not carry it into the talk */
   if(elSMenu && elSMenu.dataset.kind!=="copy" && !mod && (k==="Escape"||k==="r"||k==="R")){ e.preventDefault(); storyMenuClose(); return; }
-  if(!mod && (k==="r"||k==="R")){ e.preventDefault(); pres.full=false; presArrange(!pres.arrange); return; }
+  if(!mod && (k==="r"||k==="R")){ e.preventDefault(); pres.full=false; talkToggle(false); presArrange(!pres.arrange); return; }
+  if(!mod && !pres.arrange && (k==="t"||k==="T")){ e.preventDefault(); talkToggle(); drawCrumbs(); return; }
+  if(k==="Escape" && !pres.arrange && talkOpen()){ e.preventDefault(); talkToggle(false); drawCrumbs(); return; }
   if(pres.arrange && k==="Escape" && pres.pick){ e.preventDefault(); pres.pick=null; render(true); return; }
   if(pres.arrange && k!=="Escape" && !(mod&&/^[1234]$/.test(k)) && !(e.altKey&&/^Digit[1234]$/.test(code))){ arrangeKey(e); return; }
   var dig = (mod&&!e.shiftKey&&/^[1234]$/.test(k)) ? k : ((e.altKey&&!mod&&/^Digit[1234]$/.test(code)) ? code.slice(5) : null);
@@ -3810,7 +3829,8 @@ function drawCrumbs(){
     elCrumbs.className="bar on lensbar";
     var total=pres.order.length, seen=pres.order.filter(function(id){ return pres.shown[id]; }).length;
     var hp='<span class="lk" style="color:var(--sel)">Presenting</span><span class="meta">'+esc(storyCur().name)+' \u00b7 '+seen+' / '+total+
-      '</span><span class="meta">\u2192 next \u00b7 \u21e7\u2192 '+(CFG.presStep==="node"?"row":"branch")+' \u00b7 \u2190 back \u00b7 '+(presCards()?'':'O / \u21e7O overview \u00b7 ')+'\u2318K jump \u00b7 \u2318C copy \u00b7 R arrange</span>'+
+      '</span><span class="meta">\u2192 next \u00b7 \u21e7\u2192 '+(CFG.presStep==="node"?"row":"branch")+' \u00b7 \u2190 back \u00b7 '+(presCards()?'':'O / \u21e7O overview \u00b7 ')+'\u2318K jump \u00b7 T set up \u00b7 R arrange</span>'+
+      '<button class="out'+(talkOpen()?' on':'')+'" data-talk="1">Set up <span class="caret">\u25be</span></button>'+
       '<button class="out" data-cmenu="1">Copy <span class="caret">\u25be</span></button>'+
       '<button class="out" data-full="1">'+(document.fullscreenElement?"Exit full screen":"Full screen")+'</button>'+
       '<button class="out" data-out="1">Esc to end</button>';
@@ -3904,6 +3924,7 @@ addEventListener("mousedown",function(e){ if(elSMenu && !elSMenu.contains(e.targ
 elCrumbs.addEventListener("click",function(e){
   var b=e.target.closest("button"); if(!b) return;
   if(b.dataset.full){ presFull(); return; }
+  if(b.dataset.talk){ talkToggle(); drawCrumbs(); return; }
   if(b.dataset.cmenu){ copyMenu(b); return; }
   if(b.dataset.smenu){ storyMenu(b); return; }
   if(b.dataset.out){
@@ -7062,11 +7083,11 @@ var PANEL=[
   {h:"Number scheme",key:"numScheme",opts:[["docs",lt("1a"),"1. a. i."],["legal",lt("1.1"),"1.1.1"],["formal",lt("IA"),"I. A. 1."]]},
   {h:"Paragraphs",key:"prose",opts:[["rule",I.prule,"A rule down the side"],["dotted",I.pdot,"A dotted box"]]},
   {sect:"Presenting"},
-  {h:"A talk is",key:"presStyle",opts:[["map",lt("Map"),"The map, revealed as you talk"],["cards",lt("Cards"),"Cards: one node to a screen, its paragraphs as the body, its children as chips"]]},
-  {h:"On screen",key:"presReach",opts:[["told",lt("Told"),"Only what has been told so far; the map grows as you go"],["all",lt("All"),"The whole map from the first second, dimmed, with the path to here lit (spotlight, with Fade below)"]]},
-  {h:"Behind you",key:"presBack",opts:[["keep",lt("Keep"),"What has been told stays as it was"],["fade",lt("Fade"),"What has been told sits back (spotlight is All above plus this)"],["hide",lt("Hide"),"What has been told goes away again, so only the path to here is on screen",function(){ return CFG.presReach!=="all"; }]]},
-  {h:"One step reveals",key:"presStep",opts:[["node",lt("1"),"One node (Shift: its row)"],["row",lt("Row"),"A whole row: tied nodes at one level arrive together (Shift: the branch)"],["branch",lt("Branch"),"A whole branch (Shift: the same)"]]},
-  {h:"The camera",key:"presCam",opts:[["follow",lt("Follow"),"Follows you"],["all",lt("All"),"Holds the whole map"],["branch",lt("Branch"),"Holds the branch you are in"]],when:function(){ return CFG.presStyle!=="cards"; }},
+  {h:"A talk is",key:"presStyle",talk:true,opts:[["map","The map","The map, revealed as you talk."],["cards","Cards","One node to a screen: its paragraphs as the body, its children as chips."]]},
+  {h:"On screen",key:"presReach",talk:true,opts:[["told","Told","Only what you have reached. The map grows as you go."],["all","The whole map","Everything from the first second, dimmed, with the path to here lit. With Fade this is the spotlight."]]},
+  {h:"Behind you",key:"presBack",talk:true,opts:[["keep","Keep","What you have told stays as it was."],["fade","Fade","What you have told sits back. With the whole map on screen this is the spotlight."],["hide","Hide","What you have told goes away again. Only the path to here stays.",function(){ return CFG.presReach!=="all"; }]]},
+  {h:"One step reveals",key:"presStep",talk:true,opts:[["node","Node","One node at a time. \u21e7\u2192 reveals its row."],["row","Row","A whole row at once, so tied nodes on one level arrive together. \u21e7\u2192 reveals the branch."],["branch","Branch","A whole branch at once. \u21e7\u2192 does the same."]]},
+  {h:"The camera",key:"presCam",talk:true,opts:[["follow","Follow","Follows what you are saying."],["all","Whole","Holds the whole map still."],["branch","Branch","Holds the branch you are in."]],when:function(){ return CFG.presStyle!=="cards"; }},
   {h:"navi",key:"hereStyle",opts:[["rail",I.hrail,"The rail: the way up, then your row"],["strip",I.hstrip,"A pill, with the siblings as chips"],["sketch",I.hsketch,"A drawn sketch of the same"]]},
   {h:"Show it",key:"hereShow",opts:[["always",I.halways,"Always"],["auto",I.hauto,"Only when the centre is out of view"],["never",I.hnever,"Never (\u2325\u21e7W cycles these)"]]},
   {h:"Your row",key:"hereSibs",opts:[["window",I.hwin,"Three either side, the rest folded"],["scroll",I.hscroll,"The whole row, in a box that scrolls"],["count",I.hcount,"Just the one you are on, and the count"],["chips",I.hchips,"The row as chips, ten and a plus"]],when:function(){ return CFG.hereStyle!=="sketch"; }},
@@ -7076,11 +7097,12 @@ var PANEL=[
   {h:"Behaviour",toggles:[["minSize","Uniform node size"],["typeOnCreate","Cursor in new nodes"],["follow","Camera follows"],["hereFade","navi fades when idle"],["hereAttach","navi joins the maps rail"]]}
 ];
 var elStyle=document.getElementById("style"), elScroll=document.getElementById("styleScroll");
-function drawPanel(){
+function panelHtml(groups){
   var h=[];
-  PANEL.forEach(function(g){
+  groups.forEach(function(g){
     if(g.sect){ h.push('<h3 class="sect">'+g.sect+'</h3>'); return; }
-    h.push('<div class="grp'+((g.when&&!g.when())?" hide":"")+'"><h4>'+g.h+'</h4>');
+    var worded=!!g.talk;
+    h.push('<div class="grp'+(worded?" txt":"")+((g.when&&!g.when())?" hide":"")+'"><h4>'+g.h+'</h4>');
     if(g.toggles){
       g.toggles.forEach(function(t){
         h.push('<button class="tog'+(CFG[t[0]]?" on":"")+'" data-t="'+t[0]+'"><span>'+t[1]+'</span><span class="pill"></span></button>');
@@ -7093,25 +7115,50 @@ function drawPanel(){
       });
       else g.opts.forEach(function(o){
         if(o[3] && !o[3]()) return;   /* an option that means nothing right now is not offered */
-        h.push('<button class="opt'+(String(CFG[g.key])===String(o[0])?" on":"")+'" data-k="'+g.key+'" data-v="'+o[0]+'" title="'+o[2]+'">'+o[1]+'</button>');
+        h.push('<button class="opt'+(worded?" txt":"")+(String(CFG[g.key])===String(o[0])?" on":"")+'" data-k="'+g.key+'" data-v="'+o[0]+'" title="'+o[2]+'">'+(worded?esc(o[1]):o[1])+'</button>');
       });
       h.push('</div>');
+      if(worded){ var cur=g.opts.filter(function(o){ return String(CFG[g.key])===String(o[0]); })[0]; h.push('<div class="desc">'+(cur?esc(cur[2]):"")+'</div>'); }
     }
     h.push('</div>');
   });
-  elScroll.innerHTML=h.join("");
+  return h.join("");
 }
-elStyle.addEventListener("mousedown",function(e){ e.preventDefault(); });
-elStyle.addEventListener("click",function(e){
-  var b=e.target.closest("button"); if(!b) return;
+function drawPanel(){ elScroll.innerHTML=panelHtml(PANEL); }
+/* The talk panel: the Presenting rows on their own, under the presenting
+   bar. T opens and closes it mid-talk; a change takes effect on the step you
+   are on, camera included. */
+var elTalk=document.getElementById("talk"), elTalkBody=document.getElementById("talkBody");
+function drawTalk(){
+  var on=!!pres && !pres.arrange && elTalk.classList.contains("on");
+  if(!on){ return; }
+  var h=panelHtml(PANEL.filter(function(g){ return g.talk; }));
+  if(elTalkBody.innerHTML!==h) elTalkBody.innerHTML=h;
+}
+function talkOpen(){ return elTalk.classList.contains("on"); }
+function talkToggle(on){
+  var want=(on==null)?!talkOpen():on;
+  if(want && !(pres && !pres.arrange)) want=false;
+  elTalk.classList.toggle("on",want);
+  if(want){ drawTalk(); presWake(); }
+}
+/* One picked option, from either panel. */
+function panelPick(b){
   if(b.dataset.t) CFG[b.dataset.t]=!CFG[b.dataset.t];
   else if(b.dataset.k){
     var v=b.dataset.v;
     if(b.dataset.k==="width"||b.dataset.k==="slop") v=Number(v);
+    if(CFG[b.dataset.k]===v) return;
     CFG[b.dataset.k]=v;
   } else return;
-  applyCss(); drawPanel(); render(true); save();
-});
+  applyCss(); drawPanel(); drawTalk(); render(true); save();
+  /* mid-talk, the step you are on takes the new setting, camera included */
+  if(pres && !pres.arrange && pres.step){ presWake(); presFrame(presCamIds(pres.step)); }
+}
+elTalk.addEventListener("mousedown",function(e){ e.preventDefault(); });
+elTalk.addEventListener("click",function(e){ var b=e.target.closest("button"); if(b) panelPick(b); });
+elStyle.addEventListener("mousedown",function(e){ e.preventDefault(); });
+elStyle.addEventListener("click",function(e){ var b=e.target.closest("button"); if(b) panelPick(b); });
 function toggleStyle(on){
   var want=(on==null)?!elStyle.classList.contains("on"):on;
   elStyle.classList.toggle("on",want);
@@ -8007,7 +8054,7 @@ window.__mf={
   presStyle:function(){ return CFG.presStyle; }, presReach:function(){ return CFG.presReach; }, presStepMode:presStepMode,
   presRoot:function(){ return pres ? pres.root : null; }, presVisible:presVisible, presDimLevel:presDimLevel,
   presFrameIds:function(){ return pres && pres.frame ? pres.frame.slice() : null; },
-  card:cardParts,
+  card:cardParts, talk:talkToggle, get talkOpen(){ return talkOpen(); },
   get panelOpts(){ var o={}; PANEL.forEach(function(g){ if(g.key&&g.opts) o[g.key]=g.opts.filter(function(x){ return !x[3]||x[3](); }).map(function(x){ return String(x[0]); }); }); return o; },
   get story(){ return JSON.parse(JSON.stringify(SF())); },
   get stories(){ return storiesReady().map(function(x){ return x.name; }); },

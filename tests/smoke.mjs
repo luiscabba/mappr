@@ -1504,6 +1504,31 @@ group("presentation: a talk set up the way you talk (1.6.0)");
   ok("Esc ends it and the map comes back", (await P()) === null && await M(() => !document.body.classList.contains("cards") && getComputedStyle(document.getElementById("world")).visibility === "visible"));
   await reset();
 
+  // ---- 7b. the talk panel (1.6.1) ----
+  await M((r) => __mf.select(r), root);
+  await press("Meta+3"); await press("Home"); await press("ArrowRight");
+  ok("the talk panel is closed to begin with", !(await M(() => __mf.talkOpen)));
+  await press("KeyT");
+  ok("T opens it mid-talk", (await M(() => __mf.talkOpen)) && await M(() => getComputedStyle(document.getElementById("talk")).display !== "none"));
+  ok("with the five rows, worded", (await M(() => document.querySelectorAll("#talk .grp").length)) === 5 && (await M(() => document.querySelectorAll("#talk .opt.txt").length)) === 13);
+  ok("and the picked option's meaning under each row", (await M(() => document.querySelectorAll("#talk .desc").length)) === 5 && /revealed as you talk/.test(await M(() => document.querySelector("#talk .desc").textContent)));
+  await M(() => document.querySelector('#talk button[data-k="presReach"][data-v="all"]').click()); await page.waitForTimeout(250);
+  ok("a pick takes effect on the step you are on", (await M(() => __mf.cfg.presReach)) === "all" && (await onScreen(Next)) && (await P()) !== null);
+  ok("and the panel redraws: hide gone, the meaning updated", (await M(() => document.querySelectorAll('#talk button[data-k="presBack"]').length)) === 2 && /first second/.test(await M(() => document.querySelectorAll("#talk .desc")[1].textContent)));
+  ok("the panel never takes the keyboard", (await M(() => document.activeElement === document.body || document.activeElement.id === "sink")));
+  await press("ArrowRight");
+  ok("so the talk still steps", (await P()).here === Slow, await P());
+  await M(() => document.querySelector('#talk button[data-k="presStyle"][data-v="cards"]').click()); await page.waitForTimeout(250);
+  ok("cards hides the camera row", (await M(() => document.querySelectorAll('#talk .grp:not(.hide)').length)) === 4 && await M(() => document.body.classList.contains("cards")));
+  await M(() => document.querySelector('#talk button[data-k="presStyle"][data-v="map"]').click()); await page.waitForTimeout(250);
+  await press("Escape");
+  ok("Esc closes the panel before it ends the talk", !(await M(() => __mf.talkOpen)) && (await P()) !== null);
+  await press("KeyT");
+  await press("Escape"); await press("Escape");
+  ok("and the talk ending closes it too", (await P()) === null && !(await M(() => __mf.talkOpen)) && await M(() => getComputedStyle(document.getElementById("talk")).display === "none"));
+  await reset();
+  ok("the Style panel's Presenting rows are worded the same way", (await M(() => { document.getElementById("btnStyle").click(); const n = document.querySelectorAll("#styleScroll .opt.txt").length; document.getElementById("btnStyle").click(); return n; })) === 13);
+
   // ---- 8. a 1.5.1 settings blob loads with the new keys defaulted ----
   await M(() => { __mf.cfg.slop = 3; __mf.set("gap", __mf.cfg.gap); });
   await page.waitForTimeout(600);

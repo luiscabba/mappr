@@ -3,6 +3,17 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.6.1] - 2026-09-19
+
+### Changed
+- **Set up the talk from inside the talk.** T mid-talk, or the Set up button
+  in the bar, opens a panel with the five Presenting rows, and a change takes
+  effect on the step you are on, camera included. Esc closes it before it ends
+  the talk, and it never takes the keyboard, so the arrows still step.
+- **The Presenting rows are worded.** Each option is its word, sized to fit,
+  with the picked option's meaning written under the row, in the talk panel
+  and in the Style panel alike.
+
 ## [1.6.0] - 2026-09-19
 
 ### Added
