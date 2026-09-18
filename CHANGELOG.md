@@ -3,6 +3,27 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.7.0] - 2026-09-19
+
+### Changed
+- **Networks, all of them at once.** Connections is now called Networks, and
+  pressing ⌘2 lays every network out rather than only the one you step into.
+  Nodes with no tie on them leave the view instead of sitting dimmed in the
+  background, so what is left on screen is only what relates to something
+  else, each network clear of the others and the centre held still as a fixed
+  point. Tab still walks them, ⌘/ still opens one on its own, ⌘E folds what is
+  only reached through a node, and ⌘0 fits them all. If you preferred the old
+  view, the Style panel has it: set Networks to Dimmed and ⌘2 goes back to the
+  whole map with the untied parts faded in place.
+- **A network holds still while you work in it.** The arrangement of each
+  network is worked out once and remembered for as long as the view is open,
+  so a keystroke, a selection or a fold no longer re-runs the whole layout,
+  and a fold or an edit inside one network never moves the others. One network
+  on its own gets the same treatment.
+- **The last tie has somewhere to go.** Untying or undoing the last tie while
+  Networks is open drops you back on the map, with a word in the status line,
+  rather than leaving an empty canvas.
+
 ## [1.6.1] - 2026-09-19
 
 ### Changed

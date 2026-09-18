@@ -142,7 +142,7 @@
   /* the number in the box: a ::before, so it sizes the box but is never in the text */
   .node[data-num]::before{content:attr(data-num);color:var(--muted);margin-right:.4em;flex:none;font-weight:400;text-decoration:none}
   #jumpList .jf{font-style:normal;color:var(--danger);font-weight:700}
-  /* dimmed by the connections lens: still there, still where you put it */
+  /* dimmed by the Networks view: still there, still where you put it */
   .node.ghost{opacity:.17}
   .node.lenshide{display:none}
   /* already covered in a presentation: still there, stepped back */
@@ -753,7 +753,7 @@
 <div id="talk" class="bar"><div class="tt"><span>Set up the talk</span><kbd>T</kbd></div><div id="talkBody"></div></div>
 <div id="modebar" class="bar" role="tablist" aria-label="Views">
   <button data-mode="1" role="tab" title="Map (⌘1)"><span class="ml">Map</span><kbd>1</kbd></button>
-  <button data-mode="2" role="tab" title="Connections (⌘2)"><span class="ml">Connections</span><kbd>2</kbd></button>
+  <button data-mode="2" role="tab" title="Networks (⌘2)"><span class="ml">Networks</span><kbd>2</kbd></button>
   <button data-mode="3" role="tab" title="Story (⌘3)"><span class="ml">Story</span><kbd>3</kbd></button>
   <button data-mode="4" role="tab" title="Flags (⌘4)"><span class="ml">Flags</span><kbd>4</kbd></button>
 </div>
@@ -836,14 +836,14 @@
     <section class="hpane" data-tab="links"><h3>Links</h3>
     <table class="keys">
       <tr><td><kbd>⌘</kbd> + click</td><td>Tie the selected node to the one you click, anywhere on the map. A faint arc joins them. The same pair again unties. A link says these two relate; it does not change who owns whom, so nothing moves.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>⇧</kbd> + click</td><td><b>Tie two branches.</b> Ties the selected node to the one you click as a <em>branch tie</em>: one heavier arc with a bracket at each end, and in connections everything under either node counts as the same network, so a whole branch relates to a whole branch without a tie per node. The same again removes it. From the keyboard, select the two nodes and press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>T</kbd>.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>⇧</kbd> + click</td><td><b>Tie two branches.</b> Ties the selected node to the one you click as a <em>branch tie</em>: one heavier arc with a bracket at each end, and in Networks everything under either node counts as the same network, so a whole branch relates to a whole branch without a tie per node. The same again removes it. From the keyboard, select the two nodes and press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>T</kbd>.</td></tr>
       <tr><td>The <b>∿</b> badge</td><td>How many links land on this node. Click it to walk to the other end, which is usually off screen; clicking again cycles through the rest. A folded branch carries the badge for everything tied up inside it, and walking there opens it.</td></tr>
       <tr><td>A hollow end</td><td>The node you actually tied is folded away inside the one the arc reaches, or lives in the map a link stands for. Better than a line running into nothing. In a focused branch, a tie that leaves the branch is not drawn, but the ∿ badge counts it as <em>outside</em> and a click on it goes there.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>1</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>1</kbd></td><td><b>Normal view.</b> The number keys are views, and 1 is the plain map. From any other view it puts you back where you were, focus and all. The <kbd>⌥</kbd> versions are there because a browser tab may keep <kbd>⌘</kbd> plus a number for itself.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>2</kbd> / <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Dim to the links.</b> The whole map stays put and everything no link touches drops to a ghost, so you keep your bearings while the arcs come forward. Pressed while focused on a tied branch, it goes straight to that node's network. Press it again, or <kbd>Esc</kbd>, to turn it off: you land back where you were, focus and all.</td></tr>
-      <tr><td><kbd>⇧</kbd> + double-click in connections</td><td>Clear every link on that node. <kbd>⌘</kbd><kbd>Z</kbd> brings them back.</td></tr>
-      <tr><td><kbd>Tab</kbd> / arrows in connections</td><td>Step from one network to the next. While dimmed, they move the selection network to network; in a focused network, they do it when the network's centre is selected, and move within the network otherwise. <kbd>Tab</kbd> wraps round, arrows stop at the ends.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>/</kbd> with a lens up</td><td>On a tied node, Focus shows <em>its whole network</em>: the node, everything tied to it, and everything tied to those, and nothing else. It is laid out <em>by the links</em> rather than by the tree, so a chain reads as a chain; nothing is moved for good. <kbd>⌘</kbd><kbd>/</kbd> again, or <kbd>Esc</kbd>, steps back to where you opened it from. While dimmed, Focus on an untied node does what it always did.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>2</kbd> / <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Networks.</b> Every network laid out by its ties, each clear of the others, and nothing else: a node with no tie on it leaves the view, so what is on screen is only what relates to something. The centre stays as a fixed point. <kbd>⌘</kbd><kbd>E</kbd> folds what is only reached through a node. Pressed while focused on a tied branch, it goes straight to that node's network. Press it again, or <kbd>Esc</kbd>, to turn it off: you land back where you were, focus and all. The Style panel's <b>Networks</b> row has the older view, <b>Dimmed</b>: the whole map stays put and everything no tie touches drops to a ghost.</td></tr>
+      <tr><td><kbd>⇧</kbd> + double-click in Networks</td><td>Clear every link on that node. <kbd>⌘</kbd><kbd>Z</kbd> brings them back.</td></tr>
+      <tr><td><kbd>Tab</kbd> / arrows in Networks</td><td>Step from one network to the next. In Networks, they move the selection network to network; in a focused network, they do it when the network's centre is selected, and move within the network otherwise. <kbd>Tab</kbd> wraps round, arrows stop at the ends.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>/</kbd> in Networks</td><td>On a tied node, Focus shows <em>its network on its own</em>: the node, everything tied to it, and everything tied to those, and nothing else, laid out by the links; nothing is moved for good. <kbd>⌘</kbd><kbd>/</kbd> again, or <kbd>Esc</kbd>, steps back to Networks. In the Dimmed view, Focus on an untied node does what it always did.</td></tr>
       <tr><td>Moving in a network</td><td>The tree is hidden, so the keys follow what is on screen: arrows go to the nearest node that way, <kbd>Tab</kbd> walks the network nearest first, and anything you make with <kbd>Enter</kbd> or <kbd>⌘</kbd>+arrow is tied to the node you made it from, so it stays in view. Moving nodes and inserting between them are off until you leave.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>E</kbd> in a network</td><td>Folds the network instead of the tree: everything reached only <em>through</em> the selected node goes, and it wears a badge counting them. Click the badge or press it again to bring them back.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>C</kbd> / <kbd>⇧</kbd><kbd>⌘</kbd><kbd>C</kbd></td><td><b>In a network:</b> copy the network as an outline (the centre, what is tied to it, what is tied to those) or as an image of just the network. The <b>Copy</b> menu in the bar does both.</td></tr>
@@ -920,6 +920,8 @@ var DEFAULTS = {
   align:"center", valign:"center", nodew:"m", minSize:false,
   gap:"m", paper:"graph", theme:"light", typeOnCreate:false, follow:true, linkStyle:"stack",
   spread:"manual",
+  /* ⌘2: every network arranged (1.7.0), or the whole map dimmed in place, which is what it did before */
+  netView:"arranged",
   /* a talk: the defaults are exactly the 1.5.1 talk */
   presStyle:"map", presReach:"told", presBack:"fade", presStep:"node", presCam:"follow"
 };
@@ -1012,7 +1014,7 @@ function toggleLink(a,b){
   return "tied";
 }
 /* A branch tie is one link with branch:true. It is drawn as one arc between
-   the two top nodes, and the connections view counts everything under either
+   the two top nodes, and the Networks view counts everything under either
    end as part of the same network, so a whole branch relates to a whole
    branch without a tie per node. */
 function branchTieReport(r,at){
@@ -1055,7 +1057,7 @@ function toggleBranchTie(a,b){
   state.links.push({a:a,b:b,branch:true});
   return "tied";
 }
-/* Every pair the connections view should treat as joined, at the nodes that
+/* Every pair the Networks view should treat as joined, at the nodes that
    currently stand for each end: plain ties as they are, and for a branch tie
    also each end's visible descendants joined to that end. */
 function linkPairs(){
@@ -1127,15 +1129,20 @@ function linkTally(id){ var x=linkEnds().by[id]; return x?x.length:0; }
 /* links from this node that leave the focused branch */
 function linksOut(id){ return focusId ? (linkEnds().out[id]||[]).slice() : []; }
 
-/* ---------- the connections lens ----------
+/* ---------- the Networks lens ----------
    Two kinds of relationship now share one picture, and past a handful of links
    they compete for the same attention. The lens is a way of asking for one and
    quieting the other. It is a VIEW: nothing here is saved, nothing here moves a
    node for good, and turning it off puts the map back exactly as it was.
 
-     lens      dim.  The whole map stays on screen and everything not part of a
-                     link drops to a ghost. You keep your bearings, because the
-                     shape you know is still there.
+     lens      Networks. With CFG.netView "arranged" (the default since
+                     1.7.0) every network is laid out by its links, each clear
+                     of the others, and every untied node leaves the view;
+                     the centre stays as a fixed point. With netView "dim"
+                     the whole map stays on screen and everything not part of
+                     a link drops to a ghost, which is what ⌘2 did before.
+                     The internal names (lens, "dim" in HINTS, netBack's
+                     "dim") kept their old spelling so no saved setting moves.
      lensOne   only. One node and its whole network: everything tied to it,
                      and everything tied to those, hop by hop along links (never
                      down the tree). This is what Focus means once any lens is
@@ -1294,17 +1301,67 @@ function toggleProse(){
                : (can.length===1?"back to a node":"back to nodes"));
 }
 function lensSolo(){ return !!lensOne; }
+/* The arranged views (1.7.0): one network on its own, or, with netView
+   "arranged", every network at once. Both take the tree away, drop every
+   untied node out of pos and arrange what is left by its links. The dim view
+   keeps the whole map and only quiets it. */
+function lensArr(){ return !!lensOne || (lens && lensKind==="links" && CFG.netView==="arranged"); }
+/* Everything the link views need about the map, worked out once per render
+   rather than once per network: the pairs, the adjacency, every separate
+   network in tree order, and each network's reach from its first node with
+   the folds applied. Keyed the way linkEnds is, plus the lens signature, since
+   a fold changes a reach. */
+var netIdx=null;
+function netMap(){
+  var L=state.links||[], sig=lensSig();
+  if(netIdx && netIdx.gen===renderGen && netIdx.links===L && netIdx.len===L.length && netIdx.focus===focusId && netIdx.sig===sig) return netIdx;
+  var pairs=linkPairs(), adj={};
+  pairs.forEach(function(pr){
+    (adj[pr[0]]=adj[pr[0]]||[]).push(pr[1]);
+    (adj[pr[1]]=adj[pr[1]]||[]).push(pr[0]);
+  });
+  var tree=[]; (function w(id){ tree.push(id); kids(N(id)).forEach(w); })(VR());
+  var rank={}; tree.forEach(function(id,i){ rank[id]=i; });
+  var seen={}, nets=[], netOf={}, origin={};
+  tree.forEach(function(id){
+    if(!adj[id]||seen[id]) return;
+    var comp=[id]; seen[id]=1;
+    for(var i=0;i<comp.length;i++) adj[comp[i]].forEach(function(x){ if(!seen[x]){ seen[x]=1; comp.push(x); } });
+    comp.sort(function(a,b){ return (rank[a]==null?1e9:rank[a])-(rank[b]==null?1e9:rank[b]); });
+    comp.forEach(function(x){ netOf[x]=nets.length; origin[x]=comp[0]; });
+    nets.push(comp);
+  });
+  var reach=nets.map(function(c){ return lensReach(c[0],adj); });
+  /* the visible ends of every branch tie, for the arrange's rigid blocks */
+  var bt=[];
+  L.forEach(function(l){ if(l.branch){ var a=visibleEnd(l.a), b=visibleEnd(l.b); if(a&&b) bt.push([a.id,b.id]); } });
+  netIdx={ gen:renderGen, links:L, len:L.length, focus:focusId, sig:sig, pairs:pairs, adj:adj, nets:nets, netOf:netOf, origin:origin, reach:reach, bt:bt };
+  return netIdx;
+}
+/* The node a fold counts outward from: the focused node in a solo view, the
+   network's first node in the arranged view. */
+function netOrigin(id){ return lensOne || netMap().origin[id] || null; }
+/* The reach a node's fold badges and hidden-link counts are read off, or null
+   when the view is not arranged. */
+function netReachOf(id){
+  if(lensOne) return lensReach(lensOne);
+  if(!lensArr()) return null;
+  var m=netMap(), k=m.netOf[id];
+  return k==null ? null : m.reach[k];
+}
 /* A network, walked breadth first from one node along links only, at whatever
    node currently stands for each end. The walk ignores folds so that every node
    has one fixed "came from" node regardless of what is folded; folding then
    hides a node when anything strictly between it and the origin is folded.
    Returns the visible set, and for each folded node how many it is hiding. */
-function lensReach(origin){
-  var adj={};
-  linkPairs().forEach(function(pr){
-    (adj[pr[0]]=adj[pr[0]]||[]).push(pr[1]);
-    (adj[pr[1]]=adj[pr[1]]||[]).push(pr[0]);
-  });
+function lensReach(origin,adj){
+  if(!adj){
+    adj={};
+    linkPairs().forEach(function(pr){
+      (adj[pr[0]]=adj[pr[0]]||[]).push(pr[1]);
+      (adj[pr[1]]=adj[pr[1]]||[]).push(pr[0]);
+    });
+  }
   var from={}, order=[origin], seen={}; seen[origin]=1;
   for(var i=0;i<order.length;i++){
     (adj[order[i]]||[]).forEach(function(x){
@@ -1329,9 +1386,15 @@ function lensReach(origin){
    exists. Inside a network, arrows go by what is on screen, Tab walks the
    network nearest first, and anything you make is tied to where you made it
    from. */
+/* Every node an arranged view is showing, network by network, each in its
+   reach order from its origin. */
+function netOrder(){
+  if(lensOne) return lensReach(lensOne).order;
+  var out=[]; netMap().reach.forEach(function(r){ out=out.concat(r.order); });
+  return out;
+}
 function netVisible(){
-  var r=lensReach(lensOne);
-  return r.order.filter(function(id){ return pos[id]; });
+  return netOrder().filter(function(id){ return pos[id]; });
 }
 function netArrow(pressed){
   var from=pos[selected]; if(!from) return null;
@@ -1369,12 +1432,14 @@ function lensParts(){
   var set={};
   if(lensOne) return lensReach(lensOne).set;
   if(lensKind==="flags"){ flagList().forEach(function(i){ set[i]=1; }); return set; }
+  /* arranged: every network's reach, so a fold inside one takes its nodes out */
+  if(lensArr()){ netMap().reach.forEach(function(r){ Object.keys(r.set).forEach(function(i){ set[i]=1; }); }); return set; }
   linkPairs().forEach(function(pr){ set[pr[0]]=1; set[pr[1]]=1; });
   return set;
 }
 function lensClear(){
   if(!lensActive()) return false;
-  lens=false; lensOne=null; lensFold={}; lensKind="links";
+  lens=false; lensOne=null; lensFold={}; lensKind="links"; arrMemo={};
   return true;
 }
 /* Turn every lens off and go back to where you were before it came up. */
@@ -1382,6 +1447,7 @@ function lensOff(){
   shiftTapReset(); hintBrowseEnd();
   var h=lensHome; lensHome=null;
   if(!lensClear()) return false;
+  stopCam();                         /* a camera still gliding would overwrite the one put back below */
   if(h && h.focus && N(h.focus)) focusId=h.focus;
   if(h && h.sel && N(h.sel)) selected=h.sel;
   if(focusId && !visible(focusId)) focusId=null;
@@ -1403,37 +1469,36 @@ function lensSet(l,one,kind){
   if(!lensActive() && !lensHome)
     lensHome={ focus:focusId, sel:selected, view:{x:view.x,y:view.y,z:view.z} };
   if((one||null)!==lensOne) lensFold={};
+  arrMemo={};                        /* a view you just entered is arranged afresh */
   lens=l; lensOne=one||null;
   if(lensOne) selected=lensOne;
   if(focusId || (lensWasSolo && !lensOne)) lensMoved=true;
-  if(lensSolo()) focusId=null;      /* the far end is usually outside the focused branch */
+  if(lensArr()) focusId=null;       /* the far end is usually outside the focused branch */
   clearMarks(); hardRender();
   /* keep your zoom: only move when the picture itself moved */
-  if(lensSolo() || lensMoved) centerOn(selected);
+  if(lensArr() || lensMoved) centerOn(selected);
   lensMoved=false;
+}
+/* The last tie went while a link view was open: undo, a delete, an untie.
+   Rather than a blank canvas with no way out, the view drops back to the map
+   and puts focus, selection and camera back the way lensOff would. Called from
+   render, so it never renders itself; the render it is in draws the map. */
+function lensDrop(){
+  var h=lensHome; lensHome=null;
+  lensClear();
+  if(h && h.focus && N(h.focus)) focusId=h.focus;
+  if(h && h.sel && N(h.sel)) selected=h.sel;
+  if(focusId && !visible(focusId)) focusId=null;
+  if(h && !focusId){ view.x=h.view.x; view.y=h.view.y; view.z=h.view.z; }
+  SC.body={}; SC.edge={};
+  /* after whatever the edit itself has to say */
+  setTimeout(function(){ flashSave("the last tie is gone \u00b7 back to the map"); },0);
 }
 var lensMoved=false;
 
 /* Every separate network on the map, each in reading order, and the networks
    themselves in the order their first node appears in the tree. */
-function lensNetworks(){
-  var adj={};
-  linkPairs().forEach(function(pr){
-    (adj[pr[0]]=adj[pr[0]]||[]).push(pr[1]);
-    (adj[pr[1]]=adj[pr[1]]||[]).push(pr[0]);
-  });
-  var tree=[]; (function w(id){ tree.push(id); kids(N(id)).forEach(w); })(VR());
-  var rank={}; tree.forEach(function(id,i){ rank[id]=i; });
-  var seen={}, nets=[];
-  tree.forEach(function(id){
-    if(!adj[id]||seen[id]) return;
-    var comp=[id]; seen[id]=1;
-    for(var i=0;i<comp.length;i++) adj[comp[i]].forEach(function(x){ if(!seen[x]){ seen[x]=1; comp.push(x); } });
-    comp.sort(function(a,b){ return (rank[a]==null?1e9:rank[a])-(rank[b]==null?1e9:rank[b]); });
-    nets.push(comp);
-  });
-  return nets;
-}
+function lensNetworks(){ return netMap().nets; }
 function lensNetIndex(nets,id){
   for(var i=0;i<nets.length;i++) if(nets[i].indexOf(id)>=0) return i;
   return -1;
@@ -1467,11 +1532,15 @@ function focusCycle(back){
 /* Fold, inside a network view. Hides what is only reached through this node and
    leaves the node itself on screen, the same way a tree fold does. */
 function toggleLensFold(id){
-  var r=lensReach(lensOne);
+  var o=netOrigin(id); if(!o){ flash(id); flashSave("nothing beyond this"); return; }
+  var r=lensReach(o);
   if(!r.beyond[id]){ flash(id); flashSave("nothing beyond this"); return; }
   if(lensFold[id]){ delete lensFold[id]; flashSave("unfolded"); }
-  else { lensFold[id]=1; flashSave("folded "+(lensReach(lensOne).hidden[id]||0)+" beyond"); }
-  hardRender();
+  else { lensFold[id]=1; flashSave("folded "+(lensReach(o).hidden[id]||0)+" beyond"); }
+  /* an ordinary render, not a hard one: the fold is in every key that
+     matters, and a hard render would throw away the other networks'
+     arrangements along with this one's */
+  render(true);
 }
 /* The network to use when a lens comes up while you are focused on a branch:
    the focused node's own, provided it has one. Focus is cleared first, because
@@ -1490,20 +1559,27 @@ function lensFromFocus(){
    node back toward where the tidy tree put it, so the result is your map with
    the tied things drawn closer rather than a force-directed blob that threw
    your placement away. Operates on pos, which layout() rebuilds from the tree
-   on every render, so this can never become permanent. */
+   on every render, so this can never become permanent.
+
+   Since 1.7.0 it arranges ONE network at a time: `members` is that network's
+   visible nodes, and nothing outside them is read or moved. The centre is
+   never a member; it holds still and the boxes are pushed clear of it at the
+   end. Returns true when the relaxation actually ran, which is what the memo
+   below and the bench count. */
 var ARR_REST=210, ARR_SPRING=0.045, ARR_REP=150000, ARR_ANCHOR=0.10, ARR_ITER=340;
-function arrangeByLinks(){
+function arrangeByLinks(members){
   var rid=VR();
-  var live=Object.keys(pos).filter(function(id){ return id!==rid && box[id]; });
-  if(live.length<2) return;
+  var live=(members||Object.keys(pos)).filter(function(id){ return id!==rid && pos[id] && box[id]; });
+  if(live.length<2) return false;
   var liveSet={}; live.forEach(function(i){ liveSet[i]=1; });
+  var nm=netMap();
 
   /* A branch tie brings whole subtrees in, drawn with their tree. Those keep
      the shape the tidy layout gave them and move as one block; arranging
      their nodes one by one threw the tree away and piled the boxes on each
      other. Everything else is a block of one. */
   var tops={};
-  (state.links||[]).forEach(function(l){ if(l.branch){ [l.a,l.b].forEach(function(t){ var e=visibleEnd(t); if(e && liveSet[e.id]) tops[e.id]=1; }); } });
+  nm.bt.forEach(function(pr){ pr.forEach(function(t){ if(liveSet[t]) tops[t]=1; }); });
   Object.keys(tops).forEach(function(t){ if(pathTo(t).slice(0,-1).some(function(a){ return tops[a]; })) delete tops[t]; });
   var blockOf={}, blocks=[];
   Object.keys(tops).forEach(function(t){
@@ -1518,16 +1594,16 @@ function arrangeByLinks(){
     b.w=x1-x0; b.h=y1-y0; b.x=(x0+x1)/2; b.y=(y0+y1)/2; b.ax=b.x; b.ay=b.y; b.vx=0; b.vy=0;
     b.off={}; b.mem.forEach(function(i){ b.off[i]=[pos[i].cx-b.x, pos[i].cy-b.y]; });
   });
-  if(blocks.length<2) return;
+  if(blocks.length<2) return false;
 
   var pairs=[];
-  linkPairs().forEach(function(pr){
+  nm.pairs.forEach(function(pr){
     if(!pos[pr[0]]||!pos[pr[1]]||pr[0]===rid||pr[1]===rid) return;
     var A=blockOf[pr[0]], B=blockOf[pr[1]];
     if(!A||!B||A===B) return;
     pairs.push([A,B]);
   });
-  if(!pairs.length) return;
+  if(!pairs.length) return false;
 
   /* rest length between two blocks: enough for both to sit clear of each other */
   function rest(A,B){ return Math.max(ARR_REST, (A.w+B.w)/2+60, (A.h+B.h)/2+40); }
@@ -1562,6 +1638,13 @@ function arrangeByLinks(){
      in this pass but never moves. */
   var boxes=blocks.slice();
   if(pos[rid]&&box[rid]) boxes.push({x:pos[rid].cx,y:pos[rid].cy,w:box[rid].w,h:box[rid].h,fixed:true});
+  pushApart(boxes);
+  blocks.forEach(function(b){ b.mem.forEach(function(i){ pos[i]={cx:b.x+b.off[i][0], cy:b.y+b.off[i][1]}; }); });
+  return true;
+}
+/* Boxes that overlap are nudged apart along the shorter axis until none do,
+   or forty passes, whichever first. A fixed box is never moved. */
+function pushApart(boxes){
   for(var sp=0; sp<40; sp++){
     var moved=false;
     for(var a2=0;a2<boxes.length;a2++) for(var b2=a2+1;b2<boxes.length;b2++){
@@ -1575,7 +1658,87 @@ function arrangeByLinks(){
     }
     if(!moved) break;
   }
-  blocks.forEach(function(b){ b.mem.forEach(function(i){ pos[i]={cx:b.x+b.off[i][0], cy:b.y+b.off[i][1]}; }); });
+}
+
+/* ---------- the arrange, remembered (1.7.0) ----------
+   lensLayout runs after every layout, which is every render, and until 1.7.0
+   it re-ran the whole relaxation each time: ARR_ITER passes over every pair
+   of blocks, on every keystroke, selection change and camera nudge while a
+   network was open. One network survived that. Every network at once did not.
+
+   So each network's arrangement is computed once and kept, keyed on
+   everything the result depends on and nothing else: its members in reading
+   order, each member's box, the link pairs among them, which of those are
+   branch ties, the folds inside it, and which view this is. Nothing about the
+   camera, the selection or the render count is in the key. A render whose
+   key matches puts the stored positions back and runs nothing. The memo is
+   per network on purpose: a fold or an edit inside one network changes that
+   network's key and no other's, so the others hold still.
+
+   What is deliberately NOT in the key is where the tidy tree put the nodes.
+   The relaxation anchors to that, so two arranges from different tidy
+   positions differ, but the tree is out of the picture in these views and a
+   network that held still while you typed is worth more than one that
+   drifted. Entering or leaving a view clears the memo (lensSet, lensClear,
+   leaveViews), so every visit starts from the tidy tree; within a visit the
+   key is the only judge, which is what lets a tie added between two networks
+   arrange the merged one and leave the rest alone. hardRender does not clear
+   it on purpose: most link edits go through hardRender, and a hard render
+   that re-relaxed every network would put the keystroke-cost bug back.
+   arrRuns counts real relaxations for the tests and the bench. */
+var arrMemo={}, arrRuns=0;
+function arrKey(mem){
+  var set={}; mem.forEach(function(i){ set[i]=1; });
+  var nm=netMap(), pr=[], bt=[];
+  nm.pairs.forEach(function(p){ if(set[p[0]]&&set[p[1]]) pr.push(p[0]+">"+p[1]); });
+  nm.bt.forEach(function(p){ if(set[p[0]]&&set[p[1]]) bt.push(p[0]+">"+p[1]); });
+  return mem.join(",")+"|"+mem.map(function(i){ return box[i].w+"x"+box[i].h; }).join(",")+
+    "|"+pr.join(",")+"|"+bt.join(",")+"|"+Object.keys(lensFold).filter(function(i){ return set[i]; }).sort().join(",")+
+    "|"+lensKind[0]+(lensOne||"");
+}
+function arrangeNetwork(mem){
+  mem=mem.filter(function(i){ return pos[i] && box[i] && i!==VR(); });
+  if(!mem.length) return false;
+  var k=arrKey(mem), slot=mem[0], m=arrMemo[slot];
+  if(m && m.key===k){ mem.forEach(function(i){ var a=m.at[i]; if(a) pos[i]={cx:a.cx, cy:a.cy}; }); return true; }
+  if(arrangeByLinks(mem)) arrRuns++;
+  arrRemember(slot,k,mem);
+  return false;
+}
+function arrRemember(slot,k,mem){
+  var at={}; mem.forEach(function(i){ at[i]={cx:pos[i].cx, cy:pos[i].cy}; });
+  arrMemo[slot]={key:k, at:at};
+}
+/* Every network at once. Each is arranged on its own (and remembered on its
+   own), then the networks are pushed clear of each other and of the centre as
+   rigid boxes. There is no spring between networks, by design: they have
+   nothing to say to each other, and the tidy anchors already put them in
+   different parts of the picture. */
+function arrangeNetworks(){
+  var nm=netMap(), rid=VR(), groups=[];
+  nm.reach.forEach(function(r){
+    var mem=r.order.filter(function(i){ return pos[i] && box[i] && i!==rid; });
+    if(!mem.length) return;
+    var hit=arrangeNetwork(mem);
+    var x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+    mem.forEach(function(i){ var p=pos[i], z=box[i]; x0=Math.min(x0,p.cx-z.w/2); y0=Math.min(y0,p.cy-z.h/2); x1=Math.max(x1,p.cx+z.w/2); y1=Math.max(y1,p.cy+z.h/2); });
+    /* a remembered network holds still; only a freshly arranged one is
+       pushed, so a fold in one network never nudges the others */
+    var g={mem:mem, w:x1-x0, h:y1-y0, x:(x0+x1)/2, y:(y0+y1)/2, off:{}, fixed:hit};
+    mem.forEach(function(i){ g.off[i]=[pos[i].cx-g.x, pos[i].cy-g.y]; });
+    groups.push(g);
+  });
+  if(groups.every(function(g){ return g.fixed; })) return;
+  var boxes=groups.slice();
+  if(pos[rid]&&box[rid]) boxes.push({x:pos[rid].cx,y:pos[rid].cy,w:box[rid].w,h:box[rid].h,fixed:true});
+  pushApart(boxes);
+  groups.forEach(function(g){
+    if(g.fixed) return;
+    g.mem.forEach(function(i){ pos[i]={cx:g.x+g.off[i][0], cy:g.y+g.off[i][1]}; });
+    /* remembered where it ended up, clear of the others, so the next render
+       finds nothing to push */
+    var m=arrMemo[g.mem[0]]; if(m) arrRemember(g.mem[0], m.key, g.mem);
+  });
 }
 
 /* ---------- presentation ----------
@@ -2282,10 +2445,16 @@ function lensLayout(){
     if(!pres.arrange) Object.keys(pos).forEach(function(id){ if(!presVisible(id)) delete pos[id]; });
     return;
   }
-  if(!lensSolo()) return;
+  /* The arranged views take the tree away: only what a link touches keeps a
+     position, plus the centre so the view has a fixed point and ⌘0 has
+     something to fit. Nothing downstream may assume a node has a pos.
+     Phase 7's orbital zoom is a map-view idea and does nothing in here, the
+     same way it does nothing during a talk. */
+  if(!lensArr()) return;
   var keep=lensParts(); keep[VR()]=1;
   Object.keys(pos).forEach(function(id){ if(!keep[id]) delete pos[id]; });
-  arrangeByLinks();
+  if(lensOne) arrangeNetwork(lensReach(lensOne,netMap().adj).order);
+  else arrangeNetworks();
 }
 function subtree(id,out){ out=out||[]; out.push(id); N(id).children.forEach(function(c){ subtree(c,out); }); return out; }
 function kids(n){ return n.collapsed ? [] : n.children; }
@@ -2814,15 +2983,25 @@ function render(keepView,lead){
       pp.style.width=(pres.order.length>1?((seen-1)/(pres.order.length-1))*100:100)+"%"; }
   }
   state.links = (state.links||[]).filter(function(l){ return N(l.a)&&N(l.b); });
+  /* a link view with nothing left to show drops back to the map, with a word */
+  if(lensLinks() && !state.links.length) lensDrop();
   var showing={};
   (function walk(id){ showing[id]=1; kids(N(id)).forEach(walk); })(VR());
   /* A solo view HIDES rather than removes: layout needs a measured box for
      every node in the tree, so the elements have to exist and be measured even
      when they are not going to be seen. lensLayout() then drops their positions
      so nothing draws them. */
-  var ghosts = lens && !lensSolo() ? lensParts() : null;
+  var ghosts = lens && !lensArr() ? lensParts() : null;
   var solo=null;
-  if(lensSolo()){ solo=lensParts(); solo[VR()]=1; }
+  if(lensArr()){
+    solo=lensParts(); solo[VR()]=1;
+    /* the selection has to be something the view shows: an untied node that
+       was selected when the view opened moves into the first network */
+    if(!editing && !solo[selected]){
+      var first=netMap().reach.filter(function(r){ return r.order.length; })[0];
+      if(first) selected=first.order[0];
+    }
+  }
 
   /* Node elements live in one wrapper per top-level branch, so a branch that
      the layout shifts as a block moves with one transform on the wrapper
@@ -2983,11 +3162,12 @@ function drawBadges(){
     return;
   }
   /* in a network view the tree's fold badges mean nothing; the network's do */
-  var lr=lensOne ? lensReach(lensOne) : null;
+  var arr=lensArr();
   Object.keys(pos).forEach(function(id){
     var n=N(id), p=pos[id], b=box[id], d=isRoot(n)?"R":dirOf(id);
+    var lr=arr ? netReachOf(id) : null;
     var lh=lr && lr.hidden[id];
-    if(lh || (!lr && n.collapsed && n.children.length)){
+    if(lh || (!arr && n.collapsed && n.children.length)){
       live[id]=1;
       var x,y;
       if(d==="R"){ x=p.cx+b.w/2+7; y=p.cy-10; }
@@ -2998,7 +3178,7 @@ function drawBadges(){
       fb.dataset.lf=lh?id:""; if(lh) fb.dataset.tie="";
       fb.style.transform="translate("+x+"px,"+y+"px)";
     }
-    var tn=linkTally(id), to=lr?0:linksOut(id).length;
+    var tn=linkTally(id), to=arr?0:linksOut(id).length;
     if(tn||to){
       var tk="tie"+id; live[tk]=1;
       var th=lr ? netHiddenLinks(id,lr.set) : 0;
@@ -3239,10 +3419,10 @@ function shapes(ids, opt){
      ghost; in the solo views it is not drawn at all, because the whole point of
      those is that the tree is out of the way. Never in an export: an exported
      map is the map, not whatever lens you happened to have up. */
-  var lensQuiet = !opt.exporting && lens && !lensSolo();
+  var lensQuiet = !opt.exporting && lens && !lensArr();
   /* 0 as drawn, 1 sat back, 2 not reached yet (only on screen with reach "all") */
   function presFade(id){ if(opt.exporting) return 0; var l=presDimLevel(id); return l ? l : ((presSkip(id) || !!(carry && carry.set[id])) ? 1 : 0); }
-  var lensHideTree = !opt.exporting && lensSolo();
+  var lensHideTree = !opt.exporting && lensArr();
   var btSet = lensHideTree ? branchTieSet() : null;
   var lensGhosts = lensQuiet ? lensParts() : {};
   ids.forEach(function(id){
@@ -3649,7 +3829,7 @@ function fitIds(ids,pad){
 /* ⌘0 — the whole map, however deep you were */
 function fitAll(){
   if(editing) commitEdit();
-  if(lensOne){ clearMarks(); render(true); fit(); flashSave("the whole network"); return; }
+  if(lensArr()){ clearMarks(); render(true); fit(); flashSave(lensOne?"the whole network":"every network"); return; }
   if(focusId){ focusId=null; hardRender(); }
   clearMarks(); render(true); fit();
   flashSave(lens ? "all the links" : "whole map");
@@ -3722,7 +3902,7 @@ function drawHint(){
   hintSig=sig;
   hintDraws++;
   if(!mode){ el.innerHTML=""; return; }
-  var names={map:"Map",focus:"Focus",dim:"Connections",flags:"Flags",net:"Network",arrange:"Story",sel:"Selection",carry:"Carrying"};
+  var names={map:"Map",focus:"Focus",dim:"Networks",flags:"Flags",net:"Network",arrange:"Story",sel:"Selection",carry:"Carrying"};
   var h;
   if(hintMin){
     h='<span class="hm">'+names[mode]+'</span>'+(hintBrowse?'<span><b>Next mode</b> <kbd>\u2325</kbd><kbd>\u21e7</kbd><kbd>K</kbd></span>':'')+'<span><b>Keys</b> <kbd>?</kbd></span><button class="hx" data-hint="1" title="Show key hints">\u25b4</button>';
@@ -3846,7 +4026,7 @@ function drawCrumbs(){
       hh='<span class="lk">Network'+(ni>=0?' '+(ni+1)+' of '+nets1.length:'')+'</span><button class="c here" data-go="'+lensOne+'" data-net="1">'+
         esc(trunc(N(lensOne).text||"\u2026"))+'</button><span class="meta">'+rr.order.length+' nodes'+
         (nf?' \u00b7 '+nf+' folded':'')+'</span><button class="out" data-cmenu="1">Copy <span class="caret">\u25be</span></button>'+
-        '<button class="out" data-out="1">'+(netBack==="off"?'Esc to leave':'Esc back to dimmed')+'</button>';
+        '<button class="out" data-out="1">'+(netBack==="off"?'Esc to leave':'Esc back to Networks')+'</button>';
     } else if(lensFlags()){
       var fl2=flagList(), fi=fl2.indexOf(selected);
       hh='<span class="lk">Flags</span><span class="meta">'+(fi>=0?'flag '+(fi+1)+' of '+fl2.length:fl2.length+(fl2.length===1?' flag':' flags'))+
@@ -3854,7 +4034,7 @@ function drawCrumbs(){
         '<button class="out" data-out="1">Esc to exit</button>';
     } else {
       var nets2=lensNetworks(), nj=lensNetIndex(nets2,selected);
-      hh='<span class="lk">Links dimmed</span><span class="meta">'+(nj>=0?'network '+(nj+1)+' of '+nets2.length:nets2.length+' networks')+
+      hh='<span class="lk">'+(lensArr()?'Networks':'Networks, dimmed')+'</span><span class="meta">'+(nj>=0?'network '+(nj+1)+' of '+nets2.length:nets2.length+' networks')+
         ' \u00b7 Tab or arrows to step through \u00b7 \u2318/ to open one</span>'+
         '<button class="out" data-out="1">Esc to exit</button>';
     }
@@ -4122,7 +4302,7 @@ function extendSel(pressed){
   }
   shiftTapKey=pressed; shiftTapAt=now;
   if(!shiftTrail || shiftTrail[shiftTrail.length-1]!==selected || !marked[selected]){ shiftTrail=[selected]; marked[selected]=1; }
-  var to=lensOne ? netArrow(pressed) : navigate(N(selected),pressed);
+  var to=lensArr() ? netArrow(pressed) : navigate(N(selected),pressed);
   if(!to){ flash(selected); return; }
   if(shiftTrail.length>1 && shiftTrail[shiftTrail.length-2]===to){ delete marked[selected]; shiftTrail.pop(); }
   else { marked[to]=1; shiftTrail.push(to); }
@@ -4346,7 +4526,7 @@ function ctxItems(id,from){
     if(linkTrail.length){ var lib=idxCached(), up=linkTrail[linkTrail.length-1]; add("Back up to \u201c"+trunc((lib.docs[up.doc]||{}).name||"Untitled")+"\u201d","\u2325\u23ce",function(){ linkUp(); }); }
     if(focusId) add("Out of the focus","Esc",function(){ exitFocus(); });
     if(lensActive()) add("Back to the map","\u23181",function(){ lensOff(); });
-    else if((state.links||[]).length) add("Connections","\u23182",function(){ lensSet(true,null,false); });
+    else if((state.links||[]).length) add("Networks","\u23182",function(){ lensSet(true,null,false); });
     if(anyFlag() && !lensFlags()) add("Flags","\u23184",function(){ goMode("4"); });
     add("Present","\u23183",function(){ presStart(); });
     sep();
@@ -4374,9 +4554,15 @@ function ctxItems(id,from){
     return it;
   }
   var centre=isVR(t)||isRoot(t);
-  if(focusId===id) add("Back out of the focus","\u2318/",function(){ focusBack(); });
-  else if(!isRoot(t)) add("Focus on this branch","\u2318/",function(){ enterFocus(); });
-  if(t.children.length) add(t.collapsed?"Unfold":"Fold","\u2318E",function(){ toggleCollapse(id); });
+  if(lensArr()){
+    /* every network at once: the tree's focus and fold mean nothing here */
+    if(linkTally(id)) add("Its own network","\u2318/",function(){ lensSet(false,id); });
+    if(linkTally(id)) add(lensFold[id]?"Unfold beyond":"Fold beyond","\u2318E",function(){ toggleLensFold(id); });
+  } else {
+    if(focusId===id) add("Back out of the focus","\u2318/",function(){ focusBack(); });
+    else if(!isRoot(t)) add("Focus on this branch","\u2318/",function(){ enterFocus(); });
+    if(t.children.length) add(t.collapsed?"Unfold":"Fold","\u2318E",function(){ toggleCollapse(id); });
+  }
   add("Present","\u23183",function(){ presStart(); });
   if(!centre) add("Present from here","\u2318P",function(){ presStart(id); });
   /* the node that was selected before the right-click, as Cmd+click reads it */
@@ -6873,7 +7059,7 @@ function leaveViews(){
   if(carry) carryEnd();
   shiftTapReset(); hintBrowseEnd();
   storyMenuClose();
-  lens=false; lensOne=null; lensFold={}; lensHome=null; lensMoved=false;
+  lens=false; lensOne=null; lensFold={}; lensHome=null; lensMoved=false; arrMemo={};
   followBefore=null; camBefore=null;
 }
 function switchDoc(id){
@@ -7082,6 +7268,9 @@ var PANEL=[
   {h:"Numbers",key:"numStyle",opts:[["gutter",I.ngut,"In the gutter"],["box",I.nbox,"In the box"],["edge",I.nedge,"On the edge"]]},
   {h:"Number scheme",key:"numScheme",opts:[["docs",lt("1a"),"1. a. i."],["legal",lt("1.1"),"1.1.1"],["formal",lt("IA"),"I. A. 1."]]},
   {h:"Paragraphs",key:"prose",opts:[["rule",I.prule,"A rule down the side"],["dotted",I.pdot,"A dotted box"]]},
+  {sect:"Networks"},
+  /* worded like the Presenting rows (words:true), but not one of them: talk:true would put it in the mid-talk T panel */
+  {h:"\u23182 shows",key:"netView",words:true,opts:[["arranged","Arranged","Every network laid out by its ties, clear of the others. Nodes with no tie leave the view."],["dim","Dimmed","The whole map where it is, with everything no tie touches faded in place."]]},
   {sect:"Presenting"},
   {h:"A talk is",key:"presStyle",talk:true,opts:[["map","The map","The map, revealed as you talk."],["cards","Cards","One node to a screen: its paragraphs as the body, its children as chips."]]},
   {h:"On screen",key:"presReach",talk:true,opts:[["told","Told","Only what you have reached. The map grows as you go."],["all","The whole map","Everything from the first second, dimmed, with the path to here lit. With Fade this is the spotlight."]]},
@@ -7101,7 +7290,7 @@ function panelHtml(groups){
   var h=[];
   groups.forEach(function(g){
     if(g.sect){ h.push('<h3 class="sect">'+g.sect+'</h3>'); return; }
-    var worded=!!g.talk;
+    var worded=!!g.talk||!!g.words;
     h.push('<div class="grp'+(worded?" txt":"")+((g.when&&!g.when())?" hide":"")+'"><h4>'+g.h+'</h4>');
     if(g.toggles){
       g.toggles.forEach(function(t){
@@ -7350,7 +7539,7 @@ document.addEventListener("keydown",function(e){
   if(mod&&e.key==="-"){ e.preventDefault(); zoomBy(1/1.15); return; }
   if(mod&&e.shiftKey&&e.key===")"){ e.preventDefault(); fitHere(); return; }
   if(mod&&e.key==="0"){ e.preventDefault(); e.shiftKey?fitHere():fitAll(); return; }
-  /* The number row is views: 1 normal, 2 connections, 3 presentation (to
+  /* The number row is views: 1 normal, 2 Networks, 3 presentation (to
      come). Each has an Alt twin matched by physical key, because Cmd plus a
      digit is how every browser switches tabs and a tab may never hand it to
      the page, and on a Mac Alt changes the character a digit types. The Alt
@@ -7363,7 +7552,8 @@ document.addEventListener("keydown",function(e){
     else flashSave("already the normal view");
     return;
   }
-  /* The connections lens. Cmd+2 dims everything a link does not touch, or,
+  /* The Networks lens. Cmd+2 arranges every network (or, with netView "dim",
+     dims everything a link does not touch), or,
      from a focused branch whose node is tied, opens that node's network.
      Pressed again it turns the lens off and puts you back where you were.
      Alt+L does the same, because Cmd plus a digit is how every browser
@@ -7389,7 +7579,7 @@ document.addEventListener("keydown",function(e){
     else {
       var fo=lensFromFocus();
       if(fo){ lensSet(false,fo,false); flashSave("its network"); }
-      else { lensSet(true,null,false); flashSave("dimmed to the links"); }
+      else { lensSet(true,null,false); flashSave(lensArr()?"every network, arranged":"dimmed to the ties"); }
     }
     return;
   }
@@ -7397,7 +7587,7 @@ document.addEventListener("keydown",function(e){
   if(mod&&e.key==="."){ e.preventDefault(); if(editing) commitEdit(); if(!followBefore) followBefore=camNow(); view.z=1; centerOn(selected); return; }
   if(mod&&(e.key==="e"||e.key==="E")){
     e.preventDefault(); if(editing) commitEdit();
-    if(lensOne) toggleLensFold(selected); else toggleCollapse();
+    if(lensArr()) toggleLensFold(selected); else toggleCollapse();
     return;
   }
   if(mod&&!e.shiftKey&&(e.key==="d"||e.key==="D")){ e.preventDefault(); if(editing) commitEdit(); duplicateBranch(); return; }
@@ -7426,7 +7616,7 @@ document.addEventListener("keydown",function(e){
       if(linkTally(selected)){
         lensSet(false,selected); return;
       }
-      if(lensSolo()){ flash(selected); flashSave("nothing tied to this"); return; }
+      if(lensArr()){ flash(selected); flashSave("nothing tied to this"); return; }
     }
     enterFocus(); return;
   }
@@ -7513,7 +7703,7 @@ elNodes.addEventListener("mousedown",function(e){
   }
   if(editing===el.dataset.id) return;
   e.stopPropagation();
-  /* in connections, Shift+click only selects, so Shift+double-click can clear */
+  /* in Networks, Shift+click only selects, so Shift+double-click can clear */
   if(lensActive() && e.button===0 && e.shiftKey){ e.preventDefault(); select(el.dataset.id); return; }
   /* Shift + click marks the row. Left button only: the same chord on the right
      button is the one gesture a page cannot have, since Chrome and Firefox both
@@ -8049,6 +8239,8 @@ window.__mf={
   linksAt:linksAt, hop:hopLink,
   get lens(){ return lensOne?"one":(lens?"dim":"off"); }, get lensKind(){ return lensActive()?lensKind:null; },
   get lensFold(){ return Object.keys(lensFold); },
+  netView:function(){ return CFG.netView; }, networks:function(){ return lensNetworks().map(function(c){ return c.slice(); }); },
+  arrangeRuns:function(){ return arrRuns; }, lensFoldToggle:toggleLensFold,
   get pres(){ return pres ? { here:pres.here, shown:Object.keys(pres.shown).length, total:pres.order.length } : null; },
   present:presStart, presNext:presNext, presBack:presBack, presEnd:presEnd,
   presStyle:function(){ return CFG.presStyle; }, presReach:function(){ return CFG.presReach; }, presStepMode:presStepMode,

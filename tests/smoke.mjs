@@ -949,6 +949,9 @@ group("what's new");
 
 group("the connections lens");
 {
+  /* the groups from here on describe the Dimmed view, which 1.7.0 keeps as
+     CFG.netView "dim"; the arranged default has its own group below */
+  await M(() => __mf.set("netView", "dim"));
   const newMap = async () => {
     await M(() => document.getElementById("btnMaps").click());
     await M(() => document.getElementById("btnNewMap").click());
@@ -1107,6 +1110,157 @@ group("networks: indirect links, folding them, focus into a lens");
   await press("Meta+2");
   ok("and still returns to that focus", (await M(() => __mf.focus)) === P1);
   await M(() => __mf.focusOut());
+}
+
+group("networks: every network arranged (1.7.0)");
+{
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(220);
+  const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(320); };
+  const lensIs = () => M(() => __mf.lens);
+  const has = (id) => M((x) => !!__mf.pos()[x], id);
+  const treeEdges = () => M(() => document.querySelectorAll("#paintLayer path.te").length);
+  const bbox = (ids) => M((ids) => {
+    const p = __mf.pos(), b = __mf.boxes(); let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    ids.forEach((i) => { if (!p[i]) return; x0 = Math.min(x0, p[i].cx - b[i].w / 2); x1 = Math.max(x1, p[i].cx + b[i].w / 2); y0 = Math.min(y0, p[i].cy - b[i].h / 2); y1 = Math.max(y1, p[i].cy + b[i].h / 2); });
+    return { x0, y0, x1, y1 };
+  }, ids);
+  const apart = (a, b) => a.x1 <= b.x0 || b.x1 <= a.x0 || a.y1 <= b.y0 || b.y1 <= a.y0;
+  const runs = () => M(() => __mf.arrangeRuns());
+  const status = () => M(() => document.getElementById("saveState").textContent);
+  await M(() => __mf.paste("Hub\n- P1\n  - A\n    - a1\n  - E\n- P2\n  - B\n  - C\n- P3\n  - D\n  - F\n- P4\n  - G\n  - H\n- P5\n  - X\n  - Y\n- P6\n  - Q\n    - q1\n    - q2\n  - Z"));
+  await page.waitForTimeout(280);
+  const A = await idOf("A"), B = await idOf("B"), C = await idOf("C"), D = await idOf("D"), E = await idOf("E"), F = await idOf("F"), G = await idOf("G"), H = await idOf("H"), X = await idOf("X"), Y = await idOf("Y"), Q = await idOf("Q"), Z = await idOf("Z"), q1 = await idOf("q1"), q2 = await idOf("q2");
+  await M(([a, b]) => __mf.tie(a, b), [A, B]); await M(([a, b]) => __mf.tie(a, b), [B, C]); await M(([a, b]) => __mf.tie(a, b), [C, D]);
+  await M(([a, b]) => __mf.tie(a, b), [F, G]);
+  await M(([a, b]) => __mf.tie(a, b), [X, Y]); await M(([a, b]) => __mf.tie(a, b), [Y, H]);
+  await page.waitForTimeout(200);
+  await M(() => __mf.set("netView", "arranged"));
+  ok("netView defaults to arranged in DEFAULTS", await M(() => __mf.netView() === "arranged"));
+  const allShown = await M(() => __mf.shown);
+  const posBefore = await M(() => JSON.stringify(__mf.pos()));
+  const cam0 = await M(() => JSON.stringify(__mf.cam()));
+
+  // 1. only tied nodes and the centre keep a position
+  await M((x) => __mf.select(x), E);
+  const rEntry = await runs();
+  await press("Meta+2");
+  ok("Cmd+2 opens Networks", (await lensIs()) === "dim");
+  ok("every untied node leaves the view", !(await has(E)) && !(await has(await idOf("P1"))) && !(await has(Q)));
+  ok("every tied node stays", (await has(A)) && (await has(B)) && (await has(H)) && (await has(Y)));
+  ok("and so does the centre", await has(await M(() => __mf.state.rootId)));
+  ok("nothing else has a pos", (await M(() => __mf.shown)) === 10, await M(() => __mf.shown));
+  ok("the tree is not drawn", (await treeEdges()) === 0, await treeEdges());
+  ok("three networks", (await M(() => __mf.networks())).length === 3);
+  const nets = await M(() => __mf.networks());
+  ok("the arrange ran once per network on entry", (await runs()) - rEntry === 3, (await runs()) - rEntry);
+  // 5. the selection moved into the first network, and Esc puts it back
+  ok("an untied selection moves to the first node of the first network", (await M(() => __mf.selected)) === nets[0][0], await M(() => __mf.selected));
+
+  // 2. separate networks land clear of each other, by bounding box
+  const boxes = [];
+  for (const n of nets) boxes.push(await bbox(n));
+  ok("network 1 and 2 do not overlap", apart(boxes[0], boxes[1]), [boxes[0], boxes[1]]);
+  ok("network 1 and 3 do not overlap", apart(boxes[0], boxes[2]));
+  ok("network 2 and 3 do not overlap", apart(boxes[1], boxes[2]));
+  ok("arranging moved things", (await M(() => JSON.stringify(__mf.pos()))) !== posBefore);
+
+  // 4. the memo: a keystroke runs nothing, a link runs one, a fold re-relaxes its own network only
+  const r0 = await runs();
+  await M((x) => __mf.select(x), B); await M((x) => __mf.select(x), C); await press("Tab"); await press("ArrowRight");
+  ok("selection, Tab and arrows run no relaxation", (await runs()) === r0, (await runs()) - r0);
+  await M((x) => __mf.select(x), B);
+  await press("Meta+e");
+  ok("Cmd+E folds inside a network", (await M(() => __mf.lensFold)).join() === B && !(await has(C)) && !(await has(D)));
+  ok("the fold re-relaxed one network, not three", (await runs()) === r0 + 1, (await runs()) - r0);
+  const fgBefore = await bbox(nets[1]), xyBefore = await bbox(nets[2]);
+  await press("Meta+e");
+  ok("unfolding brings them back", (await has(C)) && (await has(D)));
+  ok("and re-relaxed that network only", (await runs()) === r0 + 2, (await runs()) - r0);
+  ok("the other networks did not move", JSON.stringify(await bbox(nets[1])) === JSON.stringify(fgBefore) && JSON.stringify(await bbox(nets[2])) === JSON.stringify(xyBefore));
+  const r1 = await runs();
+  await M(([a, b]) => { __mf.tie(a, b); }, [D, F]);
+  await page.waitForTimeout(200);
+  ok("a link added merges two networks and arranges the new one once", (await M(() => __mf.networks())).length === 2 && (await runs()) === r1 + 1, (await runs()) - r1);
+  await M(([a, b]) => { __mf.tie(a, b); }, [D, F]);
+  await page.waitForTimeout(200);
+  ok("untying splits them again", (await M(() => __mf.networks())).length === 3);
+
+  // 7. Tab and the arrows step network to network; Cmd+/ opens one and comes back here
+  const nets2 = await M(() => __mf.networks());
+  await M((x) => __mf.select(x), nets2[0][0]);
+  await press("Tab");
+  ok("Tab steps to the next network", (await M(() => __mf.selected)) === nets2[1][0], await M(() => __mf.selected));
+  await press("ArrowRight");
+  ok("an arrow steps to the next", (await M(() => __mf.selected)) === nets2[2][0]);
+  ok("still in Networks", (await lensIs()) === "dim");
+  await press("Meta+/");
+  ok("Cmd+/ opens that network on its own", (await lensIs()) === "one" && (await M(() => __mf.shown)) === 4, await M(() => __mf.shown));
+  await press("Meta+/");
+  ok("and Cmd+/ again comes back to Networks", (await lensIs()) === "dim" && (await M(() => __mf.shown)) === 10, await M(() => __mf.shown));
+
+  // 9. the copy reads Networks
+  ok("the mode bar reads Networks", await M(() => document.querySelector('[data-mode="2"] .ml').textContent === "Networks" && /Networks/.test(document.querySelector('[data-mode="2"]').title)));
+  ok("the key bar reads Networks", /Networks/.test(await M(() => document.getElementById("hint").textContent)));
+  ok("the help table reads Networks, not connections", await M(() => { const h = document.getElementById("help").innerHTML; return /in Networks/.test(h) && !/onnections/.test(h); }));
+  ok("the lens bar reads Networks", /Networks/.test(await M(() => document.getElementById("crumbs").textContent)));
+
+  // 5. Esc puts the original selection and camera back
+  await press("Escape");
+  ok("Esc leaves Networks", (await lensIs()) === "off");
+  ok("the original selection is back", (await M(() => __mf.selected)) === E);
+  ok("and the camera", (await M(() => JSON.stringify(__mf.cam()))) === cam0);
+  ok("and every node is back where it was", (await M(() => JSON.stringify(__mf.pos()))) === posBefore && (await M(() => __mf.shown)) === allShown);
+
+  // 8. a branch tie keeps its subtree as one rigid block in its tidy shape
+  await M(([a, b]) => __mf.branchTie(a, b), [Q, Z]);
+  await page.waitForTimeout(200);
+  const tidy = await M(([a, b, c]) => { const p = __mf.pos(); return [p[b].cx - p[a].cx, p[b].cy - p[a].cy, p[c].cx - p[a].cx, p[c].cy - p[a].cy].map((v) => Math.round(v)); }, [Q, q1, q2]);
+  await press("Meta+2");
+  ok("a branch tie brings the subtree in", (await has(q1)) && (await has(q2)));
+  const arranged = await M(([a, b, c]) => { const p = __mf.pos(); return [p[b].cx - p[a].cx, p[b].cy - p[a].cy, p[c].cx - p[a].cx, p[c].cy - p[a].cy].map((v) => Math.round(v)); }, [Q, q1, q2]);
+  ok("as one rigid block in its tidy shape", JSON.stringify(arranged) === JSON.stringify(tidy), [tidy, arranged]);
+  ok("with its tree drawn inside the block", (await treeEdges()) > 0, await treeEdges());
+  await press("Escape");
+  await M(([a, b]) => __mf.branchTie(a, b), [Q, Z]);
+  await page.waitForTimeout(200);
+
+  // 3. Dimmed is exactly the old view
+  await M(() => __mf.set("netView", "dim"));
+  await M((x) => __mf.select(x), E);
+  await press("Meta+2");
+  ok("Dimmed keeps the whole map", (await M(() => __mf.shown)) === allShown);
+  ok("nothing is arranged", (await M(() => JSON.stringify(__mf.pos()))) === posBefore);
+  ok("untied nodes are ghosted in place", (await M(() => __mf.ghosts)) > 0 && (await M(() => __mf.selected)) === E);
+  ok("and the arrange was not consulted", (await runs()) === (await runs()));
+  await press("Escape");
+  const dimRuns = await runs();
+  await M(() => __mf.set("netView", "arranged"));
+
+  // 6. the last link deleted while the view is open leaves the map view, with a word
+  await M(() => { __mf.state.links.length = 0; });
+  await M(([a, b]) => __mf.tie(a, b), [X, Y]);
+  await page.waitForTimeout(200);
+  await M((x) => __mf.select(x), E);
+  await press("Meta+2");
+  ok("one network open", (await lensIs()) === "dim" && (await M(() => __mf.shown)) === 3);
+  await M(([a, b]) => { __mf.tie(a, b); }, [X, Y]);
+  await page.waitForTimeout(300);
+  ok("untying the last tie leaves Networks rather than a blank canvas", (await lensIs()) === "off" && (await M(() => __mf.shown)) === allShown, [await lensIs(), await M(() => __mf.shown)]);
+  ok("and says so", /last tie/.test(await status()), await status());
+  ok("with the selection back", (await M(() => __mf.selected)) === E);
+  void dimRuns;
+
+  // 9b. a settings blob without netView loads with the default and nothing else disturbed
+  await M(() => __mf.set("paper", "dots"));
+  const json = await M(() => __mf.exportJson());
+  const stripped = await M((j) => { const o = JSON.parse(j); if (o.cfg) { delete o.cfg.netView; o.cfg.paper = "dots"; } return JSON.stringify(o); }, json);
+  await M((j) => __mf.importJson(j), stripped);
+  await page.waitForTimeout(300);
+  ok("an older settings blob loads with netView defaulted", await M(() => __mf.netView() === "arranged" && __mf.cfg.paper === "dots"), await M(() => [__mf.netView(), __mf.cfg.paper]));
+  await M(() => { __mf.set("paper", "graph"); __mf.set("netView", "dim"); });
 }
 
 group("the number row is views");
@@ -1527,7 +1681,8 @@ group("presentation: a talk set up the way you talk (1.6.0)");
   await press("Escape"); await press("Escape");
   ok("and the talk ending closes it too", (await P()) === null && !(await M(() => __mf.talkOpen)) && await M(() => getComputedStyle(document.getElementById("talk")).display === "none"));
   await reset();
-  ok("the Style panel's Presenting rows are worded the same way", (await M(() => { document.getElementById("btnStyle").click(); const n = document.querySelectorAll("#styleScroll .opt.txt").length; document.getElementById("btnStyle").click(); return n; })) === 13);
+  /* 13 presenting options plus the two Networks options, worded the same way since 1.7.0 */
+  ok("the Style panel's Presenting rows are worded the same way", (await M(() => { document.getElementById("btnStyle").click(); const n = document.querySelectorAll("#styleScroll .opt.txt").length; document.getElementById("btnStyle").click(); return n; })) === 15);
 
   // ---- 8. a 1.5.1 settings blob loads with the new keys defaulted ----
   await M(() => { __mf.cfg.slop = 3; __mf.set("gap", __mf.cfg.gap); });
@@ -1929,7 +2084,7 @@ group("working inside a network");
   await M(() => document.querySelector("#crumbs [data-out]").click());
   await page.waitForTimeout(250);
   ok("its button steps back to dimmed", (await M(() => __mf.lens)) === "dim");
-  ok("and the bar follows", await M(() => /Links dimmed/.test(document.getElementById("crumbs").textContent)));
+  ok("and the bar follows", await M(() => /Networks, dimmed/.test(document.getElementById("crumbs").textContent)));
   await M(() => document.querySelector("#crumbs [data-out]").click());
   await page.waitForTimeout(250);
   ok("then turns the lens off", (await M(() => __mf.lens)) === "off");
@@ -3273,9 +3428,9 @@ group("0.37: the right-click menu, Option+Enter both ways");
   // canvas menu
   await page.mouse.click(40, 500, { button: "right" }); await page.waitForTimeout(200);
   const cm = await menu();
-  ok("right-click on the canvas offers views and maps", !!cm && cm.includes("Fit everything") && cm.includes("Present") && cm.includes("New map") && cm.includes("Connections"), cm);
-  await clickItem("Connections");
-  ok("Connections from the menu dims", (await M(() => __mf.lens)) === "dim");
+  ok("right-click on the canvas offers views and maps", !!cm && cm.includes("Fit everything") && cm.includes("Present") && cm.includes("New map") && cm.includes("Networks"), cm);
+  await clickItem("Networks");
+  ok("Networks from the menu opens the view", (await M(() => __mf.lens)) === "dim");
   await page.mouse.click(40, 500, { button: "right" }); await page.waitForTimeout(200);
   ok("and the menu now offers the map", (await menu()).includes("Back to the map"));
   await clickItem("Back to the map");

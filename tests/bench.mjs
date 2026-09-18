@@ -291,16 +291,79 @@ console.log("\nrender with 150 cross-links in a 1200-node map (median of 9 selec
     for (let i = 0; i < 150; i++) { const a = ids[Math.floor(r() * ids.length)], b = ids[Math.floor(r() * ids.length)]; if (a !== b) __mf.state.links.push({ a, b }); }
   });
   results.links = {};
-  const views = [["map", () => __mf.setLens("off")], ["connections", () => __mf.setLens("dim")],
-                 ["one network", () => __mf.setLens("one", __mf.state.links[0].a)], ["presenting", () => { __mf.setLens("off"); __mf.present(); }]];
+  const hasNetView = await page.evaluate(() => typeof __mf.netView === "function");
+  const setView = (v) => page.evaluate((v) => { if (__mf.cfg.netView !== undefined) __mf.set("netView", v); }, v);
+  await setView("dim");
+  const views = [["map", () => __mf.setLens("off")], ["dimmed", () => __mf.setLens("dim")],
+                 /* the biggest network on the map, so the arrange has real work in it */
+                 ["one network", () => { const nets = __mf.networks ? __mf.networks() : null; const big = nets ? nets.slice().sort((a, b) => b.length - a.length)[0] : null; __mf.setLens("one", big ? big[0] : __mf.state.links[0].a); }],
+                 ["presenting", () => { __mf.setLens("off"); __mf.present(); }]];
+  const selRenders = () => page.evaluate(() => {
+    const ids = Object.keys(__mf.state.nodes), xs = [];
+    for (let i = 0; i < 9; i++) { const t0 = performance.now(); __mf.select(ids[i * 13 + 1]); xs.push(performance.now() - t0); }
+    xs.sort((a, b) => a - b); return Math.round(xs[4] * 10) / 10;
+  });
   for (const [label, fn] of views) {
     await page.evaluate(fn); await page.waitForTimeout(250);
+    const r0 = await page.evaluate(() => __mf.arrangeRuns ? __mf.arrangeRuns() : null);
+    const ms = await selRenders();
+    const extra = await page.evaluate((r0) => {
+      const n = __mf.lens === "one" ? __mf.shown - 1 : null;
+      return (n != null ? n + " nodes in it" : "") + (r0 != null && __mf.lens === "one" ? ", " + (__mf.arrangeRuns() - r0) + " relaxations over 9 renders" : "");
+    }, r0);
+    results.links[label] = ms; row("  " + label, ms, extra);
+  }
+  await page.evaluate(() => { __mf.presEnd(); __mf.setLens("off"); });
+  /* one dense network on its own: 40 nodes tied in a ring with chords, which
+     is where the relaxation itself, not the render, is the cost */
+  const nLinks = await page.evaluate(() => __mf.state.links.length);
+  await page.evaluate(() => {
+    const ids = Object.keys(__mf.state.nodes).filter((i) => i !== __mf.state.rootId).slice(200, 240);
+    window.__benchRing = ids;
+    for (let i = 0; i < ids.length; i++) { __mf.state.links.push({ a: ids[i], b: ids[(i + 1) % ids.length] }); if (i % 4 === 0) __mf.state.links.push({ a: ids[i], b: ids[(i + 7) % ids.length] }); }
+    __mf.setLens("one", ids[0]);
+  });
+  await page.waitForTimeout(250);
+  {
+    const r0 = await page.evaluate(() => __mf.arrangeRuns ? __mf.arrangeRuns() : null);
     const ms = await page.evaluate(() => {
-      const ids = Object.keys(__mf.state.nodes), xs = [];
-      for (let i = 0; i < 9; i++) { const t0 = performance.now(); __mf.select(ids[i * 13 + 1]); xs.push(performance.now() - t0); }
+      const row = Object.keys(__mf.pos()).filter((i) => i !== __mf.state.rootId), xs = [];
+      for (let i = 0; i < 9; i++) { const t0 = performance.now(); __mf.select(row[i % row.length]); xs.push(performance.now() - t0); }
       xs.sort((a, b) => a - b); return Math.round(xs[4] * 10) / 10;
     });
-    results.links[label] = ms; row("  " + label, ms);
+    const extra = await page.evaluate((r0) => (__mf.shown - 1) + " nodes in it" + (r0 != null ? ", " + (__mf.arrangeRuns() - r0) + " relaxations over 9 renders" : ""), r0);
+    results.links["one dense network"] = ms; row("  one dense network", ms, extra);
+    await page.evaluate(() => __mf.setLens("off"));
+  }
+  /* the arranged view (1.7.0): entering it, a keystroke while it is open, and a fold in one network */
+  if (!hasNetView) { row("  networks", "n/a", "no netView in this build"); }
+  else {
+    await setView("arranged"); await page.waitForTimeout(200);
+    const enter = await page.evaluate(() => {
+      const xs = [];
+      for (let i = 0; i < 5; i++) { __mf.setLens("off"); const t0 = performance.now(); __mf.setLens("dim"); xs.push(performance.now() - t0); }
+      xs.sort((a, b) => a - b); return { ms: Math.round(xs[2] * 10) / 10, nets: __mf.networks().length, shown: __mf.shown };
+    });
+    results.links["networks: enter"] = enter.ms; row("  networks: enter", enter.ms, enter.nets + " networks, " + enter.shown + " nodes shown");
+    const keyMs = await page.evaluate(() => {
+      const row = __mf.networks().map((c) => c[0]), xs = [], r0 = __mf.arrangeRuns();
+      for (let i = 0; i < 9; i++) { const t0 = performance.now(); __mf.select(row[i % row.length]); xs.push(performance.now() - t0); }
+      xs.sort((a, b) => a - b); return { ms: Math.round(xs[4] * 10) / 10, runs: __mf.arrangeRuns() - r0 };
+    });
+    results.links["networks: keystroke"] = keyMs.ms; row("  networks: keystroke", keyMs.ms, keyMs.runs + " relaxations");
+    const foldMs = await page.evaluate(() => {
+      /* the second node of the dense ring: folding the first would hide the whole network, which is no arrange at all */
+      const at = window.__benchRing[1];
+      const r0 = __mf.arrangeRuns(); __mf.select(at);
+      const t0 = performance.now(); __mf.lensFoldToggle(at); const ms = performance.now() - t0;
+      __mf.lensFoldToggle(at);
+      return { ms: Math.round(ms * 10) / 10, runs: __mf.arrangeRuns() - r0, nets: __mf.networks().length };
+    });
+    if (foldMs) { results.links["networks: fold"] = foldMs.ms; row("  networks: fold one", foldMs.ms, foldMs.runs + " relaxations for the fold and unfold, " + foldMs.nets + " networks on screen"); }
+    await page.evaluate(() => __mf.setLens("off"));
+  }
+  await page.evaluate((n) => { __mf.state.links.length = n; }, nLinks);
+  {
   }
 }
 
