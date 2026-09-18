@@ -3,6 +3,17 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.3.1] - 2026-09-18
+
+### Changed
+- **Numbering leaves a half-hidden row alone.** Numbering a row reads the order
+  off the picture, so every node in the row has to be in the picture. If one of
+  them is folded away or hidden, the numbers still go on but the order is left
+  exactly as it was, and the status line says so. Unhide it and press again for
+  the ordered result. Before this, the hidden ones held whatever slot they
+  happened to have, which mixed the old creation order back into the result and
+  gave you a different answer depending on what was hidden at the time.
+
 ## [1.3.0] - 2026-09-18
 
 ### Added

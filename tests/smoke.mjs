@@ -2735,7 +2735,11 @@ group("branch ties");
   const id = (t) => M((t) => Object.values(__mf.state.nodes).filter((n) => n.text === t).map((n) => n.id)[0], t);
   const a = await id("2025"), b = await id("2026");
   const clickNode = async (x, mods) => {
-    const r = await M((x) => { const e = document.querySelector('.node[data-id="' + x + '"]').getBoundingClientRect(); return { x: e.left + e.width / 2, y: e.top + e.height / 2 }; }, x);
+    /* the camera may still be gliding after a lens change: wait for the node
+       to hold still before clicking, the way the ties group does */
+    const at = () => M((x) => { const e = document.querySelector('.node[data-id="' + x + '"]').getBoundingClientRect(); return { x: e.left + e.width / 2, y: e.top + e.height / 2 }; }, x);
+    let r = await at();
+    for (let t = 0; t < 20; t++) { await page.waitForTimeout(60); const q = await at(); if (Math.abs(q.x - r.x) < 0.5 && Math.abs(q.y - r.y) < 0.5) break; r = q; }
     for (const m of mods) await page.keyboard.down(m);
     await page.mouse.click(r.x, r.y);
     for (const m of mods.reverse()) await page.keyboard.up(m);
@@ -3769,10 +3773,14 @@ group("1.3.0 #5: numbering follows what you see");
     __mf.numLabel(r.children[0]);
     return JSON.stringify(__mf.cam()) === before;
   }));
-  // orderRow survives a node with no pos
-  ok("a node with no pos is left where it was", await M(() => {
+  // orderRow refuses a row it cannot see all of
+  ok("orderRow refuses a row with a node that has no pos", await M(() => {
     const r = __mf.state.nodes[__mf.state.rootId];
-    return __mf.orderRow(r.id) === false || r.children.length > 0;
+    const kept = __mf.pos()[r.children[0]];
+    delete __mf.pos()[r.children[0]];
+    const verdict = __mf.orderRow(r.id);
+    __mf.pos()[r.children[0]] = kept;
+    return verdict === "hidden";
   }));
   ok("no runtime errors", errors.length === 0, errors);
 }
@@ -3873,6 +3881,48 @@ group("1.3.0 #7: navi");
     Object.keys(old).forEach((k) => __mf.set(k, k === "hereStyle" ? "rail" : k === "hereShow" ? "always" : true));
     return kept;
   }));
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
+
+group("1.3.1: a half-hidden row keeps its order");
+{
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(220); };
+  const sel = (t) => M((t) => __mf.select(Object.values(__mf.state.nodes).find((n) => n.text === t).id), t);
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  await M((t) => { __mf.paste(t); __mf.mark([]); }, "Hidden hub\n- North\n- East\n- South\n- West");
+  await page.waitForTimeout(240);
+  await M(() => __mf.set("spread", "manual"));
+  const ids = await M(() => Object.fromEntries(Object.values(__mf.state.nodes).map((n) => [n.text, n.id])));
+  await M((ix) => {
+    const s = __mf.state, r = s.nodes[s.rootId];
+    s.nodes[ix.North].dir = "U"; s.nodes[ix.East].dir = "R"; s.nodes[ix.South].dir = "D"; s.nodes[ix.West].dir = "L";
+    r.children = [ix.South, ix.West, ix.North, ix.East];
+  }, ids);
+  await M(() => __mf.set("spread", "manual"));
+  await page.waitForTimeout(260);
+  const order = () => M(() => __mf.rowOrder(__mf.state.rootId).map((c) => __mf.state.nodes[c].text).join());
+  const before = await order();
+  ok("the array and the screen disagree", before === "South,West,North,East", before);
+  // hide one of them the way a fold or a lens does
+  await M(() => { const r = __mf.state.nodes[__mf.state.rootId]; delete __mf.pos()[r.children[1]]; });
+  await M(() => __mf.select(__mf.state.rootId));
+  await M(() => { const r = __mf.state.nodes[__mf.state.rootId]; delete __mf.pos()[r.children[1]]; __mf.number(); });
+  await page.waitForTimeout(280);
+  ok("the numbers still go on", (await M(() => __mf.anyNum)) === true);
+  ok("but the order is left exactly as it was", (await order()) === before, await order());
+  ok("and the status line says so", /hidden/.test(await M(() => document.getElementById("saveState").textContent)), await M(() => document.getElementById("saveState").textContent));
+  ok("a refused row does not take the spread over either", (await M(() => __mf.cfg.spread)) === "manual");
+  await press("Meta+z");
+  await page.waitForTimeout(220);
+  ok("undo takes the numbers back off", (await M(() => __mf.anyNum)) === false);
+  // with everything visible it orders as usual
+  await M(() => __mf.select(__mf.state.rootId));
+  await press("Alt+Digit7");
+  ok("with the whole row in view it orders as usual", (await order()) === "North,East,South,West", await order());
+  ok("and says nothing about hiding", !/hidden/.test(await M(() => document.getElementById("saveState").textContent)), await M(() => document.getElementById("saveState").textContent));
+  void sel;
   ok("no runtime errors", errors.length === 0, errors);
 }
 

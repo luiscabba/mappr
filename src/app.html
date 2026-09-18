@@ -763,7 +763,7 @@
       <tr><td><kbd>⌘</kbd><kbd>X</kbd></td><td><b>Carry.</b> Picks up the selection (or the selected node): it goes faint where it is, and the arrows, or a click, choose where it goes. <kbd>⏎</kbd> drops it inside the ringed node, <kbd>⇧</kbd><kbd>⏎</kbd> right after it, <kbd>Esc</kbd> puts it back. Nothing changes until the drop, and one <kbd>⌘</kbd><kbd>Z</kbd> undoes it. <kbd>⌘</kbd><kbd>V</kbd> puts it down as well as <kbd>⏎</kbd> does, and the clipboard still holds what you picked up, so you can paste a copy of it anywhere else.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself. With a selection up, every selected branch is duplicated and the copies come out selected.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>X</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd><br><kbd>⌥</kbd><kbd>F</kbd></td><td>Mark done (struck through) / flag. <kbd>⌥</kbd><kbd>D</kbd> still marks done, the older key. Firefox and Zen keep <kbd>⌘</kbd><kbd>⇧</kbd><kbd>F</kbd> for themselves, so <kbd>⌥</kbd><kbd>F</kbd> does the same; likewise <kbd>⌥</kbd><kbd>G</kbd> ungroups and <kbd>⌥</kbd><kbd>C</kbd> copies as an image. <kbd>⌃</kbd> works as <kbd>⌘</kbd> everywhere, which is the key to use on an iPad. A flag is a hand-drawn pennant on the box; the Style panel has a ribbon, a ring and an asterisk instead. <kbd>⌘</kbd><kbd>4</kbd> dims the map to its flags and <kbd>Tab</kbd> steps through them; in <kbd>⌘</kbd><kbd>K</kbd>, type <kbd>!</kbd> first to list only flagged nodes. Sort has <em>Flagged first</em>, and a copied outline writes <kbd>!</kbd> before a flagged line, which flags it again when pasted back.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>7</kbd><br><kbd>⌥</kbd><kbd>7</kbd></td><td><b>Number.</b> Docs' own key. Numbers the row the node is on, its siblings in order; with a selection up, every row that has a selected node in it, so <kbd>⌘</kbd><kbd>⇧</kbd><kbd>→</kbd> then <kbd>⌘</kbd><kbd>⇧</kbd><kbd>7</kbd> numbers a whole branch as an outline. On the centre alone it numbers the branches. Pressed on rows already numbered, it takes the numbers off. A number belongs to the row, not the node: nothing is typed into the text, and a move, a sort, a delete or a paste renumbers on its own. Rows nest 1. then a. then i.; the Style panel has 1.1.1 and I. A. 1. instead, and draws the number in the gutter, in the box or on the edge. A copied outline writes the number before the line and a pasted <kbd>1.</kbd> or <kbd>a.</kbd> line comes in numbered.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>7</kbd><br><kbd>⌥</kbd><kbd>7</kbd></td><td><b>Number.</b> Docs' own key. Numbers the row the node is on, its siblings in order; with a selection up, every row that has a selected node in it, so <kbd>⌘</kbd><kbd>⇧</kbd><kbd>→</kbd> then <kbd>⌘</kbd><kbd>⇧</kbd><kbd>7</kbd> numbers a whole branch as an outline. On the centre alone it numbers the branches. Pressed on rows already numbered, it takes the numbers off. A number belongs to the row, not the node: nothing is typed into the text, and a move, a sort, a delete or a paste renumbers on its own. Rows nest 1. then a. then i.; the Style panel has 1.1.1 and I. A. 1. instead, and draws the number in the gutter, in the box or on the edge. A copied outline writes the number before the line and a pasted <kbd>1.</kbd> or <kbd>a.</kbd> line comes in numbered. Numbering a row also settles its order, read off the picture: down the page on a side row, clockwise from the top round the centre. A row with a node hidden or folded away in it keeps the order it had, since there is no honest place to put what you cannot see.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>⇧</kbd><kbd>W</kbd></td><td><b>navi.</b> The rail top left follows the selection and shows only the way up and the row you are on: ancestors as a muted spine, the siblings under the parent with yours lit, children as a count. When the centre is off screen a small arrow points to where it is. Click a row to go there. A long row is capped: three siblings either side and a folded row at each end, with the whole row in a scrolling box, just the count, or the row as chips as the alternatives in Style. Inside a focus it shows how deep you are instead of the spine, as pips, in words or as two crumbs. The key cycles always, only when the centre is out of view, and off; the Style panel has the same, plus a pill with the siblings as chips or a drawn sketch instead of the rail, whether it fades when idle, and whether it joins the maps rail in one panel.</td></tr>
     </table></section>
     <section class="hpane" data-tab="frames"><h3>Select and frames</h3>
@@ -1150,14 +1150,19 @@ function numLabel(id){
    the array. Same trade the app already makes when you hand-place a branch. */
 function orderRow(parentId,dirOrder){
   var p=N(parentId); if(!p || p.children.length<2) return false;
+  var at=function(id){ return pos[id]||null; };
+  /* The order comes off the picture, so every node in the row has to be in the
+     picture. If any of them is hidden, folded away or off in a lens, there is
+     no honest place to put it: holding its old slot would mix creation order
+     back into the result, and where it went would depend on what happened to
+     be hidden when the key was pressed. So the row is left exactly as it is
+     and the numbers go on anyway. Unhide it and press again for the ordered
+     result. Phase 7 makes this the common case rather than the edge one. */
+  if(p.children.some(function(c){ return !at(c); })) return "hidden";
   if(parentId===VR() && CFG.spread!=="manual") takeOverSpread();
   var order=dirOrder||["U","R","D","L"];
-  var at=function(id){ return pos[id]||null; };
-  /* a node with no pos (hidden, folded away, off in a lens) keeps the place it
-     already had rather than being swept to one end */
-  var seen={}, missing=p.children.filter(function(c){ return !at(c); });
-  var placed=p.children.filter(function(c){ return !!at(c); });
-  if(placed.length<2) return false;
+  var seen={};
+  var placed=p.children.slice();
   var byDir={}; order.forEach(function(d){ byDir[d]=[]; });
   var loose=[];
   placed.forEach(function(c){ var d=dirOf(c); (byDir[d]||loose).push(c); });
@@ -1173,12 +1178,9 @@ function orderRow(parentId,dirOrder){
   order.forEach(function(d){ if(byDir[d].length) out=out.concat(sortIn(byDir[d],d)); });
   if(loose.length) out=out.concat(loose);
   out.forEach(function(c){ seen[c]=1; });
-  /* the nodes that had no position go back in their old places */
   var res=[], k=0;
   p.children.forEach(function(c){ res.push(seen[c]?out[k++]:c); });
-  var same=res.every(function(c,i){ return c===p.children[i]; });
-  void missing;
-  if(same) return false;
+  if(res.every(function(c,i){ return c===p.children[i]; })) return false;
   p.children=res;
   return true;
 }
@@ -1197,10 +1199,14 @@ function toggleNumber(){
   var allOn=L.every(function(p){ return N(p).num; });
   snap();
   /* the order and the figures are one undo step, so one ⌘Z puts both back */
-  if(!allOn) L.forEach(function(p){ orderRow(p); });
+  var held=0;
+  if(!allOn) L.forEach(function(p){ if(orderRow(p)==="hidden") held++; });
   L.forEach(function(p){ if(allOn) delete N(p).num; else N(p).num=true; });
   render(true); saveSoon();
-  flashSave(allOn ? "numbers off" : (L.length===1 ? "row numbered" : L.length+" rows numbered")+" · the Style panel has the scheme");
+  if(allOn){ flashSave("numbers off"); return; }
+  var what=(L.length===1 ? "row numbered" : L.length+" rows numbered");
+  flashSave(held ? what+" \u00b7 part of it is hidden, so the order was left alone"
+                 : what+" \u00b7 the Style panel has the scheme");
 }
 function lensSolo(){ return !!lensOne; }
 /* A network, walked breadth first from one node along links only, at whatever
