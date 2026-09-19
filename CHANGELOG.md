@@ -3,6 +3,22 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.7.1] - 2026-09-19
+
+### Changed
+- **Networks opens on all of them.** Pressing `⌘2` now fits every network on
+  screen rather than centring on the one you were nearest, since seeing them
+  together is the point of the view. `Esc` still puts your camera back exactly.
+- **The key bar knows the view.** In Networks the bar lists the keys that work
+  there, Fold beyond and Copy all among them, and the Dimmed view keeps its own
+  row.
+- **Typing does not shake the network.** A node you are retyping inside
+  Networks holds its place while you type, and the network settles once when
+  you finish, rather than re-arranging on every letter.
+- **`⌘C` copies every network.** In Networks, copy gives you all the networks as
+  one outline, each from its first node, in both plain and rich text, the way
+  a single network already did.
+
 ## [1.7.0] - 2026-09-19
 
 ### Changed

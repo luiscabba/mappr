@@ -684,7 +684,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v1.7.0">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
+  <span class="brand" id="brand" title="Mappr v1.7.1">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -771,7 +771,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.7.0</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.7.1</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <div id="helpBody">
@@ -893,9 +893,9 @@
      panel cannot drift from the record of what actually shipped. -->
 <div id="notes">
   <div id="notesCard">
-    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.7.0</span></h2>
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.7.1</span></h2>
     <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
-    <div id="notesBody"><h3 class="rel">1.7.0 <span>2026-09-19</span></h3><h4>Changed</h4><ul><li><b>Networks, all of them at once.</b> Connections is now called Networks, and pressing ⌘2 lays every network out rather than only the one you step into. Nodes with no tie on them leave the view instead of sitting dimmed in the background, so what is left on screen is only what relates to something else, each network clear of the others and the centre held still as a fixed point. Tab still walks them, ⌘/ still opens one on its own, ⌘E folds what is only reached through a node, and ⌘0 fits them all. If you preferred the old view, the Style panel has it: set Networks to Dimmed and ⌘2 goes back to the whole map with the untied parts faded in place.</li><li><b>A network holds still while you work in it.</b> The arrangement of each network is worked out once and remembered for as long as the view is open, so a keystroke, a selection or a fold no longer re-runs the whole layout, and a fold or an edit inside one network never moves the others. One network on its own gets the same treatment.</li><li><b>The last tie has somewhere to go.</b> Untying or undoing the last tie while Networks is open drops you back on the map, with a word in the status line, rather than leaving an empty canvas.</li></ul><h3 class="rel">1.6.1 <span>2026-09-19</span></h3><h4>Changed</h4><ul><li><b>Set up the talk from inside the talk.</b> T mid-talk, or the Set up button in the bar, opens a panel with the five Presenting rows, and a change takes effect on the step you are on, camera included. Esc closes it before it ends the talk, and it never takes the keyboard, so the arrows still step.</li><li><b>The Presenting rows are worded.</b> Each option is its word, sized to fit, with the picked option&#x27;s meaning written under the row, in the talk panel and in the Style panel alike.</li></ul><h3 class="rel">1.6.0 <span>2026-09-19</span></h3><h4>Added</h4><ul><li><b>A talk you can set up the way you talk.</b> The Style panel has a Presenting section. The whole map can be up from the first second, dimmed, with the path to what you are saying lit, so the room always sees where this bit sits (On screen: All, with Behind you: Fade). What is behind you can stay as it was, sit back, or go away again; &quot;go away again&quot; is not offered while the whole map is on screen, because there is nothing for it to hide. A step can reveal one node, a whole row or a whole branch, and a row at a time is also the answer for tied nodes that sit at the same level, since they arrive together because their row does. ⇧→ is always one step coarser than the setting: a row when a step is a node, a branch when a step is a row. The camera can follow you, hold the whole map, or hold the branch you are in. With nothing set, a talk is exactly what it was.</li><li><b>Present from here.</b> ⌘P starts a talk from whatever you have selected rather than from the centre, so the rest of the map is never told, and leaving and coming back resumes that talk and not the one from the centre. ⌥⇧P does the same where the browser keeps ⌘P for print, and the right-click menu has it too. On the centre it is ⌘3.</li><li><b>Cards.</b> A talk can drop the map altogether and read as cards, one node to a screen with its paragraphs as the body and its other children as chips, which is what prose was for. A paragraph is read on its parent&#x27;s card, lit, and the ones told before it sit above it. The map is still there underneath, so Esc puts you back exactly where you were; O and ⇧O have nothing to show and say so.</li></ul><h3 class="rel">1.5.1 <span>2026-09-18</span></h3><h4>Fixed</h4><ul><li><b>A copy made from something already rendered keeps its headings.</b> Copy a chat answer or a page and the plain text arrives with the bold already gone, so 1.5.0 had nothing to read the shape from and everything landed in one column. The bold is still there in the clipboard&#x27;s rich-text flavour, and Mappr now reads that flavour whenever it carries headings, bold or code, not only when it carries a list. A bold paragraph is a heading, the paragraphs after it are its children, and a bold label still opens a definition. The rule that keeps a paste honest is unchanged and now carries the whole weight: a row with no bold anywhere in it is left exactly as it was pasted, so an indented list keeps every level it came with and a branch copied out of a map and pasted back comes home unchanged.</li><li><b>A code block is one node, and its fences are not nodes at all.</b> A fenced block used to arrive as a stack of lines wrapped in two nodes made of backticks. It now comes in as a single node with its lines intact, which ⌥S splits again if that is what you wanted, and a copy that put a bullet in front of every line, as a chat copy does, has that bullet taken off the code too. An unclosed fence still ends, and a code span inside a line is left alone.</li></ul><h3 class="rel">1.5.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Markdown arrives as a shape, not as asterisks.</b> Paste a list out of a chat or a document and the markdown written inside the lines comes off: bold, italic, code, strikethrough and links all arrive as their words. When the paste has no indentation left in it, which is what a chat answer and most stripped copies give you, the markdown says what the shape was. A line that is bold from end to end becomes a heading, a line that ends in a colon with nothing after it introduces what follows, and everything after them hangs underneath. A list that used to land as forty siblings in one column now lands as the two or three levels it was written as.</li><li><b>A term and its definition come in as two nodes.</b> A line like <b>PTP (Promise to Pay):</b> the borrower commits to an amount and a date becomes the term as a node with the sentence as a paragraph under it, so a definition list becomes a map rather than a column of long boxes. The same two readings work on a rich-text copy, where the bold arrives as real bold rather than asterisks.</li><li><b>Nothing is invented from a paste that already has a shape.</b> A paste that carries any indentation of its own is taken exactly as it is, and a paste with no bold anywhere in it is left flat, so a branch copied out of a map and pasted back always comes home unchanged.</li></ul><h4>Fixed</h4><ul><li><b>A paragraph&#x27;s children are joined to something you can see.</b> A paragraph has no box, so the lines to its children used to start at an edge nobody had drawn and read as lines joined to nothing. A paragraph with children on screen now carries a lighter rule down the side they leave from, and the lines meet it.</li><li><b>A row&#x27;s numbering stays its own.</b> A bulleted line and a bare line written at the same depth are two rows of the tree, but the paste was counting them as one when it decided whether a row was numbered, so one row could take the other&#x27;s numbering.</li></ul><h3 class="rel">1.4.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Prose.</b> <code>⌘⇧9</code> turns a node into a paragraph: wider, left aligned, smaller type, a rule down the side instead of a box, and never numbered. <code>⏎</code> on a paragraph writes the next one and <code>⌘⏎</code> starts an ordinary node under it, so a branch can go from map to document and back without leaving the map. Numbering skips paragraphs, so a row of paragraph, bullet, bullet still counts a. b. Copy still gives you the outline, with your paragraphs as paragraphs, and pasting one back brings them in as paragraphs, so a branch with prose in it travels without losing what it was. The Style panel draws them with a rule or a dotted box. <code>⌥9</code> is the twin, for the browsers and the iPad that keep the chord. A branch with paragraphs in it is a document; the rest of the map is still a map.</li><li><b>Two new rows in the copy menu.</b> Copy as markdown hands over the branch as a document, with real headings and sections worked out from what hangs under each node, and Copy as JSON hands over the branch itself. Both are on the right-click menu on the map and in the Copy menu while presenting or in a network.</li></ul><h4>Fixed</h4><ul><li><b>A numbered map stops re-measuring itself.</b> Every numbered node was being measured again on every render, because the size Mappr remembered for it was filed without its figure and looked up with one, so the two could never match. In a numbered map of 1500 nodes that was 1500 measurements on every keystroke; it is now none.</li></ul><h4>Changed</h4><ul><li><b>A numbered row with a paragraph in it copies out as a plain list.</b> A document&#x27;s numbered list has no way to hold a paragraph between two numbered items without either counting it or breaking the list in two, so a row that is part document keeps its bullets and carries its figures in the text, the way the 1.2.3 scheme already does. A numbered row with no paragraph in it is unchanged, and still arrives as a real numbered list.</li></ul></div>
+    <div id="notesBody"><h3 class="rel">1.7.1 <span>2026-09-19</span></h3><h4>Changed</h4><ul><li><b>Networks opens on all of them.</b> Pressing <code>⌘2</code> now fits every network on screen rather than centring on the one you were nearest, since seeing them together is the point of the view. <code>Esc</code> still puts your camera back exactly.</li><li><b>The key bar knows the view.</b> In Networks the bar lists the keys that work there, Fold beyond and Copy all among them, and the Dimmed view keeps its own row.</li><li><b>Typing does not shake the network.</b> A node you are retyping inside Networks holds its place while you type, and the network settles once when you finish, rather than re-arranging on every letter.</li><li><b><code>⌘C</code> copies every network.</b> In Networks, copy gives you all the networks as one outline, each from its first node, in both plain and rich text, the way a single network already did.</li></ul><h3 class="rel">1.7.0 <span>2026-09-19</span></h3><h4>Changed</h4><ul><li><b>Networks, all of them at once.</b> Connections is now called Networks, and pressing ⌘2 lays every network out rather than only the one you step into. Nodes with no tie on them leave the view instead of sitting dimmed in the background, so what is left on screen is only what relates to something else, each network clear of the others and the centre held still as a fixed point. Tab still walks them, ⌘/ still opens one on its own, ⌘E folds what is only reached through a node, and ⌘0 fits them all. If you preferred the old view, the Style panel has it: set Networks to Dimmed and ⌘2 goes back to the whole map with the untied parts faded in place.</li><li><b>A network holds still while you work in it.</b> The arrangement of each network is worked out once and remembered for as long as the view is open, so a keystroke, a selection or a fold no longer re-runs the whole layout, and a fold or an edit inside one network never moves the others. One network on its own gets the same treatment.</li><li><b>The last tie has somewhere to go.</b> Untying or undoing the last tie while Networks is open drops you back on the map, with a word in the status line, rather than leaving an empty canvas.</li></ul><h3 class="rel">1.6.1 <span>2026-09-19</span></h3><h4>Changed</h4><ul><li><b>Set up the talk from inside the talk.</b> T mid-talk, or the Set up button in the bar, opens a panel with the five Presenting rows, and a change takes effect on the step you are on, camera included. Esc closes it before it ends the talk, and it never takes the keyboard, so the arrows still step.</li><li><b>The Presenting rows are worded.</b> Each option is its word, sized to fit, with the picked option&#x27;s meaning written under the row, in the talk panel and in the Style panel alike.</li></ul><h3 class="rel">1.6.0 <span>2026-09-19</span></h3><h4>Added</h4><ul><li><b>A talk you can set up the way you talk.</b> The Style panel has a Presenting section. The whole map can be up from the first second, dimmed, with the path to what you are saying lit, so the room always sees where this bit sits (On screen: All, with Behind you: Fade). What is behind you can stay as it was, sit back, or go away again; &quot;go away again&quot; is not offered while the whole map is on screen, because there is nothing for it to hide. A step can reveal one node, a whole row or a whole branch, and a row at a time is also the answer for tied nodes that sit at the same level, since they arrive together because their row does. ⇧→ is always one step coarser than the setting: a row when a step is a node, a branch when a step is a row. The camera can follow you, hold the whole map, or hold the branch you are in. With nothing set, a talk is exactly what it was.</li><li><b>Present from here.</b> ⌘P starts a talk from whatever you have selected rather than from the centre, so the rest of the map is never told, and leaving and coming back resumes that talk and not the one from the centre. ⌥⇧P does the same where the browser keeps ⌘P for print, and the right-click menu has it too. On the centre it is ⌘3.</li><li><b>Cards.</b> A talk can drop the map altogether and read as cards, one node to a screen with its paragraphs as the body and its other children as chips, which is what prose was for. A paragraph is read on its parent&#x27;s card, lit, and the ones told before it sit above it. The map is still there underneath, so Esc puts you back exactly where you were; O and ⇧O have nothing to show and say so.</li></ul><h3 class="rel">1.5.1 <span>2026-09-18</span></h3><h4>Fixed</h4><ul><li><b>A copy made from something already rendered keeps its headings.</b> Copy a chat answer or a page and the plain text arrives with the bold already gone, so 1.5.0 had nothing to read the shape from and everything landed in one column. The bold is still there in the clipboard&#x27;s rich-text flavour, and Mappr now reads that flavour whenever it carries headings, bold or code, not only when it carries a list. A bold paragraph is a heading, the paragraphs after it are its children, and a bold label still opens a definition. The rule that keeps a paste honest is unchanged and now carries the whole weight: a row with no bold anywhere in it is left exactly as it was pasted, so an indented list keeps every level it came with and a branch copied out of a map and pasted back comes home unchanged.</li><li><b>A code block is one node, and its fences are not nodes at all.</b> A fenced block used to arrive as a stack of lines wrapped in two nodes made of backticks. It now comes in as a single node with its lines intact, which ⌥S splits again if that is what you wanted, and a copy that put a bullet in front of every line, as a chat copy does, has that bullet taken off the code too. An unclosed fence still ends, and a code span inside a line is left alone.</li></ul><h3 class="rel">1.5.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Markdown arrives as a shape, not as asterisks.</b> Paste a list out of a chat or a document and the markdown written inside the lines comes off: bold, italic, code, strikethrough and links all arrive as their words. When the paste has no indentation left in it, which is what a chat answer and most stripped copies give you, the markdown says what the shape was. A line that is bold from end to end becomes a heading, a line that ends in a colon with nothing after it introduces what follows, and everything after them hangs underneath. A list that used to land as forty siblings in one column now lands as the two or three levels it was written as.</li><li><b>A term and its definition come in as two nodes.</b> A line like <b>PTP (Promise to Pay):</b> the borrower commits to an amount and a date becomes the term as a node with the sentence as a paragraph under it, so a definition list becomes a map rather than a column of long boxes. The same two readings work on a rich-text copy, where the bold arrives as real bold rather than asterisks.</li><li><b>Nothing is invented from a paste that already has a shape.</b> A paste that carries any indentation of its own is taken exactly as it is, and a paste with no bold anywhere in it is left flat, so a branch copied out of a map and pasted back always comes home unchanged.</li></ul><h4>Fixed</h4><ul><li><b>A paragraph&#x27;s children are joined to something you can see.</b> A paragraph has no box, so the lines to its children used to start at an edge nobody had drawn and read as lines joined to nothing. A paragraph with children on screen now carries a lighter rule down the side they leave from, and the lines meet it.</li><li><b>A row&#x27;s numbering stays its own.</b> A bulleted line and a bare line written at the same depth are two rows of the tree, but the paste was counting them as one when it decided whether a row was numbered, so one row could take the other&#x27;s numbering.</li></ul></div>
     <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
 </div>
@@ -909,7 +909,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="1.7.0";
+var VERSION="1.7.1";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid", flagStyle:"pennant",
   numStyle:"gutter", numScheme:"docs", prose:"rule",
@@ -1475,8 +1475,11 @@ function lensSet(l,one,kind){
   if(focusId || (lensWasSolo && !lensOne)) lensMoved=true;
   if(lensArr()) focusId=null;       /* the far end is usually outside the focused branch */
   clearMarks(); hardRender();
-  /* keep your zoom: only move when the picture itself moved */
-  if(lensArr() || lensMoved) centerOn(selected);
+  /* keep your zoom: only move when the picture itself moved. Every network at
+     once is the one view whose point is seeing all of it, so that one fits
+     (1.7.1); a single network and the dimmed map centre on the selection. */
+  if(lens && !lensOne && lensArr()) fit();
+  else if(lensArr() || lensMoved) centerOn(selected);
   lensMoved=false;
 }
 /* The last tie went while a link view was open: undo, a delete, an untie.
@@ -1686,13 +1689,18 @@ function pushApart(boxes){
    it on purpose: most link edits go through hardRender, and a hard render
    that re-relaxed every network would put the keystroke-cost bug back.
    arrRuns counts real relaxations for the tests and the bench. */
-var arrMemo={}, arrRuns=0;
+var arrMemo={}, arrRuns=0, arrEditBox=null;
 function arrKey(mem){
   var set={}; mem.forEach(function(i){ set[i]=1; });
   var nm=netMap(), pr=[], bt=[];
   nm.pairs.forEach(function(p){ if(set[p[0]]&&set[p[1]]) pr.push(p[0]+">"+p[1]); });
   nm.bt.forEach(function(p){ if(set[p[0]]&&set[p[1]]) bt.push(p[0]+">"+p[1]); });
-  return mem.join(",")+"|"+mem.map(function(i){ return box[i].w+"x"+box[i].h; }).join(",")+
+  /* The node being typed in changes size with every letter. Its box goes into
+     the key as it was when typing began, so the network holds still under the
+     cursor and re-arranges once, when the edit is committed (1.7.1). */
+  if(!editing) arrEditBox=null;
+  else if(!arrEditBox || arrEditBox.id!==editing) arrEditBox={id:editing, k:box[editing]?box[editing].w+"x"+box[editing].h:""};
+  return mem.join(",")+"|"+mem.map(function(i){ return (arrEditBox && i===arrEditBox.id) ? arrEditBox.k : box[i].w+"x"+box[i].h; }).join(",")+
     "|"+pr.join(",")+"|"+bt.join(",")+"|"+Object.keys(lensFold).filter(function(i){ return set[i]; }).sort().join(",")+
     "|"+lensKind[0]+(lensOne||"");
 }
@@ -2233,11 +2241,19 @@ function storyOutline(scope){
 /* A network as an outline: the centre, what is tied to it, what is tied to
    those, following the same walk the network view uses, folds included. */
 function netOutlineOf(){
-  var r=lensReach(lensOne), kids={};
-  r.order.forEach(function(id){ var p=r.from[id]; if(p!=null) (kids[p]=kids[p]||[]).push(id); });
-  return outlineOf(lensOne, function(id){ return kids[id]||[]; });
+  function one(origin,r){
+    var kids={};
+    r.order.forEach(function(id){ var p=r.from[id]; if(p!=null) (kids[p]=kids[p]||[]).push(id); });
+    return outlineOf(origin, function(id){ return kids[id]||[]; });
+  }
+  if(lensOne) return one(lensOne, lensReach(lensOne));
+  /* every network at once: each from its first node, one after another (1.7.1) */
+  var nm=netMap(), txt=[], html=[];
+  nm.nets.forEach(function(c,i){ var o=one(c[0], nm.reach[i]); txt.push(o.txt); html.push(o.html); });
+  return { txt:txt.join("\n\n"), html:html.join("") };
 }
-function netIds(){ return lensReach(lensOne).order.filter(function(id){ return pos[id]; }); }
+function netCopyLabel(){ return lensOne ? "network copied as an outline" : lensNetworks().length+" networks copied as an outline"; }
+function netIds(){ return netVisible(); }
 /* The story as a picture: what has been told, or the whole story, with the
    frames around it and nothing it skips. The whole story is drawn by briefly
    switching the view to it, which happens inside one call, so nothing flickers. */
@@ -3853,6 +3869,7 @@ var HINTS={
   map:[["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Child","⌘","⏎"],["Retype","Space"],["Fold","⌘","E"],["Focus","⌘","/"],["Jump","⌘","K"],["Done","⌥","X"]],
   focus:[["Next branch","Tab"],["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Fold","⌘","E"],["Out","Esc"]],
   dim:[["Tie","⌘","+click"],["Next network","Tab"],["Open it","⌘","/"],["Clear links","⇧","+double-click"],["Fit","⌘","0"],["Map","⌘","1"]],
+  nets:[["Tie","⌘","+click"],["Next network","Tab"],["Open it","⌘","/"],["Fold beyond","⌘","E"],["Copy all","⌘","C"],["Fit","⌘","0"],["Map","⌘","1"]],
   flags:[["Next flag","Tab"],["Unflag","⌘","⇧","F"],["Focus","⌘","/"],["Fit","⌘","0"],["Map","⌘","1"]],
   net:[["Move","←↑→↓"],["Walk","Tab"],["Fold beyond","⌘","E"],["New linked node","⏎"],["Back","Esc"]],
   carry:[["Choose where","←↑→↓"],["Drop inside","⏎"],["Drop after","⇧","⏎"],["Put back","Esc"]],
@@ -3864,11 +3881,11 @@ var hintMin=false, hintSig="";
 /* ⌥⇧K walks the key bar through the other modes without changing mode. The
    bar is a reference, not a control: browsing never takes the keyboard, and
    any other key, or five seconds, puts the live mode back. */
-var HINT_MODES=["map","focus","dim","flags","net","arrange","sel","carry"];
+var HINT_MODES=["map","focus","nets","dim","flags","net","arrange","sel","carry"];
 var hintBrowse=null, hintBrowseT=null, hintDraws=0;
 function hintLive(){
   return pres ? (pres.arrange?"arrange":null) : carry ? "carry" :
-    (Object.keys(marked).length?"sel":(lensOne?"net":(lensFlags()?"flags":(lens?"dim":(focusId?"focus":"map")))));
+    (Object.keys(marked).length?"sel":(lensOne?"net":(lensFlags()?"flags":(lens?(lensArr()?"nets":"dim"):(focusId?"focus":"map")))));
 }
 function hintBrowseStep(){
   var live=hintLive();
@@ -3902,7 +3919,7 @@ function drawHint(){
   hintSig=sig;
   hintDraws++;
   if(!mode){ el.innerHTML=""; return; }
-  var names={map:"Map",focus:"Focus",dim:"Networks",flags:"Flags",net:"Network",arrange:"Story",sel:"Selection",carry:"Carrying"};
+  var names={map:"Map",focus:"Focus",nets:"Networks",dim:"Networks, dimmed",flags:"Flags",net:"Network",arrange:"Story",sel:"Selection",carry:"Carrying"};
   var h;
   if(hintMin){
     h='<span class="hm">'+names[mode]+'</span>'+(hintBrowse?'<span><b>Next mode</b> <kbd>\u2325</kbd><kbd>\u21e7</kbd><kbd>K</kbd></span>':'')+'<span><b>Keys</b> <kbd>?</kbd></span><button class="hx" data-hint="1" title="Show key hints">\u25b4</button>';
@@ -4173,6 +4190,8 @@ function beginEdit(id,selectAll){
   if(editing!==id) editOld={id:id,text:N(id).text||""};
   if(fresh===id) fresh=null;
   editing=id;
+  /* the size the arrange keys on for the whole edit: see arrKey */
+  arrEditBox={id:id, k:box[id]?box[id].w+"x"+box[id].h:""};
   var el=els[id];
   el.className="node"+(isVR(N(id))?" root":"")+" editing";
   el.contentEditable="true"; el.textContent=N(id).text||"\u200b";
@@ -5832,7 +5851,7 @@ document.addEventListener("copy",function(e){
   e.preventDefault();
   var o=null, label="";
   if(pres){ var sc=presScope(); o=storyOutlineOf(sc); label=sc==="sofar"?"the story so far copied":"story copied as an outline"; }
-  else if(lensOne){ o=netOutlineOf(); label="network copied as an outline"; }
+  else if(lensArr()){ o=netOutlineOf(); label=netCopyLabel(); }
   if(!o && !selFrame){
     var c=selectionCopy();
     if(c){ clip=c; o=c; label=c.ids.length+(c.ids.length===1?" node copied":" nodes copied"); }
@@ -5925,7 +5944,7 @@ function buildSvg(ids, frame, withFrames){
     s.body.join("")+title+texts+'</svg>';
 }
 function exportTargets(){
-  if(lensOne) return { ids:netIds(), frame:null, name:(N(lensOne).text||"network") };
+  if(lensArr()) return { ids:netIds(), frame:null, name:lensOne?(N(lensOne).text||"network"):"networks" };
   if(selFrame){
     var f=frameById(selFrame);
     if(f){ var b=frameBounds(f); if(b) return {ids:b.ids, frame:f, name:f.title}; }
@@ -5971,7 +5990,7 @@ function doExport(kind){
   }
   if(kind==="outline"){
     if(pres){ storyOutline(presScope()); return; }
-    if(lensOne){ var no=netOutlineOf(); copyText(no.txt,"network copied as an outline",no.html); return; }
+    if(lensArr()){ var no=netOutlineOf(); copyText(no.txt,netCopyLabel(),no.html); return; }
     copyText(currentOutline(), selFrame?"frame outline copied":"outline copied", currentOutlineHtml()); return;
   }
   if(kind==="markdown"){

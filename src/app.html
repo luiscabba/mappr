@@ -1475,8 +1475,11 @@ function lensSet(l,one,kind){
   if(focusId || (lensWasSolo && !lensOne)) lensMoved=true;
   if(lensArr()) focusId=null;       /* the far end is usually outside the focused branch */
   clearMarks(); hardRender();
-  /* keep your zoom: only move when the picture itself moved */
-  if(lensArr() || lensMoved) centerOn(selected);
+  /* keep your zoom: only move when the picture itself moved. Every network at
+     once is the one view whose point is seeing all of it, so that one fits
+     (1.7.1); a single network and the dimmed map centre on the selection. */
+  if(lens && !lensOne && lensArr()) fit();
+  else if(lensArr() || lensMoved) centerOn(selected);
   lensMoved=false;
 }
 /* The last tie went while a link view was open: undo, a delete, an untie.
@@ -1686,13 +1689,18 @@ function pushApart(boxes){
    it on purpose: most link edits go through hardRender, and a hard render
    that re-relaxed every network would put the keystroke-cost bug back.
    arrRuns counts real relaxations for the tests and the bench. */
-var arrMemo={}, arrRuns=0;
+var arrMemo={}, arrRuns=0, arrEditBox=null;
 function arrKey(mem){
   var set={}; mem.forEach(function(i){ set[i]=1; });
   var nm=netMap(), pr=[], bt=[];
   nm.pairs.forEach(function(p){ if(set[p[0]]&&set[p[1]]) pr.push(p[0]+">"+p[1]); });
   nm.bt.forEach(function(p){ if(set[p[0]]&&set[p[1]]) bt.push(p[0]+">"+p[1]); });
-  return mem.join(",")+"|"+mem.map(function(i){ return box[i].w+"x"+box[i].h; }).join(",")+
+  /* The node being typed in changes size with every letter. Its box goes into
+     the key as it was when typing began, so the network holds still under the
+     cursor and re-arranges once, when the edit is committed (1.7.1). */
+  if(!editing) arrEditBox=null;
+  else if(!arrEditBox || arrEditBox.id!==editing) arrEditBox={id:editing, k:box[editing]?box[editing].w+"x"+box[editing].h:""};
+  return mem.join(",")+"|"+mem.map(function(i){ return (arrEditBox && i===arrEditBox.id) ? arrEditBox.k : box[i].w+"x"+box[i].h; }).join(",")+
     "|"+pr.join(",")+"|"+bt.join(",")+"|"+Object.keys(lensFold).filter(function(i){ return set[i]; }).sort().join(",")+
     "|"+lensKind[0]+(lensOne||"");
 }
@@ -2233,11 +2241,19 @@ function storyOutline(scope){
 /* A network as an outline: the centre, what is tied to it, what is tied to
    those, following the same walk the network view uses, folds included. */
 function netOutlineOf(){
-  var r=lensReach(lensOne), kids={};
-  r.order.forEach(function(id){ var p=r.from[id]; if(p!=null) (kids[p]=kids[p]||[]).push(id); });
-  return outlineOf(lensOne, function(id){ return kids[id]||[]; });
+  function one(origin,r){
+    var kids={};
+    r.order.forEach(function(id){ var p=r.from[id]; if(p!=null) (kids[p]=kids[p]||[]).push(id); });
+    return outlineOf(origin, function(id){ return kids[id]||[]; });
+  }
+  if(lensOne) return one(lensOne, lensReach(lensOne));
+  /* every network at once: each from its first node, one after another (1.7.1) */
+  var nm=netMap(), txt=[], html=[];
+  nm.nets.forEach(function(c,i){ var o=one(c[0], nm.reach[i]); txt.push(o.txt); html.push(o.html); });
+  return { txt:txt.join("\n\n"), html:html.join("") };
 }
-function netIds(){ return lensReach(lensOne).order.filter(function(id){ return pos[id]; }); }
+function netCopyLabel(){ return lensOne ? "network copied as an outline" : lensNetworks().length+" networks copied as an outline"; }
+function netIds(){ return netVisible(); }
 /* The story as a picture: what has been told, or the whole story, with the
    frames around it and nothing it skips. The whole story is drawn by briefly
    switching the view to it, which happens inside one call, so nothing flickers. */
@@ -3853,6 +3869,7 @@ var HINTS={
   map:[["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Child","⌘","⏎"],["Retype","Space"],["Fold","⌘","E"],["Focus","⌘","/"],["Jump","⌘","K"],["Done","⌥","X"]],
   focus:[["Next branch","Tab"],["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Fold","⌘","E"],["Out","Esc"]],
   dim:[["Tie","⌘","+click"],["Next network","Tab"],["Open it","⌘","/"],["Clear links","⇧","+double-click"],["Fit","⌘","0"],["Map","⌘","1"]],
+  nets:[["Tie","⌘","+click"],["Next network","Tab"],["Open it","⌘","/"],["Fold beyond","⌘","E"],["Copy all","⌘","C"],["Fit","⌘","0"],["Map","⌘","1"]],
   flags:[["Next flag","Tab"],["Unflag","⌘","⇧","F"],["Focus","⌘","/"],["Fit","⌘","0"],["Map","⌘","1"]],
   net:[["Move","←↑→↓"],["Walk","Tab"],["Fold beyond","⌘","E"],["New linked node","⏎"],["Back","Esc"]],
   carry:[["Choose where","←↑→↓"],["Drop inside","⏎"],["Drop after","⇧","⏎"],["Put back","Esc"]],
@@ -3864,11 +3881,11 @@ var hintMin=false, hintSig="";
 /* ⌥⇧K walks the key bar through the other modes without changing mode. The
    bar is a reference, not a control: browsing never takes the keyboard, and
    any other key, or five seconds, puts the live mode back. */
-var HINT_MODES=["map","focus","dim","flags","net","arrange","sel","carry"];
+var HINT_MODES=["map","focus","nets","dim","flags","net","arrange","sel","carry"];
 var hintBrowse=null, hintBrowseT=null, hintDraws=0;
 function hintLive(){
   return pres ? (pres.arrange?"arrange":null) : carry ? "carry" :
-    (Object.keys(marked).length?"sel":(lensOne?"net":(lensFlags()?"flags":(lens?"dim":(focusId?"focus":"map")))));
+    (Object.keys(marked).length?"sel":(lensOne?"net":(lensFlags()?"flags":(lens?(lensArr()?"nets":"dim"):(focusId?"focus":"map")))));
 }
 function hintBrowseStep(){
   var live=hintLive();
@@ -3902,7 +3919,7 @@ function drawHint(){
   hintSig=sig;
   hintDraws++;
   if(!mode){ el.innerHTML=""; return; }
-  var names={map:"Map",focus:"Focus",dim:"Networks",flags:"Flags",net:"Network",arrange:"Story",sel:"Selection",carry:"Carrying"};
+  var names={map:"Map",focus:"Focus",nets:"Networks",dim:"Networks, dimmed",flags:"Flags",net:"Network",arrange:"Story",sel:"Selection",carry:"Carrying"};
   var h;
   if(hintMin){
     h='<span class="hm">'+names[mode]+'</span>'+(hintBrowse?'<span><b>Next mode</b> <kbd>\u2325</kbd><kbd>\u21e7</kbd><kbd>K</kbd></span>':'')+'<span><b>Keys</b> <kbd>?</kbd></span><button class="hx" data-hint="1" title="Show key hints">\u25b4</button>';
@@ -4173,6 +4190,8 @@ function beginEdit(id,selectAll){
   if(editing!==id) editOld={id:id,text:N(id).text||""};
   if(fresh===id) fresh=null;
   editing=id;
+  /* the size the arrange keys on for the whole edit: see arrKey */
+  arrEditBox={id:id, k:box[id]?box[id].w+"x"+box[id].h:""};
   var el=els[id];
   el.className="node"+(isVR(N(id))?" root":"")+" editing";
   el.contentEditable="true"; el.textContent=N(id).text||"\u200b";
@@ -5832,7 +5851,7 @@ document.addEventListener("copy",function(e){
   e.preventDefault();
   var o=null, label="";
   if(pres){ var sc=presScope(); o=storyOutlineOf(sc); label=sc==="sofar"?"the story so far copied":"story copied as an outline"; }
-  else if(lensOne){ o=netOutlineOf(); label="network copied as an outline"; }
+  else if(lensArr()){ o=netOutlineOf(); label=netCopyLabel(); }
   if(!o && !selFrame){
     var c=selectionCopy();
     if(c){ clip=c; o=c; label=c.ids.length+(c.ids.length===1?" node copied":" nodes copied"); }
@@ -5925,7 +5944,7 @@ function buildSvg(ids, frame, withFrames){
     s.body.join("")+title+texts+'</svg>';
 }
 function exportTargets(){
-  if(lensOne) return { ids:netIds(), frame:null, name:(N(lensOne).text||"network") };
+  if(lensArr()) return { ids:netIds(), frame:null, name:lensOne?(N(lensOne).text||"network"):"networks" };
   if(selFrame){
     var f=frameById(selFrame);
     if(f){ var b=frameBounds(f); if(b) return {ids:b.ids, frame:f, name:f.title}; }
@@ -5971,7 +5990,7 @@ function doExport(kind){
   }
   if(kind==="outline"){
     if(pres){ storyOutline(presScope()); return; }
-    if(lensOne){ var no=netOutlineOf(); copyText(no.txt,"network copied as an outline",no.html); return; }
+    if(lensArr()){ var no=netOutlineOf(); copyText(no.txt,netCopyLabel(),no.html); return; }
     copyText(currentOutline(), selFrame?"frame outline copied":"outline copied", currentOutlineHtml()); return;
   }
   if(kind==="markdown"){

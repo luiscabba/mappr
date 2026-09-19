@@ -1141,10 +1141,11 @@ group("networks: every network arranged (1.7.0)");
   ok("netView defaults to arranged in DEFAULTS", await M(() => __mf.netView() === "arranged"));
   const allShown = await M(() => __mf.shown);
   const posBefore = await M(() => JSON.stringify(__mf.pos()));
-  const cam0 = await M(() => JSON.stringify(__mf.cam()));
 
   // 1. only tied nodes and the centre keep a position
   await M((x) => __mf.select(x), E);
+  await page.waitForTimeout(400);   /* the camera glide after a select has to land before it is remembered */
+  const cam0 = await M(() => JSON.stringify(__mf.cam()));
   const rEntry = await runs();
   await press("Meta+2");
   ok("Cmd+2 opens Networks", (await lensIs()) === "dim");
@@ -1158,6 +1159,8 @@ group("networks: every network arranged (1.7.0)");
   ok("the arrange ran once per network on entry", (await runs()) - rEntry === 3, (await runs()) - rEntry);
   // 5. the selection moved into the first network, and Esc puts it back
   ok("an untied selection moves to the first node of the first network", (await M(() => __mf.selected)) === nets[0][0], await M(() => __mf.selected));
+  // 1.7.1: entering fits every network on screen
+  ok("entering fits every network on screen", await M(() => { const c = __mf.cam(), p = __mf.pos(), b = __mf.boxes(); return Object.keys(p).every((i) => { const x = p[i].cx * c.z + c.x, y = p[i].cy * c.z + c.y; return x > 0 && x < innerWidth && y > 0 && y < innerHeight; }); }));
 
   // 2. separate networks land clear of each other, by bounding box
   const boxes = [];
@@ -1200,6 +1203,25 @@ group("networks: every network arranged (1.7.0)");
   ok("Cmd+/ opens that network on its own", (await lensIs()) === "one" && (await M(() => __mf.shown)) === 4, await M(() => __mf.shown));
   await press("Meta+/");
   ok("and Cmd+/ again comes back to Networks", (await lensIs()) === "dim" && (await M(() => __mf.shown)) === 10, await M(() => __mf.shown));
+
+  // 1.7.1: the key bar has its own mode for the arranged view
+  ok("the key bar is in its Networks mode", (await M(() => __mf.hintMode())) === "nets", await M(() => __mf.hintMode()));
+  ok("and lists Fold beyond and Copy all", await M(() => { const t = document.getElementById("hint").textContent; return /Fold beyond/.test(t) && /Copy all/.test(t); }));
+  // 1.7.1: Cmd+C copies every network as one outline
+  const copied = await M(() => { const dt = new DataTransfer(); document.dispatchEvent(new ClipboardEvent("copy", { clipboardData: dt, bubbles: true, cancelable: true })); return { txt: dt.getData("text/plain"), html: dt.getData("text/html") }; });
+  ok("Cmd+C copies every network as an outline", /A/.test(copied.txt) && /G|F/.test(copied.txt) && /Y/.test(copied.txt) && copied.txt.split("\n\n").length === 3, copied.txt);
+  ok("with the rich flavour alongside", (copied.html.match(/<ul>/g) || []).length >= 3);
+  ok("and says how many", /3 networks copied/.test(await status()), await status());
+  // 1.7.1: typing in a node does not re-arrange its network until the edit commits
+  const rT = await runs();
+  await M((x) => __mf.select(x), B);
+  await press(" ");
+  await page.keyboard.type("more words here"); await page.waitForTimeout(250);
+  ok("typing runs no relaxation while the edit is open", (await runs()) === rT && (await M(() => __mf.editing)) === B, (await runs()) - rT);
+  await press("Escape");
+  ok("committing the edit re-arranges that network once", (await runs()) === rT + 1 && (await M(() => __mf.state.nodes[__mf.selected].text)) === "more words here", (await runs()) - rT);
+  ok("and only that one", (await M(() => __mf.lens)) === "dim");
+  await M((x) => { __mf.state.nodes[x].text = "B"; }, B); await M(() => __mf.select(__mf.selected));
 
   // 9. the copy reads Networks
   ok("the mode bar reads Networks", await M(() => document.querySelector('[data-mode="2"] .ml').textContent === "Networks" && /Networks/.test(document.querySelector('[data-mode="2"]').title)));
