@@ -33,6 +33,8 @@
     --sel:#6965db;
     --danger:#c0392b;
     --tie:#c2410c; --tie-soft:#fde3d3;
+    /* a holder is done with an item (1.8.0) */
+    --okline:#2f9e44; --okfill:#ebfbee;
     --pin:#e8590c;
     --link:#0c8599; --link-soft:#e3fafc;
     --sel-soft:#e0dfff;
@@ -61,6 +63,7 @@
     --sel:#a5a1ff;
     --danger:#ff8b7a;
     --tie:#ff9f6e; --tie-soft:#4a2a1c;
+    --okline:#69db7c; --okfill:#16301d;
     --pin:#ffa94d;
     --link:#66d9e8; --link-soft:#0b3b42;
     --sel-soft:#2a2856;
@@ -276,6 +279,37 @@
 
   /* collapse badges live in world space */
   #badges{position:absolute;left:0;top:0;width:0;height:0}
+  /* Holder chips (1.8.0) live in world space too, beside the badges rather
+     than in the paint layer: they carry text and they take clicks, and the
+     paint layer is SVG that an export walks. One row per item, under its box. */
+  #chips{position:absolute;left:0;top:0;width:0;height:0}
+  .chiprow{position:absolute;left:0;top:0;display:flex;gap:3px;align-items:center}
+  .chip{
+    white-space:nowrap;height:18px;padding:0 7px;
+    display:flex;align-items:center;gap:4px;
+    font-family:var(--font-ui);font-size:11px;line-height:1;
+    color:var(--muted);background:var(--panel);
+    border:1.5px solid var(--panel-line);border-radius:999px;
+    cursor:pointer;user-select:none;opacity:.62;
+  }
+  .chip:hover{color:var(--ink);border-color:var(--sel);opacity:1}
+  .chip.on{color:var(--okline);border-color:var(--okline);background:var(--okfill);opacity:1}
+  /* the lanes grid: one cell per holder per item, the same click as a chip */
+  .cell{
+    position:absolute;left:0;top:0;width:26px;height:26px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-ui);font-size:12px;line-height:1;
+    color:var(--muted);background:var(--panel);
+    border:1.5px solid var(--panel-line);border-radius:7px;
+    cursor:pointer;user-select:none;opacity:.7;
+  }
+  .cell:hover{border-color:var(--sel);opacity:1}
+  .cell.on{color:var(--okline);border-color:var(--okline);background:var(--okfill);opacity:1}
+  .lanehead{
+    position:absolute;left:0;top:0;white-space:nowrap;
+    font-family:var(--font-ui);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--muted);pointer-events:none;
+  }
   /* The empty-map guide. Anchored to the centre node inside #world, so it sits
      with the node at any zoom and pans with it, and it is DOM rather than SVG so
      it can never reach an export. */
@@ -662,6 +696,7 @@
     </svg>
     <div id="frames"></div>
     <div id="badges"></div>
+    <div id="chips"></div>
     <div id="nodes"></div>
     <div id="startHint" aria-hidden="true">
       <div class="sh" data-sh="top">
@@ -684,7 +719,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v1.7.1">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
+  <span class="brand" id="brand" title="Mappr v1.8.0">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -771,7 +806,7 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.7.1</span></h2>
+    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.8.0</span></h2>
     <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
 
     <div id="helpBody">
@@ -838,6 +873,7 @@
       <tr><td><kbd>⌘</kbd> + click</td><td>Tie the selected node to the one you click, anywhere on the map. A faint arc joins them. The same pair again unties. A link says these two relate; it does not change who owns whom, so nothing moves.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd> + click</td><td><b>Tie two branches.</b> Ties the selected node to the one you click as a <em>branch tie</em>: one heavier arc with a bracket at each end, and in Networks everything under either node counts as the same network, so a whole branch relates to a whole branch without a tie per node. The same again removes it. From the keyboard, select the two nodes and press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>T</kbd>.</td></tr>
       <tr><td>The <b>∿</b> badge</td><td>How many links land on this node. Click it to walk to the other end, which is usually off screen; clicking again cycles through the rest. A folded branch carries the badge for everything tied up inside it, and walking there opens it.</td></tr>
+      <tr><td><kbd>⌥</kbd><kbd>⇧</kbd><kbd>H</kbd></td><td><b>Hand a branch to another node.</b> Select two nodes — the <em>holder</em> first, then the node whose branch it takes on — and press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>H</kbd>, or use the right-click row. There is still only one of each item, so renaming one renames it for everybody, and several nodes can hold the same branch. In <b>Networks</b> each item carries a chip for every holder, and <b>clicking a chip</b> marks that holder done with that item; there is no key for it. The Style panel’s <b>A held branch</b> row has the same thing as a grid. On the map the tie is an ordinary tie with a small mark at the end that holds it. Only a node with children can be handed over, and a node cannot end up holding itself.</td></tr>
       <tr><td>A hollow end</td><td>The node you actually tied is folded away inside the one the arc reaches, or lives in the map a link stands for. Better than a line running into nothing. In a focused branch, a tie that leaves the branch is not drawn, but the ∿ badge counts it as <em>outside</em> and a click on it goes there.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>1</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>1</kbd></td><td><b>Normal view.</b> The number keys are views, and 1 is the plain map. From any other view it puts you back where you were, focus and all. The <kbd>⌥</kbd> versions are there because a browser tab may keep <kbd>⌘</kbd> plus a number for itself.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>2</kbd> / <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Networks.</b> Every network laid out by its ties, each clear of the others, and nothing else: a node with no tie on it leaves the view, so what is on screen is only what relates to something. The centre stays as a fixed point. <kbd>⌘</kbd><kbd>E</kbd> folds what is only reached through a node. Pressed while focused on a tied branch, it goes straight to that node's network. Press it again, or <kbd>Esc</kbd>, to turn it off: you land back where you were, focus and all. The Style panel's <b>Networks</b> row has the older view, <b>Dimmed</b>: the whole map stays put and everything no tie touches drops to a ghost.</td></tr>
@@ -893,9 +929,9 @@
      panel cannot drift from the record of what actually shipped. -->
 <div id="notes">
   <div id="notesCard">
-    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.7.1</span></h2>
+    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v1.8.0</span></h2>
     <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
-    <div id="notesBody"><h3 class="rel">1.7.1 <span>2026-09-19</span></h3><h4>Changed</h4><ul><li><b>Networks opens on all of them.</b> Pressing <code>⌘2</code> now fits every network on screen rather than centring on the one you were nearest, since seeing them together is the point of the view. <code>Esc</code> still puts your camera back exactly.</li><li><b>The key bar knows the view.</b> In Networks the bar lists the keys that work there, Fold beyond and Copy all among them, and the Dimmed view keeps its own row.</li><li><b>Typing does not shake the network.</b> A node you are retyping inside Networks holds its place while you type, and the network settles once when you finish, rather than re-arranging on every letter.</li><li><b><code>⌘C</code> copies every network.</b> In Networks, copy gives you all the networks as one outline, each from its first node, in both plain and rich text, the way a single network already did.</li></ul><h3 class="rel">1.7.0 <span>2026-09-19</span></h3><h4>Changed</h4><ul><li><b>Networks, all of them at once.</b> Connections is now called Networks, and pressing ⌘2 lays every network out rather than only the one you step into. Nodes with no tie on them leave the view instead of sitting dimmed in the background, so what is left on screen is only what relates to something else, each network clear of the others and the centre held still as a fixed point. Tab still walks them, ⌘/ still opens one on its own, ⌘E folds what is only reached through a node, and ⌘0 fits them all. If you preferred the old view, the Style panel has it: set Networks to Dimmed and ⌘2 goes back to the whole map with the untied parts faded in place.</li><li><b>A network holds still while you work in it.</b> The arrangement of each network is worked out once and remembered for as long as the view is open, so a keystroke, a selection or a fold no longer re-runs the whole layout, and a fold or an edit inside one network never moves the others. One network on its own gets the same treatment.</li><li><b>The last tie has somewhere to go.</b> Untying or undoing the last tie while Networks is open drops you back on the map, with a word in the status line, rather than leaving an empty canvas.</li></ul><h3 class="rel">1.6.1 <span>2026-09-19</span></h3><h4>Changed</h4><ul><li><b>Set up the talk from inside the talk.</b> T mid-talk, or the Set up button in the bar, opens a panel with the five Presenting rows, and a change takes effect on the step you are on, camera included. Esc closes it before it ends the talk, and it never takes the keyboard, so the arrows still step.</li><li><b>The Presenting rows are worded.</b> Each option is its word, sized to fit, with the picked option&#x27;s meaning written under the row, in the talk panel and in the Style panel alike.</li></ul><h3 class="rel">1.6.0 <span>2026-09-19</span></h3><h4>Added</h4><ul><li><b>A talk you can set up the way you talk.</b> The Style panel has a Presenting section. The whole map can be up from the first second, dimmed, with the path to what you are saying lit, so the room always sees where this bit sits (On screen: All, with Behind you: Fade). What is behind you can stay as it was, sit back, or go away again; &quot;go away again&quot; is not offered while the whole map is on screen, because there is nothing for it to hide. A step can reveal one node, a whole row or a whole branch, and a row at a time is also the answer for tied nodes that sit at the same level, since they arrive together because their row does. ⇧→ is always one step coarser than the setting: a row when a step is a node, a branch when a step is a row. The camera can follow you, hold the whole map, or hold the branch you are in. With nothing set, a talk is exactly what it was.</li><li><b>Present from here.</b> ⌘P starts a talk from whatever you have selected rather than from the centre, so the rest of the map is never told, and leaving and coming back resumes that talk and not the one from the centre. ⌥⇧P does the same where the browser keeps ⌘P for print, and the right-click menu has it too. On the centre it is ⌘3.</li><li><b>Cards.</b> A talk can drop the map altogether and read as cards, one node to a screen with its paragraphs as the body and its other children as chips, which is what prose was for. A paragraph is read on its parent&#x27;s card, lit, and the ones told before it sit above it. The map is still there underneath, so Esc puts you back exactly where you were; O and ⇧O have nothing to show and say so.</li></ul><h3 class="rel">1.5.1 <span>2026-09-18</span></h3><h4>Fixed</h4><ul><li><b>A copy made from something already rendered keeps its headings.</b> Copy a chat answer or a page and the plain text arrives with the bold already gone, so 1.5.0 had nothing to read the shape from and everything landed in one column. The bold is still there in the clipboard&#x27;s rich-text flavour, and Mappr now reads that flavour whenever it carries headings, bold or code, not only when it carries a list. A bold paragraph is a heading, the paragraphs after it are its children, and a bold label still opens a definition. The rule that keeps a paste honest is unchanged and now carries the whole weight: a row with no bold anywhere in it is left exactly as it was pasted, so an indented list keeps every level it came with and a branch copied out of a map and pasted back comes home unchanged.</li><li><b>A code block is one node, and its fences are not nodes at all.</b> A fenced block used to arrive as a stack of lines wrapped in two nodes made of backticks. It now comes in as a single node with its lines intact, which ⌥S splits again if that is what you wanted, and a copy that put a bullet in front of every line, as a chat copy does, has that bullet taken off the code too. An unclosed fence still ends, and a code span inside a line is left alone.</li></ul><h3 class="rel">1.5.0 <span>2026-09-18</span></h3><h4>Added</h4><ul><li><b>Markdown arrives as a shape, not as asterisks.</b> Paste a list out of a chat or a document and the markdown written inside the lines comes off: bold, italic, code, strikethrough and links all arrive as their words. When the paste has no indentation left in it, which is what a chat answer and most stripped copies give you, the markdown says what the shape was. A line that is bold from end to end becomes a heading, a line that ends in a colon with nothing after it introduces what follows, and everything after them hangs underneath. A list that used to land as forty siblings in one column now lands as the two or three levels it was written as.</li><li><b>A term and its definition come in as two nodes.</b> A line like <b>PTP (Promise to Pay):</b> the borrower commits to an amount and a date becomes the term as a node with the sentence as a paragraph under it, so a definition list becomes a map rather than a column of long boxes. The same two readings work on a rich-text copy, where the bold arrives as real bold rather than asterisks.</li><li><b>Nothing is invented from a paste that already has a shape.</b> A paste that carries any indentation of its own is taken exactly as it is, and a paste with no bold anywhere in it is left flat, so a branch copied out of a map and pasted back always comes home unchanged.</li></ul><h4>Fixed</h4><ul><li><b>A paragraph&#x27;s children are joined to something you can see.</b> A paragraph has no box, so the lines to its children used to start at an edge nobody had drawn and read as lines joined to nothing. A paragraph with children on screen now carries a lighter rule down the side they leave from, and the lines meet it.</li><li><b>A row&#x27;s numbering stays its own.</b> A bulleted line and a bare line written at the same depth are two rows of the tree, but the paste was counting them as one when it decided whether a row was numbered, so one row could take the other&#x27;s numbering.</li></ul></div>
+    <div id="notesBody"><h3 class="rel">1.8.0 <span>2026-09-19</span></h3><h4>Added</h4><ul><li><b>Hand a branch to someone.</b> Select two nodes, the one that takes the work first and the branch to hand over second, and press <code>⌥⇧H</code>. That node now holds the whole branch as its own, and so does anyone else you hand it to. Nothing is copied: there is still only one of each item, so renaming one renames it for everybody. The right-click menu has the same thing worded both ways, and <code>⌥⇧H</code> again takes the branch back.</li><li><b>Networks shows who holds what, and how far each of them has got.</b> In <code>⌘2</code> the held branch is drawn once, as a tree, and each item carries a small chip for every holder. Click a holder&#x27;s chip to mark them done with that item, which is how you see at a glance who still owes you the Abstract. It is a click and nothing else: there is no key for it.</li><li><b>The same thing as a grid.</b> The Style panel&#x27;s new <b>A held branch</b> row has <b>Lanes</b>: a row per item, a column per holder, and a cell you click for each pair, for when you would rather compare holders than read the branch. Any other network in the view is still laid out as a cluster beside it.</li><li><b>The map is unchanged.</b> <code>⌘1</code> draws a holding tie as an ordinary tie with a small mark at the end that holds it, so you can see which way it points without opening Networks. No chips anywhere on the map.</li></ul><h4>Changed</h4><ul><li>A holding tie and a branch tie are the same tie worn two ways, so making one on a pair that has the other swaps it over and says so in the status line.</li><li>Only a node with children can be handed over, and a node can never end up holding itself: both are refused with a nudge and a word rather than quietly making a tie that means nothing.</li><li>Deleting, merging or moving an item out of a held branch clears it from every holder&#x27;s list in the same step, so one <code>⌘Z</code> puts the item and its ticks back together.</li><li>Your file carries all of it. Breaking a branch out into its own map takes the holders and their ticks with the tie, a copied branch pastes with them, and a map saved before this release opens with no holding ties and nothing else disturbed.</li></ul><h3 class="rel">1.7.1 <span>2026-09-19</span></h3><h4>Changed</h4><ul><li><b>Networks opens on all of them.</b> Pressing <code>⌘2</code> now fits every network on screen rather than centring on the one you were nearest, since seeing them together is the point of the view. <code>Esc</code> still puts your camera back exactly.</li><li><b>The key bar knows the view.</b> In Networks the bar lists the keys that work there, Fold beyond and Copy all among them, and the Dimmed view keeps its own row.</li><li><b>Typing does not shake the network.</b> A node you are retyping inside Networks holds its place while you type, and the network settles once when you finish, rather than re-arranging on every letter.</li><li><b><code>⌘C</code> copies every network.</b> In Networks, copy gives you all the networks as one outline, each from its first node, in both plain and rich text, the way a single network already did.</li></ul><h3 class="rel">1.7.0 <span>2026-09-19</span></h3><h4>Changed</h4><ul><li><b>Networks, all of them at once.</b> Connections is now called Networks, and pressing ⌘2 lays every network out rather than only the one you step into. Nodes with no tie on them leave the view instead of sitting dimmed in the background, so what is left on screen is only what relates to something else, each network clear of the others and the centre held still as a fixed point. Tab still walks them, ⌘/ still opens one on its own, ⌘E folds what is only reached through a node, and ⌘0 fits them all. If you preferred the old view, the Style panel has it: set Networks to Dimmed and ⌘2 goes back to the whole map with the untied parts faded in place.</li><li><b>A network holds still while you work in it.</b> The arrangement of each network is worked out once and remembered for as long as the view is open, so a keystroke, a selection or a fold no longer re-runs the whole layout, and a fold or an edit inside one network never moves the others. One network on its own gets the same treatment.</li><li><b>The last tie has somewhere to go.</b> Untying or undoing the last tie while Networks is open drops you back on the map, with a word in the status line, rather than leaving an empty canvas.</li></ul><h3 class="rel">1.6.1 <span>2026-09-19</span></h3><h4>Changed</h4><ul><li><b>Set up the talk from inside the talk.</b> T mid-talk, or the Set up button in the bar, opens a panel with the five Presenting rows, and a change takes effect on the step you are on, camera included. Esc closes it before it ends the talk, and it never takes the keyboard, so the arrows still step.</li><li><b>The Presenting rows are worded.</b> Each option is its word, sized to fit, with the picked option&#x27;s meaning written under the row, in the talk panel and in the Style panel alike.</li></ul><h3 class="rel">1.6.0 <span>2026-09-19</span></h3><h4>Added</h4><ul><li><b>A talk you can set up the way you talk.</b> The Style panel has a Presenting section. The whole map can be up from the first second, dimmed, with the path to what you are saying lit, so the room always sees where this bit sits (On screen: All, with Behind you: Fade). What is behind you can stay as it was, sit back, or go away again; &quot;go away again&quot; is not offered while the whole map is on screen, because there is nothing for it to hide. A step can reveal one node, a whole row or a whole branch, and a row at a time is also the answer for tied nodes that sit at the same level, since they arrive together because their row does. ⇧→ is always one step coarser than the setting: a row when a step is a node, a branch when a step is a row. The camera can follow you, hold the whole map, or hold the branch you are in. With nothing set, a talk is exactly what it was.</li><li><b>Present from here.</b> ⌘P starts a talk from whatever you have selected rather than from the centre, so the rest of the map is never told, and leaving and coming back resumes that talk and not the one from the centre. ⌥⇧P does the same where the browser keeps ⌘P for print, and the right-click menu has it too. On the centre it is ⌘3.</li><li><b>Cards.</b> A talk can drop the map altogether and read as cards, one node to a screen with its paragraphs as the body and its other children as chips, which is what prose was for. A paragraph is read on its parent&#x27;s card, lit, and the ones told before it sit above it. The map is still there underneath, so Esc puts you back exactly where you were; O and ⇧O have nothing to show and say so.</li></ul><h3 class="rel">1.5.1 <span>2026-09-18</span></h3><h4>Fixed</h4><ul><li><b>A copy made from something already rendered keeps its headings.</b> Copy a chat answer or a page and the plain text arrives with the bold already gone, so 1.5.0 had nothing to read the shape from and everything landed in one column. The bold is still there in the clipboard&#x27;s rich-text flavour, and Mappr now reads that flavour whenever it carries headings, bold or code, not only when it carries a list. A bold paragraph is a heading, the paragraphs after it are its children, and a bold label still opens a definition. The rule that keeps a paste honest is unchanged and now carries the whole weight: a row with no bold anywhere in it is left exactly as it was pasted, so an indented list keeps every level it came with and a branch copied out of a map and pasted back comes home unchanged.</li><li><b>A code block is one node, and its fences are not nodes at all.</b> A fenced block used to arrive as a stack of lines wrapped in two nodes made of backticks. It now comes in as a single node with its lines intact, which ⌥S splits again if that is what you wanted, and a copy that put a bullet in front of every line, as a chat copy does, has that bullet taken off the code too. An unclosed fence still ends, and a code span inside a line is left alone.</li></ul></div>
     <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
 </div>
@@ -909,7 +945,7 @@
 /* ============================================================
    SETTINGS
    ============================================================ */
-var VERSION="1.7.1";
+var VERSION="1.8.0";
 var DEFAULTS = {
   colorMode:"depth", stroke:"ink", fill:"paper", fillStyle:"solid", flagStyle:"pennant",
   numStyle:"gutter", numScheme:"docs", prose:"rule",
@@ -922,6 +958,9 @@ var DEFAULTS = {
   spread:"manual",
   /* ⌘2: every network arranged (1.7.0), or the whole map dimmed in place, which is what it did before */
   netView:"arranged",
+  /* how a held subtree reads in Networks (1.8.0): a chip per holder on each
+     item, or the same thing as a grid */
+  netGroup:"chips",
   /* a talk: the defaults are exactly the 1.5.1 talk */
   presStyle:"map", presReach:"told", presBack:"fade", presStep:"node", presCam:"follow"
 };
@@ -993,6 +1032,26 @@ function pathTo(id){ var o=[],n=N(id); while(n){ o.unshift(n.id); n=n.parent?N(n
    than in it: layout never sees a link, and a link can never make the picture
    move. Order does not matter, so a pair is stored once and matched either way
    round. */
+/* A link is rebuilt from scratch in six places (merge, delete, break out,
+   bring in, the clipboard, the branch export), and every field added to a link
+   since 0.36 has had to be threaded through all of them by hand. One copier,
+   so a new field is carried everywhere by adding it here. `over` replaces the
+   ends; `done` is remapped through `dmap` when the item ids moved. */
+function linkCopy(l,over,dmap){
+  var o={ a:(over&&over.a!==undefined)?over.a:l.a, b:(over&&over.b!==undefined)?over.b:l.b };
+  if(l.branch) o.branch=true;
+  if(l.hold) o.hold=l.hold;
+  if(l.va) o.va=l.va;
+  if(l.vb) o.vb=l.vb;
+  if(l.done){
+    var d={}, any=false;
+    Object.keys(l.done).forEach(function(i){
+      var k=dmap?dmap(i):i; if(k==null) return; d[k]=1; any=true;
+    });
+    if(any) o.done=d;
+  }
+  return o;
+}
 function linkIndex(a,b){
   var L=state.links||[];
   for(var i=0;i<L.length;i++){
@@ -1021,7 +1080,8 @@ function branchTieReport(r,at){
   if(!r){ flash(at); return; }
   if(r==="same"){ flash(at); flashSave("one of these is inside the other"); return; }
   clearMarks(); hardRender(); saveSoon();
-  flashSave(r==="tied" ? "branches tied \u00b7 \u23182 shows them as one network" : "branch tie removed");
+  flashSave(r==="swapped" ? "the holding tie is now a branch tie"
+    : (r==="tied" ? "branches tied \u00b7 \u23182 shows them as one network" : "branch tie removed"));
 }
 function branchTieKey(){
   var ids=Object.keys(marked).filter(function(i){ return N(i); });
@@ -1053,21 +1113,131 @@ function toggleBranchTie(a,b){
   var i=linkIndex(a,b);
   snap();
   if(i>=0 && state.links[i].branch){ state.links.splice(i,1); return "cut"; }
-  if(i>=0){ state.links[i].branch=true; return "tied"; }
+  /* the two are exclusive: a branch tie over a holding tie takes the hold and
+     its ticks with it, the way toggleHoldTie takes the branch (1.8.0) */
+  if(i>=0){ var was=!!state.links[i].hold; delete state.links[i].hold; delete state.links[i].done; state.links[i].branch=true; return was?"swapped":"tied"; }
   state.links.push({a:a,b:b,branch:true});
   return "tied";
 }
+/* ---------- the holding tie (1.8.0) ----------
+   A tie that hands a whole branch to another node, live: the holder does not
+   get a copy, it gets the same items, so renaming one renames it everywhere.
+   This is the FIRST directed link. The pair is still stored once and
+   linkIndex still matches it either way round; what is directed is what the
+   two ends mean, and that is read through holdOf rather than off a and b, so
+   no site that matches a pair had to change. Nothing here reaches the map
+   view: ⌘1 draws a holding tie as a tie with a mark at the holder end.
+
+   `hold` names the end whose subtree is conferred, so {a,b,hold:"b"} hands
+   b's branch to a. `done` is a set of item ids on the same link, which makes
+   a link the first thing in the model carrying user state: export, undo and
+   every sweep have to carry it, which linkCopy above is for. */
+function holdOf(l){
+  if(!l||!l.hold) return null;
+  return l.hold==="a" ? {holder:l.b, source:l.a, link:l} : {holder:l.a, source:l.b, link:l};
+}
+/* every holding tie whose ends are both still here, in link order */
+function holdList(){
+  var out=[];
+  (state.links||[]).forEach(function(l){ if(l.hold && N(l.a) && N(l.b)) out.push(holdOf(l)); });
+  return out;
+}
+/* The items a source confers: its subtree below it, as folded on screen, so a
+   folded branch hands over what you can see of it and nothing else. */
+function holdItems(sourceId){
+  var out=[];
+  (function w(id){ kids(N(id)).forEach(function(c){ out.push(c); w(c); }); })(sourceId);
+  return out;
+}
+/* Why a pair cannot hold: nothing to hand over, a leaf that stands for another
+   map, or a loop that would have the holder inherit itself. */
+function holdRefusal(holder,source){
+  if(!N(holder)||!N(source)||holder===source) return "no";
+  if(N(holder).link||N(source).link) return "link";
+  if(!N(source).children.length) return "leaf";
+  if(pathTo(holder).indexOf(source)>=0) return "cycle";
+  if(pathTo(source).indexOf(holder)>=0) return "cycle";
+  return null;
+}
+/* Directed, so the two selected nodes are not interchangeable: the FIRST is
+   the holder, the second the source whose branch it takes on. A pair already
+   carrying a branch tie swaps one for the other, and says so. */
+function toggleHoldTie(holder,source){
+  var bad=holdRefusal(holder,source);
+  if(bad) return bad;
+  state.links=state.links||[];
+  var i=linkIndex(holder,source);
+  snap();
+  if(i>=0 && state.links[i].hold){ state.links.splice(i,1); return "cut"; }
+  if(i>=0){
+    var l=state.links[i], swapped=!!l.branch;
+    delete l.branch;
+    l.hold = (l.a===source) ? "a" : "b";
+    return swapped ? "swapped" : "tied";
+  }
+  state.links.push({a:holder, b:source, hold:"b"});
+  return "tied";
+}
+function holdReport(r,holder,source){
+  if(!r||r==="no"){ flash(source); return; }
+  if(r==="leaf"){ flash(source); flashSave("nothing to hand over \u00b7 \u201c"+trunc(N(source).text)+"\u201d has no children"); return; }
+  if(r==="link"){ flash(source); flashSave("a link stands in for a whole map \u00b7 its children live there"); return; }
+  if(r==="cycle"){ flash(source); flashSave("one of these is inside the other \u00b7 the holder would inherit itself"); return; }
+  clearMarks(); hardRender(); saveSoon();
+  flashSave(r==="cut" ? "the branch is its own again"
+    : (r==="swapped" ? "the branch tie is now a holding tie \u00b7 \u23182 shows who holds what"
+                     : "\u201c"+trunc(N(holder).text)+"\u201d holds \u201c"+trunc(N(source).text)+"\u201d \u00b7 \u23182 shows the items"));
+}
+/* ⌥⇧H, beside ⌥⇧T. Order matters here and nowhere else in the tie keys, so
+   the status line names which way round it went. */
+function holdTieKey(){
+  var ids=Object.keys(marked).filter(function(i){ return N(i); });
+  if(ids.length!==2){ flash(selected); flashSave("select two nodes: the holder first, then the branch to hand it (\u21e7+click or \u21e7+arrows)"); return; }
+  holdReport(toggleHoldTie(ids[0],ids[1]), ids[0], ids[1]);
+}
+/* A holding tie is only true while its source still has children and the two
+   ends are still on separate lines, and a `done` only means something while
+   the item it names is still inside the source's branch. Deleting an ITEM is
+   the case the ordinary link sweep cannot see: that sweep filters by the two
+   endpoints, and an item is neither. Run from render, the way storySweep is,
+   so every path that removes or reparents a node is covered by one rule and
+   the repair lands inside the same undo step as the edit that caused it. */
+function sweepHolds(){
+  var changed=0;
+  if(!(state.links||[]).some(function(l){ return l.hold; })) return 0;
+  (state.links||[]).forEach(function(l){
+    if(!l.hold) return;
+    var h=holdOf(l);
+    if(!N(h.holder)||!N(h.source)) return;          /* the link sweep has this one */
+    if(!N(h.source).children.length ||
+       pathTo(h.holder).indexOf(h.source)>=0 || pathTo(h.source).indexOf(h.holder)>=0){
+      delete l.hold; delete l.done; changed++; return;
+    }
+    if(!l.done) return;
+    var inside={}; subtree(h.source).forEach(function(i){ inside[i]=1; });
+    var left=0;
+    Object.keys(l.done).forEach(function(i){
+      if(N(i) && inside[i] && i!==h.source) left++;
+      else { delete l.done[i]; changed++; }
+    });
+    if(!left) delete l.done;
+  });
+  return changed;
+}
 /* Every pair the Networks view should treat as joined, at the nodes that
-   currently stand for each end: plain ties as they are, and for a branch tie
-   also each end's visible descendants joined to that end. */
+   currently stand for each end: plain ties as they are, for a branch tie also
+   each end's visible descendants joined to that end, and for a holding tie the
+   same but at the source end only, since that is the branch being handed over
+   and the holder is one node. */
 function linkPairs(){
   var out=[];
   (state.links||[]).forEach(function(l){
     var a=visibleEnd(l.a), b=visibleEnd(l.b);
     if(!a||!b||a.id===b.id) return;
     out.push([a.id,b.id]);
-    if(!l.branch) return;
-    [a.id,b.id].forEach(function(top){
+    var tops = l.branch ? [a.id,b.id] : (l.hold ? [l.hold==="a"?a.id:b.id] : null);
+    if(!tops) return;
+    tops.forEach(function(top){
       (function w(id){
         kids(N(id)).forEach(function(c){ if(visible(c)){ out.push([top,c]); w(c); } });
       })(top);
@@ -1078,8 +1248,10 @@ function linkPairs(){
 function branchTieSet(){
   var set={};
   (state.links||[]).forEach(function(l){
-    if(!l.branch) return;
-    [l.a,l.b].forEach(function(t){ if(N(t)) subtree(t).forEach(function(x){ set[x]=1; }); });
+    if(l.branch){ [l.a,l.b].forEach(function(t){ if(N(t)) subtree(t).forEach(function(x){ set[x]=1; }); }); return; }
+    /* a held branch is drawn as a tree for the same reason: it is a branch,
+       and its items are what the chips hang off */
+    if(l.hold && !lanesOn()){ var h=holdOf(l); if(N(h.source)) subtree(h.source).forEach(function(x){ set[x]=1; }); }
   });
   return set;
 }
@@ -1333,9 +1505,17 @@ function netMap(){
   });
   var reach=nets.map(function(c){ return lensReach(c[0],adj); });
   /* the visible ends of every branch tie, for the arrange's rigid blocks */
-  var bt=[];
-  L.forEach(function(l){ if(l.branch){ var a=visibleEnd(l.a), b=visibleEnd(l.b); if(a&&b) bt.push([a.id,b.id]); } });
-  netIdx={ gen:renderGen, links:L, len:L.length, focus:focusId, sig:sig, pairs:pairs, adj:adj, nets:nets, netOf:netOf, origin:origin, reach:reach, bt:bt };
+  var bt=[], ht=[];
+  L.forEach(function(l){
+    /* resolving an end walks the tree, so only the ties that need it pay */
+    if(!l.branch && !l.hold) return;
+    var a=visibleEnd(l.a), b=visibleEnd(l.b);
+    if(!a||!b) return;
+    if(l.branch) bt.push([a.id,b.id]);
+    /* a holding tie: the source is a rigid block, the holder is not */
+    else ht.push({ holder:(l.hold==="a"?b.id:a.id), source:(l.hold==="a"?a.id:b.id), link:l });
+  });
+  netIdx={ gen:renderGen, links:L, len:L.length, focus:focusId, sig:sig, pairs:pairs, adj:adj, nets:nets, netOf:netOf, origin:origin, reach:reach, bt:bt, ht:ht };
   return netIdx;
 }
 /* The node a fold counts outward from: the focused node in a solo view, the
@@ -1569,6 +1749,124 @@ function lensFromFocus(){
    never a member; it holds still and the boxes are pushed clear of it at the
    end. Returns true when the relaxation actually ran, which is what the memo
    below and the bench count. */
+/* ---------- holder chips (1.8.0) ----------
+   Who holds each item, worked out ONCE per render from the ties rather than
+   per item by walking every tie, and read by the painter, the layout and the
+   click handler alike. A tick changes an entry's lit state and nothing else:
+   no box, no member list, so nothing here may reach arrKey.
+
+   The chip row is real DOM under the item's box, which the arrange cannot see:
+   blocks are measured from box[i] alone, so without a band for the row two
+   networks would be pushed clear of each other while their chips overlapped
+   the neighbour above. chipSize() is that band. box itself is untouched,
+   because the painter's cache keys are built from it. */
+var CHIP_H=18, CHIP_GAP=6, CHIP_PAD=22, CHIP_CH=6.1, CHIP_CUT=14;
+function chipLabel(id){ var t=hereFirst(id); return t.length>CHIP_CUT ? t.slice(0,CHIP_CUT-1)+"\u2026" : t; }
+function netGroupIs(k){ return !pres && lensArr() && lensLinks() && CFG.netGroup===k; }
+function chipsOn(){ return netGroupIs("chips"); }
+function lanesOn(){ return netGroupIs("lanes"); }
+var chipIdx=null;
+function chipMap(){
+  if(chipIdx && chipIdx.gen===renderGen) return chipIdx;
+  var byItem={}, srcs=[], on=chipsOn()||lanesOn();
+  /* the tree walk below is for ordering the holders, and it is the whole cost
+     of this function: a map with no holding tie on it must not pay for it, and
+     most maps have none */
+  if(on && !(state.links||[]).some(function(l){ return l.hold; })) on=false;
+  if(on){
+    var rank={}, k=0;
+    (function w(id){ rank[id]=k++; kids(N(id)).forEach(w); })(VR());
+    var hl=holdList().filter(function(h){ return rank[h.holder]!=null; });
+    hl.sort(function(x,y){ return rank[x.holder]-rank[y.holder]; });
+    hl.forEach(function(h){
+      if(srcs.indexOf(h.source)<0) srcs.push(h.source);
+      holdItems(h.source).forEach(function(i){
+        (byItem[i]=byItem[i]||[]).push(h);
+      });
+    });
+  }
+  chipIdx={ gen:renderGen, byItem:byItem, srcs:srcs, on:on };
+  return chipIdx;
+}
+function chipsFor(id){ return chipMap().byItem[id]||null; }
+function holdDone(h,itemId){ return !!(h.link.done && h.link.done[itemId]); }
+/* The room a chip row needs, or null. Width is estimated from the labels
+   rather than measured: it is only used to keep networks apart, and an
+   estimate a few pixels wide is cheaper than a second measuring pass. */
+function chipSize(id){
+  if(!chipsOn()) return null;
+  var row=chipsFor(id); if(!row||!row.length) return null;
+  var w=0;
+  row.forEach(function(h){ w+=CHIP_PAD+chipLabel(h.holder).length*CHIP_CH+(holdDone(h,id)?10:0)+3; });
+  return { w:w, h:CHIP_H+CHIP_GAP };
+}
+function chipBand(id){ var z=chipSize(id); return z?z.h:0; }
+/* ---------- lanes (1.8.0) ----------
+   The same thing as a grid, for comparing holders: the held items down the
+   page, a column per holder, a cell per pair. It is a plain deterministic
+   placement rather than a relaxation, so it never counts as an arrange run,
+   and it hands its own bounds back to arrangeNetworks because a grid is wider
+   and taller than the boxes it is built from. */
+var laneCells=[], laneBox={};
+function laneSource(mem){
+  if(!lanesOn()) return null;
+  var set={}; mem.forEach(function(i){ set[i]=1; });
+  var hs=netMap().ht.filter(function(h){ return set[h.holder]&&set[h.source]; });
+  if(!hs.length) return null;
+  var src=hs[0].source;
+  return { source:src, holders:hs.filter(function(h){ return h.source===src; }) };
+}
+function laneLayout(mem,slot){
+  var L=laneSource(mem); if(!L) return false;
+  var set={}; mem.forEach(function(i){ set[i]=1; });
+  var items=holdItems(L.source).filter(function(i){ return set[i]&&box[i]; });
+  if(!items.length) return false;
+  var used={}; used[L.source]=1; items.forEach(function(i){ used[i]=1; });
+  L.holders.forEach(function(h){ used[h.holder]=1; });
+  /* keep the grid where the tidy tree left this network, so it lands in the
+     same part of the picture rather than jumping to the origin */
+  var cx0=0, cy0=0, nn=0;
+  mem.forEach(function(i){ if(pos[i]){ cx0+=pos[i].cx; cy0+=pos[i].cy; nn++; } });
+  cx0=nn?cx0/nn:0; cy0=nn?cy0/nn:0;
+
+  var rowH=0, itemW=0;
+  items.forEach(function(i){ rowH=Math.max(rowH,box[i].h); itemW=Math.max(itemW,box[i].w); });
+  var step=rowH+16;
+  var colW=70;
+  L.holders.forEach(function(h){ if(box[h.holder]) colW=Math.max(colW, box[h.holder].w+20); });
+  var colX=itemW+46;
+  var headY=-step*1.3;
+  var srcH=box[L.source]?box[L.source].h:28;
+  var srcY=headY-srcH/2-40;
+
+  var put={};
+  items.forEach(function(i,r){ put[i]={cx:box[i].w/2, cy:r*step}; });
+  put[L.source]={cx:(box[L.source]?box[L.source].w/2:0), cy:srcY};
+  var cells=[];
+  L.holders.forEach(function(h,j){
+    var cx=colX+j*colW+colW/2;
+    put[h.holder]={cx:cx, cy:headY};
+    items.forEach(function(i,r){ cells.push({holder:h.holder, item:i, h:h, x:cx, y:r*step}); });
+  });
+  /* anything else this network dragged in sits in a column to the right of the
+     grid rather than being dropped: nothing may lose its place */
+  var rest=mem.filter(function(i){ return !used[i]; });
+  var restX=colX+L.holders.length*colW+60;
+  rest.forEach(function(i,r){ put[i]={cx:restX+box[i].w/2, cy:r*step}; });
+
+  var x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  Object.keys(put).forEach(function(i){
+    var z=box[i]; if(!z) return;
+    x0=Math.min(x0,put[i].cx-z.w/2); x1=Math.max(x1,put[i].cx+z.w/2);
+    y0=Math.min(y0,put[i].cy-z.h/2); y1=Math.max(y1,put[i].cy+z.h/2);
+  });
+  cells.forEach(function(c){ x0=Math.min(x0,c.x-13); x1=Math.max(x1,c.x+13); y0=Math.min(y0,c.y-13); y1=Math.max(y1,c.y+13); });
+  var mx=cx0-(x0+x1)/2, my=cy0-(y0+y1)/2;
+  Object.keys(put).forEach(function(i){ if(box[i]) pos[i]={cx:put[i].cx+mx, cy:put[i].cy+my}; });
+  cells.forEach(function(c){ c.x+=mx; c.y+=my; laneCells.push(c); });
+  laneBox[slot]={ x0:x0+mx, y0:y0+my, x1:x1+mx, y1:y1+my };
+  return true;
+}
 var ARR_REST=210, ARR_SPRING=0.045, ARR_REP=150000, ARR_ANCHOR=0.10, ARR_ITER=340;
 function arrangeByLinks(members){
   var rid=VR();
@@ -1583,6 +1881,9 @@ function arrangeByLinks(members){
      other. Everything else is a block of one. */
   var tops={};
   nm.bt.forEach(function(pr){ pr.forEach(function(t){ if(liveSet[t]) tops[t]=1; }); });
+  /* a held branch is one block for the same reason: it is drawn as a tree,
+     and only the source end of a holding tie brings a subtree in */
+  nm.ht.forEach(function(h){ if(liveSet[h.source]) tops[h.source]=1; });
   Object.keys(tops).forEach(function(t){ if(pathTo(t).slice(0,-1).some(function(a){ return tops[a]; })) delete tops[t]; });
   var blockOf={}, blocks=[];
   Object.keys(tops).forEach(function(t){
@@ -1593,7 +1894,11 @@ function arrangeByLinks(members){
   live.forEach(function(id){ if(!blockOf[id]){ var b={id:id, mem:[id]}; blocks.push(b); blockOf[id]=b; } });
   blocks.forEach(function(b){
     var x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
-    b.mem.forEach(function(i){ var p=pos[i], z=box[i]; x0=Math.min(x0,p.cx-z.w/2); y0=Math.min(y0,p.cy-z.h/2); x1=Math.max(x1,p.cx+z.w/2); y1=Math.max(y1,p.cy+z.h/2); });
+    b.mem.forEach(function(i){
+      var p=pos[i], z=box[i], c=chipSize(i);
+      x0=Math.min(x0,p.cx-z.w/2); y0=Math.min(y0,p.cy-z.h/2);
+      x1=Math.max(x1,p.cx+z.w/2+(c?Math.max(0,c.w-z.w/2):0)); y1=Math.max(y1,p.cy+z.h/2+(c?c.h:0));
+    });
     b.w=x1-x0; b.h=y1-y0; b.x=(x0+x1)/2; b.y=(y0+y1)/2; b.ax=b.x; b.ay=b.y; b.vx=0; b.vy=0;
     b.off={}; b.mem.forEach(function(i){ b.off[i]=[pos[i].cx-b.x, pos[i].cy-b.y]; });
   });
@@ -1692,23 +1997,55 @@ function pushApart(boxes){
 var arrMemo={}, arrRuns=0, arrEditBox=null;
 function arrKey(mem){
   var set={}; mem.forEach(function(i){ set[i]=1; });
-  var nm=netMap(), pr=[], bt=[];
+  var nm=netMap(), pr=[], bt=[], ht=[];
   nm.pairs.forEach(function(p){ if(set[p[0]]&&set[p[1]]) pr.push(p[0]+">"+p[1]); });
   nm.bt.forEach(function(p){ if(set[p[0]]&&set[p[1]]) bt.push(p[0]+">"+p[1]); });
+  /* which way each holding tie points changes the picture; which items have
+     been TICKED does not, and must never enter this key or a tick would
+     re-relax the network it was in (1.8.0) */
+  nm.ht.forEach(function(h){ if(set[h.holder]&&set[h.source]) ht.push(h.holder+">"+h.source); });
   /* The node being typed in changes size with every letter. Its box goes into
      the key as it was when typing began, so the network holds still under the
      cursor and re-arranges once, when the edit is committed (1.7.1). */
   if(!editing) arrEditBox=null;
   else if(!arrEditBox || arrEditBox.id!==editing) arrEditBox={id:editing, k:box[editing]?box[editing].w+"x"+box[editing].h:""};
   return mem.join(",")+"|"+mem.map(function(i){ return (arrEditBox && i===arrEditBox.id) ? arrEditBox.k : box[i].w+"x"+box[i].h; }).join(",")+
-    "|"+pr.join(",")+"|"+bt.join(",")+"|"+Object.keys(lensFold).filter(function(i){ return set[i]; }).sort().join(",")+
-    "|"+lensKind[0]+(lensOne||"");
+    "|"+pr.join(",")+"|"+bt.join(",")+"|"+ht.join(",")+"|"+Object.keys(lensFold).filter(function(i){ return set[i]; }).sort().join(",")+
+    "|"+lensKind[0]+(lensOne||"")+"|"+CFG.netGroup;
+}
+/* A chip row is drawn under its item and the tidy tree knows nothing about
+   it, so in a held branch every row would sit on the chips of the row above.
+   The rows are spread apart here, in the view's own positions, rather than in
+   layout(): the map view has no chips and must not pay for them (house rule
+   6). Members on the same line take one band between them, so a branch laid
+   out across the page spreads once rather than once per node. */
+function spreadChips(mem){
+  if(!chipsOn()) return;
+  var rows={}, any=false;
+  mem.forEach(function(i){
+    if(!pos[i]) return;
+    var k=Math.round(pos[i].cy);
+    (rows[k]=rows[k]||[]).push(i);
+    if(chipBand(i)) any=true;
+  });
+  if(!any) return;
+  var ks=Object.keys(rows).map(Number).sort(function(a,b){ return a-b; }), acc=0;
+  ks.forEach(function(k){
+    var band=0;
+    rows[k].forEach(function(i){ pos[i]={cx:pos[i].cx, cy:pos[i].cy+acc}; band=Math.max(band,chipBand(i)); });
+    acc+=band;
+  });
 }
 function arrangeNetwork(mem){
   mem=mem.filter(function(i){ return pos[i] && box[i] && i!==VR(); });
   if(!mem.length) return false;
-  var k=arrKey(mem), slot=mem[0], m=arrMemo[slot];
+  var slot=mem[0];
+  /* The grid is deterministic and costs nothing, so it is laid out afresh on
+     every render rather than remembered, and it never counts as a relaxation. */
+  if(lanesOn() && laneLayout(mem,slot)){ delete arrMemo[slot]; return false; }
+  var k=arrKey(mem), m=arrMemo[slot];
   if(m && m.key===k){ mem.forEach(function(i){ var a=m.at[i]; if(a) pos[i]={cx:a.cx, cy:a.cy}; }); return true; }
+  spreadChips(mem);
   if(arrangeByLinks(mem)) arrRuns++;
   arrRemember(slot,k,mem);
   return false;
@@ -1729,11 +2066,19 @@ function arrangeNetworks(){
     if(!mem.length) return;
     var hit=arrangeNetwork(mem);
     var x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
-    mem.forEach(function(i){ var p=pos[i], z=box[i]; x0=Math.min(x0,p.cx-z.w/2); y0=Math.min(y0,p.cy-z.h/2); x1=Math.max(x1,p.cx+z.w/2); y1=Math.max(y1,p.cy+z.h/2); });
+    var lb=laneBox[mem[0]];
+    if(lb){ x0=lb.x0; y0=lb.y0; x1=lb.x1; y1=lb.y1; }
+    else mem.forEach(function(i){
+      var p=pos[i], z=box[i], c=chipSize(i);
+      x0=Math.min(x0,p.cx-z.w/2); y0=Math.min(y0,p.cy-z.h/2);
+      x1=Math.max(x1,p.cx+z.w/2+(c?Math.max(0,c.w-z.w/2):0)); y1=Math.max(y1,p.cy+z.h/2+(c?c.h:0));
+    });
     /* a remembered network holds still; only a freshly arranged one is
        pushed, so a fold in one network never nudges the others */
-    var g={mem:mem, w:x1-x0, h:y1-y0, x:(x0+x1)/2, y:(y0+y1)/2, off:{}, fixed:hit};
+    var g={mem:mem, w:x1-x0, h:y1-y0, x:(x0+x1)/2, y:(y0+y1)/2, off:{}, fixed:hit, lane:!!lb};
+    g.x0=g.x; g.y0=g.y;
     mem.forEach(function(i){ g.off[i]=[pos[i].cx-g.x, pos[i].cy-g.y]; });
+    if(lb) laneCells.forEach(function(c){ if(!c.net && mem.indexOf(c.item)>=0) c.net=g; });
     groups.push(g);
   });
   if(groups.every(function(g){ return g.fixed; })) return;
@@ -1742,6 +2087,15 @@ function arrangeNetworks(){
   pushApart(boxes);
   groups.forEach(function(g){
     if(g.fixed) return;
+    if(g.lane){
+      var dx=g.x-g.x0, dy=g.y-g.y0;
+      if(dx||dy){
+        g.mem.forEach(function(i){ if(pos[i]) pos[i]={cx:pos[i].cx+dx, cy:pos[i].cy+dy}; });
+        laneCells.forEach(function(c){ if(c.net===g) { c.x+=dx; c.y+=dy; } });
+        var lb2=laneBox[g.mem[0]]; if(lb2){ lb2.x0+=dx; lb2.x1+=dx; lb2.y0+=dy; lb2.y1+=dy; }
+      }
+      return;
+    }
     g.mem.forEach(function(i){ pos[i]={cx:g.x+g.off[i][0], cy:g.y+g.off[i][1]}; });
     /* remembered where it ended up, clear of the others, so the next render
        finds nothing to push */
@@ -2325,7 +2679,7 @@ function branchJson(root){
     nodes[i]=o;
   });
   var links=(state.links||[]).filter(function(l){ return has[l.a]&&has[l.b]; })
-    .map(function(l){ var o={a:l.a,b:l.b}; if(l.branch) o.branch=true; return o; });
+    .map(function(l){ return linkCopy(l,null,function(i){ return has[i]?i:null; }); });
   return JSON.stringify({v:5, state:{rootId:root, nodes:nodes, frames:[], links:links}, cfg:CFG});
 }
 /* What the two rows copy, in whichever view the menu was opened from: the told
@@ -2457,6 +2811,7 @@ function presKey(e){
 
 /* Run after layout(), before anything is positioned or painted. */
 function lensLayout(){
+  laneCells=[]; laneBox={};
   if(pres){
     if(!pres.arrange) Object.keys(pos).forEach(function(id){ if(!presVisible(id)) delete pos[id]; });
     return;
@@ -2917,7 +3272,8 @@ var elNodes=document.getElementById("nodes"), elPaint=document.getElementById("p
 var elOverlay=document.getElementById("overlayLayer"), elFrames=document.getElementById("frames");
 var elHint=document.getElementById("startHint");
 var elBadges=document.getElementById("badges");
-var els={}, ftEls={}, bdEls={}, wraps={};
+var elChips=document.getElementById("chips");
+var els={}, ftEls={}, bdEls={}, chEls={}, wraps={};
 
 /* Key HANDLING has been cross-platform since the beginning (metaKey||ctrlKey,
    altKey); only the labels were Mac-only, so every Windows and Linux visitor
@@ -2963,6 +3319,7 @@ function hardRender(){
   Object.keys(wraps).forEach(function(k){ wraps[k].remove(); delete wraps[k]; });
   Object.keys(ftEls).forEach(function(id){ ftEls[id].remove(); delete ftEls[id]; });
   Object.keys(bdEls).forEach(function(id){ bdEls[id].remove(); delete bdEls[id]; });
+  Object.keys(chEls).forEach(function(k){ chEls[k].remove(); delete chEls[k]; });
   render(true);
 }
 function markedSet(){
@@ -2999,6 +3356,9 @@ function render(keepView,lead){
       pp.style.width=(pres.order.length>1?((seen-1)/(pres.order.length-1))*100:100)+"%"; }
   }
   state.links = (state.links||[]).filter(function(l){ return N(l.a)&&N(l.b); });
+  /* an item of a held branch that was deleted, moved out or left a leaf behind
+     is neither end of its tie, so the filter above cannot see it (1.8.0) */
+  sweepHolds();
   /* a link view with nothing left to show drops back to the map, with a word */
   if(lensLinks() && !state.links.length) lensDrop();
   var showing={};
@@ -3090,7 +3450,7 @@ function render(keepView,lead){
     meas[id]={k:el.className+"\u0001"+el.textContent+"\u0001"+(el.dataset.num||""), w:w, h:h};
   });
 
-  layout(); lensLayout(); reposition(); paint(); drawBadges(); drawFrameTitles(); drawCrumbs(); drawFrameBar(); drawStartHint(); drawHere(true); drawCard();
+  layout(); lensLayout(); reposition(); paint(); drawBadges(); drawChips(); drawFrameTitles(); drawCrumbs(); drawFrameBar(); drawStartHint(); drawHere(true); drawCard();
   if(!keepView && CFG.follow) cameraTo(selected,lead);
   applyView();
 }
@@ -3214,6 +3574,84 @@ elBadges.addEventListener("click",function(e){
   if(el.dataset.tie){ hopLink(el.dataset.tie); return; }
   if(el.dataset.lf){ selected=el.dataset.lf; toggleLensFold(el.dataset.lf); return; }
   selected=el.dataset.b; toggleCollapse(el.dataset.b);
+});
+/* ---------- the chips, and ticking one ----------
+   One row per item, built from the index rather than by walking every tie for
+   every item, and the elements are kept between renders and only rewritten
+   when they changed, the way the node divs are. A tick is pointer-only by
+   decision: there is no key for it, and the key bar and ? say so rather than
+   implying one. */
+function chipEl(key,cls){
+  var el=chEls[key];
+  if(!el){ el=document.createElement("div"); elChips.appendChild(el); chEls[key]=el; }
+  if(el.className!==cls) el.className=cls;
+  return el;
+}
+function drawChips(){
+  var live={};
+  if(chipsOn()){
+    var m=chipMap();
+    Object.keys(m.byItem).forEach(function(id){
+      if(!pos[id]||!box[id]) return;
+      var row=m.byItem[id], rk="cr"+id; live[rk]=1;
+      var r=chipEl(rk,"chiprow");
+      var t="translate("+(pos[id].cx-box[id].w/2)+"px,"+(pos[id].cy+box[id].h/2+CHIP_GAP)+"px)";
+      if(r._t!==t){ r.style.transform=t; r._t=t; }
+      row.forEach(function(h,j){
+        var ck=rk+"|"+h.holder, on=holdDone(h,id);
+        live[ck]=1;
+        var c=chipEl(ck,"chip"+(on?" on":""));
+        if(c.parentNode!==r || r.children[j]!==c) r.insertBefore(c,r.children[j]||null);
+        c.dataset.holder=h.holder; c.dataset.item=id;
+        var txt=chipLabel(h.holder)+(on?" \u2713":"");
+        if(c.textContent!==txt) c.textContent=txt;
+        c.title=(on?"Done: ":"Not done: ")+hereFirst(h.holder)+" \u00b7 click to change";
+      });
+    });
+  } else if(lanesOn()){
+    laneCells.forEach(function(c){
+      var on=holdDone(c.h,c.item), ck="cl"+c.holder+"|"+c.item;
+      live[ck]=1;
+      var el=chipEl(ck,"cell"+(on?" on":""));
+      el.dataset.holder=c.holder; el.dataset.item=c.item;
+      var txt=on?"\u2713":"";
+      if(el.textContent!==txt) el.textContent=txt;
+      el.title=hereFirst(c.holder)+" \u00b7 "+hereFirst(c.item)+(on?" \u00b7 done":"");
+      var t="translate("+(c.x-13)+"px,"+(c.y-13)+"px)";
+      if(el._t!==t){ el.style.transform=t; el._t=t; }
+    });
+    /* the column heads name the holder above its own node, which is the node
+       itself: nothing extra is drawn for them */
+  }
+  Object.keys(chEls).forEach(function(k){ if(!live[k]){ chEls[k].remove(); delete chEls[k]; } });
+}
+/* A tick is a model change on the tie, so it goes through snap() and one ⌘Z
+   puts it back. It changes no box and no member list, which is why arrKey
+   does not see it and the network it is in is not re-arranged. */
+function tickHold(holderId,itemId){
+  var hit=null;
+  (state.links||[]).forEach(function(l){
+    if(!l.hold||hit) return;
+    var h=holdOf(l);
+    if(h.holder!==holderId) return;
+    if(holdItems(h.source).indexOf(itemId)>=0) hit=h;
+  });
+  if(!hit) return false;
+  snap();
+  var L=hit.link;
+  if(L.done && L.done[itemId]){ delete L.done[itemId]; if(!Object.keys(L.done).length) delete L.done; }
+  else { L.done=L.done||{}; L.done[itemId]=1; }
+  render(true); saveSoon();
+  flashSave(hereFirst(holderId)+(holdDone(hit,itemId)?" is done with ":" is back on ")+"\u201c"+trunc(N(itemId).text)+"\u201d");
+  return true;
+}
+/* House rule 3: a floating thing that takes clicks must never take the
+   keyboard, or the arrows stop stepping the moment you tick something. */
+elChips.addEventListener("mousedown",function(e){ e.preventDefault(); e.stopPropagation(); });
+elChips.addEventListener("click",function(e){
+  var el=e.target.closest(".chip,.cell"); if(!el) return;
+  e.stopPropagation();
+  tickHold(el.dataset.holder, el.dataset.item);
 });
 /* The far end of a link is usually off screen, so there has to be a way to get
    there. Repeating on the same node cycles its links rather than bouncing
@@ -3385,7 +3823,7 @@ function shapes(ids, opt){
       var on=!opt.exporting && (lensLinks() || selected===ea.id || selected===eb.id);
       var pa=ea.proxy||!!l.va, pb=eb.proxy||!!l.vb;   /* folded away, or away in a linked map */
       var lkey="lk"+l.a+"_"+l.b+"|"+SC.gen+"|"+geo(ea.id)+"|"+geo(eb.id)+"|"+
-               (pa?1:0)+(pb?1:0)+"|"+(on?1:0)+"|"+lensSig()+"|"+(l.branch?"B":"");
+               (pa?1:0)+(pb?1:0)+"|"+(on?1:0)+"|"+lensSig()+"|"+(l.branch?"B":"")+(l.hold?"H"+l.hold:"");
       if(cache){
         var lhit=SC.edge[lkey];
         if(lhit!==undefined){ nEdge[lkey]=lhit; emit(lkey,lhit.s,0,0); return; }
@@ -3417,6 +3855,21 @@ function shapes(ids, opt){
         var ka=0; while(ka<pts.length-1 && !outside(pts[ka],ea.id)) ka++;
         var kb=pts.length-1; while(kb>0 && !outside(pts[kb],eb.id)) kb--;
         capAt(ka,1); capAt(kb,-1);
+      }
+      /* A holding tie is the one link with a direction, so the map says which
+         way it points without opening Networks: a small chevron in the hand of
+         the rest of the drawing, at the END THAT HOLDS, pointing into it. */
+      if(l.hold){
+        var hEnd=(l.hold==="a")?eb.id:ea.id;
+        var kh=(hEnd===ea.id)?0:pts.length-1, kn=(kh===0)?1:pts.length-2;
+        var hp=pts[kh], np=pts[kn];
+        var hang=Math.atan2(hp[1]-np[1],hp[0]-np[0]);
+        var hj=function(){ return (lr()*2-1)*amp*.8; };
+        [-1,1].forEach(function(sg){
+          var a2=hang+sg*2.5, ln=11;
+          lout+='<path d="M'+(hp[0]+hj())+','+(hp[1]+hj())+' L'+(hp[0]+Math.cos(a2)*ln+hj())+','+(hp[1]+Math.sin(a2)*ln+hj())+
+            '" stroke="'+lcol+'" stroke-width="2.2" stroke-linecap="round" fill="none" opacity="'+(on?.95:.62)+'"/>';
+        });
       }
       /* hollow end = the node you actually tied is folded inside this one */
       [[A,pa],[B,pb]].forEach(function(pr){
@@ -3869,12 +4322,12 @@ var HINTS={
   map:[["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Child","⌘","⏎"],["Retype","Space"],["Fold","⌘","E"],["Focus","⌘","/"],["Jump","⌘","K"],["Done","⌥","X"]],
   focus:[["Next branch","Tab"],["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Fold","⌘","E"],["Out","Esc"]],
   dim:[["Tie","⌘","+click"],["Next network","Tab"],["Open it","⌘","/"],["Clear links","⇧","+double-click"],["Fit","⌘","0"],["Map","⌘","1"]],
-  nets:[["Tie","⌘","+click"],["Next network","Tab"],["Open it","⌘","/"],["Fold beyond","⌘","E"],["Copy all","⌘","C"],["Fit","⌘","0"],["Map","⌘","1"]],
+  nets:[["Tie","⌘","+click"],["Hand a branch over","⌥","⇧","H"],["Tick a holder","click a chip"],["Next network","Tab"],["Open it","⌘","/"],["Fold beyond","⌘","E"],["Copy all","⌘","C"],["Fit","⌘","0"],["Map","⌘","1"]],
   flags:[["Next flag","Tab"],["Unflag","⌘","⇧","F"],["Focus","⌘","/"],["Fit","⌘","0"],["Map","⌘","1"]],
-  net:[["Move","←↑→↓"],["Walk","Tab"],["Fold beyond","⌘","E"],["New linked node","⏎"],["Back","Esc"]],
+  net:[["Move","←↑→↓"],["Walk","Tab"],["Tick a holder","click a chip"],["Fold beyond","⌘","E"],["New linked node","⏎"],["Back","Esc"]],
   carry:[["Choose where","←↑→↓"],["Drop inside","⏎"],["Drop after","⇧","⏎"],["Put back","Esc"]],
   sort:[],
-  sel:[["Grow","⇧","←↑→↓"],["Branches","⌘","⇧","←↑→↓"],["Move","⌥","←↑→↓"],["Carry","⌘","X"],["Done","⌥","X"],["Sort","⌥","O"],["Merge","⌥","J"],["Break out","⌥","B"],["Copy","⌘","C"],["Delete","⌫"],["Frame","⌘","G"],["Clear","Esc"]],
+  sel:[["Grow","⇧","←↑→↓"],["Branches","⌘","⇧","←↑→↓"],["Hand over","⌥","⇧","H"],["Move","⌥","←↑→↓"],["Carry","⌘","X"],["Done","⌥","X"],["Sort","⌥","O"],["Merge","⌥","J"],["Break out","⌥","B"],["Copy","⌘","C"],["Delete","⌫"],["Frame","⌘","G"],["Clear","Esc"]],
   arrange:[["Pick next","⌘","+click"],["Pick up / drop","Space"],["Unpick","⌫"],["Story","[","]"],["Present","R"]]
 };
 var hintMin=false, hintSig="";
@@ -4589,6 +5042,12 @@ function ctxItems(id,from){
     var li=linkIndex(from,id), isB=li>=0 && state.links[li].branch;
     add((li>=0&&!isB)?"Untie from \u201c"+trunc(N(from).text)+"\u201d":"Tie to \u201c"+trunc(N(from).text)+"\u201d","\u2318 click",function(){ tieFromSelected(from,id); });
     add(isB?"Untie the branches":"Tie the branches","\u2318\u21e7 click",function(){ branchTieReport(toggleBranchTie(from,id), id); });
+    /* the holding tie is directed, so the row names which way round it goes:
+       the node you had selected takes on the branch you right-clicked */
+    var lh=li>=0 && state.links[li].hold, hh=lh?holdOf(state.links[li]):null;
+    var holds=hh && hh.holder===from;
+    if(holds || !hh) add(holds?"Take the branch back":"Hand this branch to \u201c"+trunc(N(from).text)+"\u201d","\u2325\u21e7H",
+      function(){ holdReport(toggleHoldTie(from,id), from, id); });
   }
   if(t.link){ add("Open the map","\u2325\u23ce",function(){ openLink(id); }); add("Bring the map back in","\u2325B",function(){ breakOut(); }); }
   else if(!centre && t.children.length) add("Break out into a map","\u2325B",function(){ breakOut(); });
@@ -4780,7 +5239,7 @@ function mergeMarked(){
   if(take.length) keep.collapsed=false;
   ids.slice(1).forEach(function(i){ delete state.nodes[i]; });
   var seen={};
-  state.links=(state.links||[]).map(function(l){ var o={a:gone[l.a]?keep.id:l.a, b:gone[l.b]?keep.id:l.b}; if(l.branch) o.branch=true; if(l.va) o.va=l.va; if(l.vb) o.vb=l.vb; return o; })
+  state.links=(state.links||[]).map(function(l){ return linkCopy(l,{a:gone[l.a]?keep.id:l.a, b:gone[l.b]?keep.id:l.b},function(i){ return gone[i]?keep.id:i; }); })
     .filter(function(l){ var k=[l.a,l.b].sort().join("|"); if(l.a===l.b||seen[k]) return false; seen[k]=1; return true; });
   state.frames=(state.frames||[]).filter(function(f){
     var r2=[]; f.roots.forEach(function(r){ var x=gone[r]?keep.id:r; if(r2.indexOf(x)<0) r2.push(x); });
@@ -4900,7 +5359,9 @@ function deleteMarked(ids){
      them, the way a frame does; a tie with nowhere to land goes */
   var seenL={};
   state.links=(state.links||[]).map(function(l){
-    var o={a:l.a,b:l.b}; if(l.branch) o.branch=true; if(l.va) o.va=l.va; if(l.vb) o.vb=l.vb;
+    /* a ticked item that went takes its tick with it; sweepHolds catches the
+       rest on the render this delete is about to run */
+    var o=linkCopy(l,null,function(i){ return D[i]?null:i; });
     if(D[o.a]) o.a=(heirs[o.a]||[]).filter(function(x){ return !D[x]; })[0]||null;
     if(D[o.b]) o.b=(heirs[o.b]||[]).filter(function(x){ return !D[x]; })[0]||null;
     return o;
@@ -5684,7 +6145,17 @@ function insertOutline(items,opt){
   });
   (opt.links||[]).forEach(function(l){
     var a=madeIds[l[0]], b=madeIds[l[1]];
-    if(a&&b){ state.links=state.links||[]; state.links.push(l[2]?{a:a,b:b,branch:true}:{a:a,b:b}); }
+    if(!a||!b) return;
+    state.links=state.links||[];
+    var o={a:a,b:b};
+    if(l[2]===1) o.branch=true;
+    else if(l[2]===2||l[2]===3) o.hold=(l[2]===2)?"a":"b";
+    if(l[3] && l[3].length){
+      var d={}, any=false;
+      l[3].forEach(function(k){ if(madeIds[k]){ d[madeIds[k]]=1; any=true; } });
+      if(any) o.done=d;
+    }
+    state.links.push(o);
   });
   editing=null; clearMarks();
   /* what landed stays selected, so it can be moved or deleted straight away */
@@ -5792,8 +6263,17 @@ function selectionCopy(){
     html+=ol?"</ol>":"</ul>";
   })(tops,rowParent(tops));
   void open;
+  /* [a, b, kind, done[]]: kind 1 is a branch tie, 2 and 3 a holding tie whose
+     source is the first or the second end. Older entries are [a,b] or [a,b,1]
+     and read exactly as they did. */
   var links=[];
-  (state.links||[]).forEach(function(l){ if(has[l.a]&&has[l.b]) links.push(l.branch?[idx[l.a],idx[l.b],1]:[idx[l.a],idx[l.b]]); });
+  (state.links||[]).forEach(function(l){
+    if(!has[l.a]||!has[l.b]) return;
+    var kind=l.branch?1:(l.hold?(l.hold==="a"?2:3):0);
+    var dn=Object.keys(l.done||{}).filter(function(i){ return has[i]; }).map(function(i){ return idx[i]; });
+    if(!kind && !dn.length){ links.push([idx[l.a],idx[l.b]]); return; }
+    links.push(dn.length?[idx[l.a],idx[l.b],kind,dn]:[idx[l.a],idx[l.b],kind]);
+  });
   return { ids:order, txt:lines.join("\n"), html:html, items:items, links:links };
 }
 var pasteSibling=false;
@@ -6784,7 +7264,7 @@ function breakOut(){
   var keepLinks=[], cut=0;
   (state.links||[]).forEach(function(l){
     var a=inside[l.a]&&l.a!==n.id, b=inside[l.b]&&l.b!==n.id;
-    if(inside[l.a]&&inside[l.b]) keepLinks.push(l.branch?{a:l.a,b:l.b,branch:true}:{a:l.a,b:l.b});
+    if(inside[l.a]&&inside[l.b]) keepLinks.push(linkCopy(l));
     else if(a||b) cut++;
   });
   var frames=(state.frames||[]).filter(function(f){ return f.roots.every(function(r){ return inside[r] && r!==n.id; }); });
@@ -6805,7 +7285,9 @@ function breakOut(){
      it stood for (va, vb) so bringing the map back in puts the tie back. */
   var seenX={};
   state.links=(state.links||[]).map(function(l){
-    var o={a:l.a,b:l.b}; if(l.branch) o.branch=true; if(l.va) o.va=l.va; if(l.vb) o.vb=l.vb;
+    /* done travels with the tie across the cut, the honest default: the items
+       are still the same items, they are just in another map for now */
+    var o=linkCopy(l);
     if(inside[o.a]&&o.a!==n.id){ o.va=o.a; o.a=n.id; }
     if(inside[o.b]&&o.b!==n.id){ o.vb=o.b; o.b=n.id; }
     return o;
@@ -6853,7 +7335,7 @@ function bringIn(){
     if(l.va && l.a===n.id){ if(map[l.va]) l.a=map[l.va]; delete l.va; }
     if(l.vb && l.b===n.id){ if(map[l.vb]) l.b=map[l.vb]; delete l.vb; }
   });
-  (src.links||[]).forEach(function(l){ if(map[l.a]&&map[l.b]) state.links.push(l.branch?{a:map[l.a],b:map[l.b],branch:true}:{a:map[l.a],b:map[l.b]}); });
+  (src.links||[]).forEach(function(l){ if(map[l.a]&&map[l.b]) state.links.push(linkCopy(l,{a:map[l.a],b:map[l.b]},function(i){ return map[i]||null; })); });
   reseatBranchTies();
   (src.frames||[]).forEach(function(f){
     var roots=f.roots.map(function(x){ return map[x]; }).filter(Boolean);
@@ -7290,6 +7772,7 @@ var PANEL=[
   {sect:"Networks"},
   /* worded like the Presenting rows (words:true), but not one of them: talk:true would put it in the mid-talk T panel */
   {h:"\u23182 shows",key:"netView",words:true,opts:[["arranged","Arranged","Every network laid out by its ties, clear of the others. Nodes with no tie leave the view."],["dim","Dimmed","The whole map where it is, with everything no tie touches faded in place."]]},
+  {h:"A held branch",key:"netGroup",words:true,opts:[["chips","Chips","The branch once, as a tree, with a chip on each item for every holder. Click a chip to mark that holder done."],["lanes","Lanes","The same as a grid: a row per item, a column per holder, a cell you click for each pair."]],when:function(){ return CFG.netView==="arranged"; }},
   {sect:"Presenting"},
   {h:"A talk is",key:"presStyle",talk:true,opts:[["map","The map","The map, revealed as you talk."],["cards","Cards","One node to a screen: its paragraphs as the body, its children as chips."]]},
   {h:"On screen",key:"presReach",talk:true,opts:[["told","Told","Only what you have reached. The map grows as you go."],["all","The whole map","Everything from the first second, dimmed, with the path to here lit. With Fade this is the spotlight."]]},
@@ -7501,6 +7984,8 @@ document.addEventListener("keydown",function(e){
     if(e.code==="KeyP" && !e.shiftKey){ e.preventDefault(); save(); togglePin(curDoc); return; }
     if(e.code==="KeyT" && !e.shiftKey){ e.preventDefault(); save(); cycleTag(curDoc); return; }
     if(e.code==="KeyT" && e.shiftKey){ e.preventDefault(); branchTieKey(); return; }
+    /* ⌥⇧H hands a branch over, beside ⌥⇧T for a branch tie. KeyH was free. */
+    if(e.code==="KeyH" && e.shiftKey){ e.preventDefault(); holdTieKey(); return; }
     if(e.code==="Backquote"){ e.preventDefault(); openPrevious(); return; }
     if(e.shiftKey && /^Digit[1-9]$/.test(e.code)){ e.preventDefault(); openPinned(+e.code.slice(5)); return; }
   }
@@ -7697,7 +8182,7 @@ elNodes.addEventListener("input",function(){
   }
   N(editing).text=ie.innerText.replace(/\u00a0/g," ").replace(/\u200b/g,"");
   box[editing]={w:els[editing].offsetWidth,h:els[editing].offsetHeight};
-  layout(); lensLayout(); reposition(); paint(); drawBadges(); drawFrameTitles();
+  layout(); lensLayout(); reposition(); paint(); drawBadges(); drawChips(); drawFrameTitles();
   if(CFG.follow) cameraTo(editing);
   saveSoon();
 });
@@ -8252,7 +8737,23 @@ window.__mf={
   bestOutline:function(h,t){ return bestOutline(h,t); },
   open:function(id){ switchDoc(id); },
   hereGo:hereGo, hereCycle:hereCycle, get hereShown(){ return !document.getElementById("here").hidden; }, get view(){ return {x:view.x,y:view.y,z:view.z}; }, setView:function(x,y,z){ stopCam(); view.x=x; view.y=y; view.z=z; applyView(); },
-  get links(){ return (state.links||[]).map(function(l){ return l.branch?{a:l.a,b:l.b,branch:true}:{a:l.a,b:l.b}; }); },
+  get links(){ return (state.links||[]).map(function(l){ return linkCopy(l); }); },
+  holds:function(){ return holdList().map(function(h){ return { holder:h.holder, source:h.source, done:Object.keys(h.link.done||{}) }; }); },
+  holdTie:function(a,b){ var r=toggleHoldTie(a,b); if(r==="tied"||r==="cut"||r==="swapped"){ hardRender(); save(); } return r; },
+  holdItems:holdItems,
+  chipsOf:function(id){ var r=chipsFor(id); return r?r.map(function(h){ return { holder:h.holder, done:holdDone(h,id) }; }):[]; },
+  chipRows:function(){ return document.querySelectorAll("#chips .chiprow").length; },
+  chipEls:function(id){ return document.querySelectorAll('#chips .chip[data-item="'+id+'"]').length; },
+  cells:function(){ return document.querySelectorAll("#chips .cell").length; },
+  clickChip:function(holderId,itemId){
+    var el=document.querySelector('#chips .chip[data-holder="'+holderId+'"][data-item="'+itemId+'"]')||
+           document.querySelector('#chips .cell[data-holder="'+holderId+'"][data-item="'+itemId+'"]');
+    if(!el) return false;
+    el.dispatchEvent(new MouseEvent("mousedown",{bubbles:true,cancelable:true}));
+    el.dispatchEvent(new MouseEvent("click",{bubbles:true,cancelable:true}));
+    return true;
+  },
+  tickHold:tickHold, netGroup:function(){ return CFG.netGroup; },
   branchTie:function(a,b){ var r=toggleBranchTie(a,b); if(r&&r!=="same"){ hardRender(); save(); } return r; },
   tie:function(a,b){ var r=toggleLink(a,b); if(r){ hardRender(); save(); } return r; },
   linksAt:linksAt, hop:hopLink,

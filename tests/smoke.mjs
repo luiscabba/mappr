@@ -1703,8 +1703,8 @@ group("presentation: a talk set up the way you talk (1.6.0)");
   await press("Escape"); await press("Escape");
   ok("and the talk ending closes it too", (await P()) === null && !(await M(() => __mf.talkOpen)) && await M(() => getComputedStyle(document.getElementById("talk")).display === "none"));
   await reset();
-  /* 13 presenting options plus the two Networks options, worded the same way since 1.7.0 */
-  ok("the Style panel's Presenting rows are worded the same way", (await M(() => { document.getElementById("btnStyle").click(); const n = document.querySelectorAll("#styleScroll .opt.txt").length; document.getElementById("btnStyle").click(); return n; })) === 15);
+  /* 13 presenting options plus the four Networks options, worded the same way since 1.7.0 */
+  ok("the Style panel's Presenting rows are worded the same way", (await M(() => { document.getElementById("btnStyle").click(); const n = document.querySelectorAll("#styleScroll .opt.txt").length; document.getElementById("btnStyle").click(); return n; })) === 17);
 
   // ---- 8. a 1.5.1 settings blob loads with the new keys defaulted ----
   await M(() => { __mf.cfg.slop = 3; __mf.set("gap", __mf.cfg.gap); });
@@ -4846,6 +4846,246 @@ group("1.5.1: the shape survives a rendered copy, and a fence is not a node");
   ok("bold at the top of an indented list moves nothing",
     at(r, "Heading").indent === at(r, "Second").indent && at(r, "one").indent > at(r, "Heading").indent,
     [at(r, "Heading").indent, at(r, "Second").indent, at(r, "one").indent]);
+
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
+group("1.8.0: inherited children");
+{
+  await M(() => document.getElementById("btnMaps").click());
+  await M(() => document.getElementById("btnNewMap").click());
+  await page.waitForTimeout(240);
+  const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(300); };
+  const holds = () => M(() => __mf.holds());
+  const runs = () => M(() => __mf.arrangeRuns());
+  const bbox = (ids) => M((ids) => {
+    const p = __mf.pos(), b = __mf.boxes(); let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    ids.forEach((i) => { if (!p[i]) return; x0 = Math.min(x0, p[i].cx - b[i].w / 2); x1 = Math.max(x1, p[i].cx + b[i].w / 2); y0 = Math.min(y0, p[i].cy - b[i].h / 2); y1 = Math.max(y1, p[i].cy + b[i].h / 2); });
+    return { x0, y0, x1, y1 };
+  }, ids);
+  /* the rendered chip rows, in world coordinates, so geometry is compared and not markup */
+  const chipRects = () => M(() => [].map.call(document.querySelectorAll("#chips .chiprow,#chips .cell"), (el) => {
+    const r = el.getBoundingClientRect(); return { x0: r.left, y0: r.top, x1: r.right, y1: r.bottom };
+  }));
+  const nodeRects = (ids) => M((ids) => ids.map((i) => {
+    const el = document.querySelector('#nodes [data-id="' + i + '"]'); if (!el) return null;
+    const r = el.getBoundingClientRect(); return { x0: r.left, y0: r.top, x1: r.right, y1: r.bottom };
+  }).filter(Boolean), ids);
+  const hits = (a, b) => !(a.x1 <= b.x0 || b.x1 <= a.x0 || a.y1 <= b.y0 || b.y1 <= a.y0);
+
+  await M(() => __mf.paste("Team\n- Luis\n- Nico\n- Rafa\n- Case Study\n  - Abstract\n  - Introduction\n    - Scope\n  - Problem\n- Other\n  - X\n  - Y"));
+  await page.waitForTimeout(280);
+  const LU = await idOf("Luis"), NI = await idOf("Nico"), RA = await idOf("Rafa"), CS = await idOf("Case Study");
+  const AB = await idOf("Abstract"), IN = await idOf("Introduction"), SC = await idOf("Scope"), PR = await idOf("Problem");
+  const XX = await idOf("X"), YY = await idOf("Y");
+
+  // ---- 1. the tie, and which way round it points ----
+  await M(([a, b]) => { __mf.select(a); __mf.mark([a, b]); }, [LU, CS]);
+  await press("Alt+Shift+KeyH");
+  let h = await holds();
+  ok("Opt+Shift+H makes a holding tie", h.length === 1, h);
+  ok("the first selected node holds", h[0] && h[0].holder === LU && h[0].source === CS, h[0]);
+  ok("hold names the source end", await M(([a, b]) => { const l = __mf.links.find((x) => x.hold); return (l.hold === "a" ? l.a : l.b) === b && (l.hold === "a" ? l.b : l.a) === a; }, [LU, CS]));
+  await M(([a, b]) => __mf.holdTie(a, b), [LU, CS]);
+  ok("the same pair again takes the branch back", (await holds()).length === 0);
+  /* both ends need children for the swap to be legal either way round */
+  const OT = await idOf("Other");
+  await M(([a, b]) => __mf.holdTie(a, b), [CS, OT]);
+  ok("CS holds Other's branch", (await holds())[0].holder === CS && (await holds())[0].source === OT, await holds());
+  await M(([a, b]) => __mf.holdTie(a, b), [CS, OT]);
+  await M(([a, b]) => __mf.holdTie(a, b), [OT, CS]);
+  ok("swapping the order swaps holder and source", (await holds())[0].holder === OT && (await holds())[0].source === CS, await holds());
+  await M(([a, b]) => __mf.holdTie(a, b), [OT, CS]);
+  ok("and untying it leaves nothing behind", (await holds()).length === 0 && (await M(() => __mf.links.length)) === 0);
+
+  // ---- 2. what it refuses ----
+  const before = await M(() => JSON.stringify(__mf.links));
+  ok("a leaf source has nothing to hand over", (await M(([a, b]) => __mf.holdTie(a, b), [LU, NI])) === "leaf");
+  ok("a source inside the holder is refused", (await M(([a, b]) => __mf.holdTie(a, b), [CS, IN])) === "cycle");
+  ok("a holder inside the source is refused", (await M(([a, b]) => __mf.holdTie(a, b), [AB, CS])) === "cycle");
+  ok("a node cannot hold itself", (await M((a) => __mf.holdTie(a, a), CS)) === "no");
+  ok("every refusal changed nothing", (await M(() => JSON.stringify(__mf.links))) === before, await M(() => __mf.links));
+  await M(() => __mf.select(__mf.state.rootId));
+  await page.waitForTimeout(120);
+
+  // a map link node at either end
+  const mapLinkId = OT;
+  await M((x) => __mf.select(x), mapLinkId);
+  await key("Alt+KeyB");
+  await page.waitForTimeout(420);
+  ok("break out leaves a map link behind", await M((x) => !!__mf.state.nodes[x].link, mapLinkId));
+  ok("a map link is a leaf, so it can neither hold nor be held",
+    (await M(([a, b]) => __mf.holdTie(a, b), [mapLinkId, CS])) === "link" &&
+    (await M(([a, b]) => __mf.holdTie(a, b), [CS, mapLinkId])) === "link");
+  await M((x) => __mf.select(x), mapLinkId);
+  await key("Alt+KeyB");
+  await page.waitForTimeout(420);
+
+  // ---- 3. a holding tie and a branch tie are exclusive ----
+  const X2 = await idOf("X"), Y2 = await idOf("Y");
+  const u0 = await M(() => __mf.undoSteps);
+  await M(([a, b]) => __mf.branchTie(a, b), [LU, CS]);
+  ok("a branch tie first", await M(() => __mf.links.some((l) => l.branch)));
+  await M(([a, b]) => __mf.holdTie(a, b), [LU, CS]);
+  ok("the holding tie replaces it", (await holds()).length === 1 && !(await M(() => __mf.links.some((l) => l.branch))));
+  ok("one link, not two", (await M(() => __mf.links.length)) === 1);
+  await M(([a, b]) => __mf.branchTie(a, b), [LU, CS]);
+  ok("and the branch tie replaces the holding tie", (await holds()).length === 0 && (await M(() => __mf.links.some((l) => l.branch))) && (await M(() => __mf.links.length)) === 1);
+  await M(() => __mf.undo());
+  ok("one undo step apiece", (await holds()).length === 1, await holds());
+  await M(([a, b]) => __mf.holdTie(a, b), [LU, CS]);
+  void u0;
+
+  // ---- the three holders, and one unrelated network ----
+  await M(([a, b]) => __mf.holdTie(a, b), [LU, CS]);
+  await M(([a, b]) => __mf.holdTie(a, b), [NI, CS]);
+  await M(([a, b]) => __mf.holdTie(a, b), [RA, CS]);
+  await M(([a, b]) => __mf.tie(a, b), [X2, Y2]);
+  await page.waitForTimeout(220);
+  ok("three holders on one source", (await holds()).length === 3);
+
+  // ---- 4. the subtree is drawn once, with a chip per holder ----
+  await M(() => __mf.set("netGroup", "chips"));
+  await M(() => __mf.set("netView", "arranged"));
+  await M((x) => __mf.select(x), CS);
+  await press("Meta+2");
+  ok("netGroup defaults to chips", await M(() => __mf.netGroup() === "chips"));
+  ok("the held branch comes into the view", await M(([a, b, c]) => { const p = __mf.pos(); return !!p[a] && !!p[b] && !!p[c]; }, [AB, IN, SC]));
+  ok("every item has exactly one position", await M(([a, b, c, d]) => { const p = __mf.pos(); return [a, b, c, d].every((i) => !!p[i]); }, [AB, IN, SC, PR]));
+  ok("a chip row per item, and none on the source", (await M(() => __mf.chipRows())) === 4 && (await M((x) => __mf.chipEls(x), CS)) === 0, await M(() => __mf.chipRows()));
+  ok("one chip per holder on each item", (await M((x) => __mf.chipEls(x), AB)) === 3 && (await M((x) => __mf.chipEls(x), SC)) === 3);
+  ok("the chips name the holders in tree order", (await M((x) => __mf.chipsOf(x), AB)).map((c) => c.holder).join() === [LU, NI, RA].join());
+  ok("the untied network is still its own", (await M(() => __mf.networks())).length === 2);
+
+  // ---- 5. a tick, undone, with no relaxation ----
+  const rTick = await runs();
+  ok("clicking a chip ticks it", await M(([h2, i]) => __mf.clickChip(h2, i), [NI, AB]));
+  await page.waitForTimeout(260);
+  ok("the tie carries the item id", (await holds()).find((x) => x.holder === NI).done.join() === AB, await holds());
+  ok("and nobody else's does", (await holds()).filter((x) => x.done.length).length === 1);
+  ok("the chip reads as done", (await M((x) => __mf.chipsOf(x), AB)).find((c) => c.holder === NI).done === true);
+  ok("a tick runs no relaxation", (await runs()) === rTick, (await runs()) - rTick);
+  await M(() => __mf.undo());
+  await page.waitForTimeout(260);
+  ok("one Cmd+Z puts the tick back", (await holds()).every((x) => !x.done.length), await holds());
+  await M(([h2, i]) => __mf.tickHold(h2, i), [NI, AB]);
+  await page.waitForTimeout(220);
+  ok("and it can be ticked again from the keyboard-free path", (await holds()).find((x) => x.holder === NI).done.join() === AB);
+
+  // ---- 6. a chip must not take the keyboard ----
+  await M((x) => __mf.select(x), AB);
+  const sel0 = await M(() => __mf.selected);
+  await M(([h2, i]) => __mf.clickChip(h2, i), [RA, AB]);
+  await page.waitForTimeout(200);
+  ok("a click on a chip leaves the selection alone", (await M(() => __mf.selected)) === sel0);
+  ok("and nothing is being edited", (await M(() => __mf.editing)) == null);
+  await press("Tab");
+  ok("an arrow or Tab straight after still moves", (await M(() => __mf.selected)) !== sel0, await M(() => __mf.selected));
+  await M(([h2, i]) => __mf.tickHold(h2, i), [RA, AB]);
+  await page.waitForTimeout(200);
+
+  // ---- 9. the chip band is in the push ----
+  {
+    const cr = await chipRects(), nr = await nodeRects([AB, IN, SC, PR, LU, NI, RA, X2, Y2, CS]);
+    let clash = 0;
+    cr.forEach((c) => nr.forEach((n) => { if (hits(c, n)) clash++; }));
+    ok("no chip row lands on a node box", clash === 0, clash);
+    const held = await bbox([CS, AB, IN, SC, PR, LU, NI, RA]), other = await bbox([X2, Y2]);
+    ok("the held network and the plain one stay clear of each other",
+      held.x1 <= other.x0 || other.x1 <= held.x0 || held.y1 <= other.y0 || other.y1 <= held.y0, [held, other]);
+  }
+
+  // ---- 7. lanes ----
+  await M(() => __mf.set("netGroup", "lanes"));
+  await page.waitForTimeout(420);
+  ok("lanes draws a cell per pair", (await M(() => __mf.cells())) === 12, await M(() => __mf.cells()));
+  ok("and no chip rows", (await M(() => __mf.chipRows())) === 0);
+  ok("the ticks are in the same cells", await M(([h2, i]) => { const el = document.querySelector('#chips .cell[data-holder="' + h2 + '"][data-item="' + i + '"]'); return !!el && /on/.test(el.className); }, [NI, AB]));
+  ok("one row per item", await M(([a, b, c, d]) => { const p = __mf.pos(); const ys = [a, b, c, d].map((i) => Math.round(p[i].cy)); return new Set(ys).size === 4; }, [AB, IN, SC, PR]));
+  ok("one column per holder", await M(([a, b, c]) => { const p = __mf.pos(); const xs = [a, b, c].map((i) => Math.round(p[i].cx)); return new Set(xs).size === 3 && Math.round(p[a].cy) === Math.round(p[b].cy); }, [LU, NI, RA]));
+  ok("a cell click ticks the same way a chip does", await M(([h2, i]) => __mf.clickChip(h2, i), [LU, PR]));
+  await page.waitForTimeout(240);
+  ok("and the tie carries it", (await holds()).find((x) => x.holder === LU).done.join() === PR, await holds());
+  await M(([h2, i]) => __mf.tickHold(h2, i), [LU, PR]);
+  await page.waitForTimeout(200);
+  ok("an unrelated network in the same view is still a cluster", await M(([a, b]) => { const p = __mf.pos(); return !!p[a] && !!p[b] && Math.hypot(p[a].cx - p[b].cx, p[a].cy - p[b].cy) < 600; }, [X2, Y2]));
+  {
+    const grid = await bbox([CS, AB, IN, SC, PR, LU, NI, RA]), other = await bbox([X2, Y2]);
+    ok("the grid reports its own bounds and stays clear of the cluster",
+      grid.x1 <= other.x0 || other.x1 <= grid.x0 || grid.y1 <= other.y0 || other.y1 <= grid.y0, [grid, other]);
+    const cr = await chipRects(), nr = await nodeRects([AB, IN, SC, PR, LU, NI, RA, X2, Y2, CS]);
+    let clash = 0; cr.forEach((c) => nr.forEach((n) => { if (hits(c, n)) clash++; }));
+    ok("no cell lands on a node box", clash === 0, clash);
+  }
+  await M(() => __mf.set("netGroup", "chips"));
+  await page.waitForTimeout(320);
+
+  // ---- 8. deleting an item sweeps every holder's done ----
+  await M(([h2, i]) => __mf.tickHold(h2, i), [LU, SC]);
+  await M(([h2, i]) => __mf.tickHold(h2, i), [RA, SC]);
+  await page.waitForTimeout(220);
+  ok("two holders are done with Scope", (await holds()).filter((x) => x.done.indexOf(SC) >= 0).length === 2);
+  const uD = await M(() => __mf.undoSteps);
+  await M((x) => { __mf.select(x); __mf.del(true); }, SC);
+  await page.waitForTimeout(320);
+  ok("deleting the item drops it from every done", (await holds()).every((x) => x.done.indexOf(SC) < 0), await holds());
+  ok("in one undo step", (await M(() => __mf.undoSteps)) === uD + 1, [uD, await M(() => __mf.undoSteps)]);
+  await M(() => __mf.undo());
+  await page.waitForTimeout(320);
+  ok("and one undo brings the item and both ticks back",
+    (await holds()).filter((x) => x.done.indexOf(SC) >= 0).length === 2 && (await M((x) => !!__mf.state.nodes[x], SC)), await holds());
+  await M(([a, b, d]) => { __mf.mark([a, b, d]); __mf.del(true); }, [AB, IN, PR]);
+  await page.waitForTimeout(320);
+  ok("a source left with no children is no longer a holding tie", (await holds()).length === 0, await holds());
+  ok("the plain ties are untouched", (await M(() => __mf.links.length)) >= 1);
+  await M(() => __mf.undo());
+  await page.waitForTimeout(340);
+  ok("and one undo brings the branch and its holders back", (await holds()).length === 3, await holds());
+
+  // ---- 10. the map view is unchanged ----
+  await press("Escape");
+  ok("Esc leaves Networks", (await M(() => __mf.lens)) === "off");
+  ok("no chips anywhere on the map", (await M(() => __mf.chipRows())) === 0 && (await M(() => __mf.cells())) === 0);
+  ok("the tie is still drawn as a tie", (await M(() => document.querySelectorAll("#paintLayer path.lk").length)) >= 3, await M(() => document.querySelectorAll("#paintLayer path.lk").length));
+  ok("the tree is drawn as usual", (await M(() => document.querySelectorAll("#paintLayer path.te").length)) > 0);
+
+  // ---- export and import carry both ----
+  {
+    const j = await M(() => __mf.exportJson());
+    const o = JSON.parse(j);
+    const hl = (o.state.links || []).filter((l) => l.hold);
+    ok("JSON export carries hold", hl.length === 3, hl.length);
+    ok("and done", JSON.stringify(o.state.links).indexOf("done") > 0);
+    await M(() => document.getElementById("btnMaps").click());
+    await M(() => document.getElementById("btnNewMap").click());
+    await page.waitForTimeout(240);
+    await M((t) => __mf.importJson(t), j);
+    await page.waitForTimeout(420);
+    ok("and an import brings them back", (await holds()).length === 3 && (await holds()).some((x) => x.done.length), await holds());
+  }
+
+  // ---- 11. a 1.7.1 map and a 1.7.1 settings blob ----
+  {
+    const old = await M(() => { const o = JSON.parse(__mf.exportJson()); delete o.cfg.netGroup; o.cfg.netView = "dim"; delete o.id; return JSON.stringify(o); });
+    await M((t) => __mf.importJson(t), old);
+    await page.waitForTimeout(420);
+    ok("a 1.7.1 settings blob defaults netGroup to chips", (await M(() => __mf.netGroup())) === "chips", await M(() => __mf.netGroup()));
+    ok("and leaves the settings it did carry alone", (await M(() => __mf.netView())) === "dim");
+    await M(() => __mf.set("netView", "arranged"));
+    await M(() => document.getElementById("btnMaps").click());
+    await M(() => document.getElementById("btnNewMap").click());
+    await page.waitForTimeout(240);
+    await M(() => __mf.paste("Old\n- one\n- two\n- three"));
+    await page.waitForTimeout(220);
+    const o1 = await idOf("one"), o2 = await idOf("two");
+    await M(([a, b]) => __mf.tie(a, b), [o1, o2]);
+    await page.waitForTimeout(200);
+    ok("a 1.7.1 map opens with no holding ties", (await holds()).length === 0 && (await M(() => __mf.links.length)) === 1);
+    await press("Meta+2");
+    ok("and Networks is exactly as it was", (await M(() => __mf.lens)) === "dim" && (await M(() => __mf.chipRows())) === 0);
+    await press("Escape");
+  }
 
   ok("no runtime errors", errors.length === 0, errors);
 }

@@ -362,9 +362,57 @@ console.log("\nrender with 150 cross-links in a 1200-node map (median of 9 selec
     if (foldMs) { results.links["networks: fold"] = foldMs.ms; row("  networks: fold one", foldMs.ms, foldMs.runs + " relaxations for the fold and unfold, " + foldMs.nets + " networks on screen"); }
     await page.evaluate(() => __mf.setLens("off"));
   }
-  await page.evaluate((n) => { __mf.state.links.length = n; }, nLinks);
-  {
+  /* 1.8.0: a held branch with several holders. Entering the view against the
+     same map without one, and a tick, which should not appear at all. */
+  if (!hasNetView) { row("  a held branch", "n/a", "no netView in this build"); }
+  else {
+    await setView("arranged");
+    const made = await page.evaluate(() => {
+      const s = __mf.state, ids = Object.keys(s.nodes);
+      /* a node with a decent number of children is the source; eight holders */
+      const size = (i) => { let n = 0; (function w(x) { n++; s.nodes[x].children.forEach(w); })(i); return n; };
+      const src = ids.filter((i) => s.nodes[i].children.length >= 4 && size(i) <= 40)
+        .sort((a, b) => s.nodes[b].children.length - s.nodes[a].children.length)[0];
+      if (!src) return null;
+      const inside = {}; (function w(i) { inside[i] = 1; s.nodes[i].children.forEach(w); })(src);
+      const up = {}; { let n = s.nodes[src]; while (n) { up[n.id] = 1; n = n.parent ? s.nodes[n.parent] : null; } }
+      const holders = ids.filter((i) => !inside[i] && !up[i] && !s.nodes[i].children.length).slice(0, 8);
+      holders.forEach((h) => __mf.holdTie(h, src));
+      return { src: src, holders: holders.length, items: __mf.holdItems(src).length };
+    });
+    if (!made) row("  a held branch", "n/a", "no branch wide enough in this map");
+    else {
+      for (const g of ["chips", "lanes"]) {
+        await page.evaluate((v) => { __mf.setLens("off"); __mf.set("netGroup", v); }, g);
+        await page.waitForTimeout(120);
+        const enter = await page.evaluate(() => {
+          const xs = [];
+          for (let i = 0; i < 5; i++) { __mf.setLens("off"); const t0 = performance.now(); __mf.setLens("dim"); xs.push(performance.now() - t0); }
+          xs.sort((a, b) => a - b);
+          return { ms: Math.round(xs[2] * 10) / 10, chips: __mf.chipRows() + __mf.cells() };
+        });
+        results.links["held branch: enter (" + g + ")"] = enter.ms;
+        row("  held branch: enter (" + g + ")", enter.ms, made.holders + " holders, " + made.items + " items, " + enter.chips + " chip elements");
+      }
+      await page.evaluate((v) => { __mf.setLens("off"); __mf.set("netGroup", v); __mf.setLens("dim"); }, "chips");
+      await page.waitForTimeout(120);
+      const tick = await page.evaluate((src) => {
+        const items = __mf.holdItems(src), hs = __mf.holds(), xs = [], r0 = __mf.arrangeRuns();
+        if (!hs.length || !items.length) return { ms: 0, runs: 0, none: true };
+        for (let i = 0; i < 9; i++) {
+          const t0 = performance.now();
+          __mf.tickHold(hs[i % hs.length].holder, items[i % items.length]);
+          xs.push(performance.now() - t0);
+        }
+        xs.sort((a, b) => a - b);
+        return { ms: Math.round(xs[4] * 10) / 10, runs: __mf.arrangeRuns() - r0 };
+      }, made.src);
+      results.links["held branch: tick"] = tick.ms;
+      row("  held branch: tick a chip", tick.ms, tick.runs + " relaxations");
+      await page.evaluate(() => { __mf.setLens("off"); __mf.state.links = __mf.state.links.filter((l) => !l.hold); });
+    }
   }
+  await page.evaluate((n) => { __mf.state.links.length = n; }, nLinks);
 }
 
 /* ---------- 6. a talk step, in reach "told" and reach "all" ---------- */

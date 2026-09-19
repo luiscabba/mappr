@@ -3,6 +3,42 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.8.0] - 2026-09-19
+
+### Added
+- **Hand a branch to someone.** Select two nodes, the one that takes the work
+  first and the branch to hand over second, and press `⌥⇧H`. That node now
+  holds the whole branch as its own, and so does anyone else you hand it to.
+  Nothing is copied: there is still only one of each item, so renaming one
+  renames it for everybody. The right-click menu has the same thing worded
+  both ways, and `⌥⇧H` again takes the branch back.
+- **Networks shows who holds what, and how far each of them has got.** In
+  `⌘2` the held branch is drawn once, as a tree, and each item carries a small
+  chip for every holder. Click a holder's chip to mark them done with that
+  item, which is how you see at a glance who still owes you the Abstract. It
+  is a click and nothing else: there is no key for it.
+- **The same thing as a grid.** The Style panel's new **A held branch** row has
+  **Lanes**: a row per item, a column per holder, and a cell you click for each
+  pair, for when you would rather compare holders than read the branch. Any
+  other network in the view is still laid out as a cluster beside it.
+- **The map is unchanged.** `⌘1` draws a holding tie as an ordinary tie with a
+  small mark at the end that holds it, so you can see which way it points
+  without opening Networks. No chips anywhere on the map.
+
+### Changed
+- A holding tie and a branch tie are the same tie worn two ways, so making one
+  on a pair that has the other swaps it over and says so in the status line.
+- Only a node with children can be handed over, and a node can never end up
+  holding itself: both are refused with a nudge and a word rather than quietly
+  making a tie that means nothing.
+- Deleting, merging or moving an item out of a held branch clears it from
+  every holder's list in the same step, so one `⌘Z` puts the item and its
+  ticks back together.
+- Your file carries all of it. Breaking a branch out into its own map takes
+  the holders and their ticks with the tie, a copied branch pastes with them,
+  and a map saved before this release opens with no holding ties and nothing
+  else disturbed.
+
 ## [1.7.1] - 2026-09-19
 
 ### Changed
