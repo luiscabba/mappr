@@ -3,6 +3,45 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.9.0] - 2026-09-21
+
+### Changed
+- **Handing a branch over is just a tie now.** `⌥⇧H` is gone, one release
+  after it arrived, and you will not miss it: select a node, `⌘`+click a
+  branch, and that node holds the branch. That is the same tie you were
+  already making, and it always meant this. If both nodes have branches of
+  their own, the one you clicked is the one handed over, so the order you
+  click in is the direction. A node tied straight to a single item takes on
+  that item.
+- **A branch tie is how you say nothing is owned.** Every other tie hands
+  something over, so the branch tie is now the one that says these two simply
+  relate. Turning a tie into one gives the branch back and says so.
+- **Maps made before this release gain hand-overs they never had.** That is
+  the point of the rule rather than an accident of it, and it is why the new
+  switch starts at Off. A map saved by 1.8.0 opens with exactly the holders it
+  had, its ticks intact.
+
+### Added
+- **The Holders switch.** Networks has a switch next to the view tabs with
+  three positions. **Off** is the map of ties you already knew, with a quiet
+  count under each held item so you can see there is something there, and
+  clicking that count opens it up. **Chips** puts a holder chip on every item.
+  **Lanes** lays the same thing out as a grid. The Style panel loses its row
+  for this, because the switch says it better and says it once.
+
+### Changed
+- **Networks is quieter.** The centre node stops sitting in the middle of a
+  view it has nothing to do with, unless something is tied to it. The tie
+  counts only appear when they are counting something you cannot see, since in
+  Networks everything on screen is tied by definition. `Esc` always takes you
+  back exactly one step, whichever way you came in, and so does `⌘/`.
+  Folding a network's first node now says how much it is holding back instead
+  of looking like the network disappeared. And the untied parts of the map
+  fade out when the view opens rather than blinking away.
+- **Tab and the arrows agree about what is next.** Tab walks the networks in
+  the order they read on screen, down the page and then across it, and an
+  arrow takes the network that way rather than the next one along the tree.
+
 ## [1.8.0] - 2026-09-19
 
 ### Added

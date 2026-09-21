@@ -362,8 +362,10 @@ console.log("\nrender with 150 cross-links in a 1200-node map (median of 9 selec
     if (foldMs) { results.links["networks: fold"] = foldMs.ms; row("  networks: fold one", foldMs.ms, foldMs.runs + " relaxations for the fold and unfold, " + foldMs.nets + " networks on screen"); }
     await page.evaluate(() => __mf.setLens("off"));
   }
-  /* 1.8.0: a held branch with several holders. Entering the view against the
-     same map without one, and a tick, which should not appear at all. */
+  /* 1.8.0, reworked in 1.9.0: a handed-over branch with several holders. The
+     tie is an ordinary one now, so this is eight plain ties onto one branch.
+     Entering the view against the same map, and a tick, which should not
+     appear at all. */
   if (!hasNetView) { row("  a held branch", "n/a", "no netView in this build"); }
   else {
     await setView("arranged");
@@ -377,12 +379,13 @@ console.log("\nrender with 150 cross-links in a 1200-node map (median of 9 selec
       const inside = {}; (function w(i) { inside[i] = 1; s.nodes[i].children.forEach(w); })(src);
       const up = {}; { let n = s.nodes[src]; while (n) { up[n.id] = 1; n = n.parent ? s.nodes[n.parent] : null; } }
       const holders = ids.filter((i) => !inside[i] && !up[i] && !s.nodes[i].children.length).slice(0, 8);
-      holders.forEach((h) => __mf.holdTie(h, src));
+      /* the holder is the node you start from, the branch the node you click */
+      holders.forEach((h) => __mf.tie(h, src));
       return { src: src, holders: holders.length, items: __mf.holdItems(src).length };
     });
     if (!made) row("  a held branch", "n/a", "no branch wide enough in this map");
     else {
-      for (const g of ["chips", "lanes"]) {
+      for (const g of ["off", "chips", "lanes"]) {
         await page.evaluate((v) => { __mf.setLens("off"); __mf.set("netGroup", v); }, g);
         await page.waitForTimeout(120);
         const enter = await page.evaluate(() => {
@@ -397,7 +400,9 @@ console.log("\nrender with 150 cross-links in a 1200-node map (median of 9 selec
       await page.evaluate((v) => { __mf.setLens("off"); __mf.set("netGroup", v); __mf.setLens("dim"); }, "chips");
       await page.waitForTimeout(120);
       const tick = await page.evaluate((src) => {
-        const items = __mf.holdItems(src), hs = __mf.holds(), xs = [], r0 = __mf.arrangeRuns();
+        /* only the holders of THIS branch: every tie is a hand-over now, so
+           holders() lists the whole map and an arbitrary one would tick nothing */
+        const items = __mf.holdItems(src), hs = __mf.holders().filter((h) => h.source === src), xs = [], r0 = __mf.arrangeRuns();
         if (!hs.length || !items.length) return { ms: 0, runs: 0, none: true };
         for (let i = 0; i < 9; i++) {
           const t0 = performance.now();
@@ -409,7 +414,7 @@ console.log("\nrender with 150 cross-links in a 1200-node map (median of 9 selec
       }, made.src);
       results.links["held branch: tick"] = tick.ms;
       row("  held branch: tick a chip", tick.ms, tick.runs + " relaxations");
-      await page.evaluate(() => { __mf.setLens("off"); __mf.state.links = __mf.state.links.filter((l) => !l.hold); });
+      await page.evaluate((n2) => { __mf.setLens("off"); __mf.state.links.length = n2; }, nLinks);
     }
   }
   await page.evaluate((n) => { __mf.state.links.length = n; }, nLinks);

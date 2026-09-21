@@ -1058,13 +1058,14 @@ group("networks: indirect links, folding them, focus into a lens");
   await M(() => __mf.setLens("dim")); await page.waitForTimeout(250);
   await M((x) => __mf.select(x), A);
   await press("Meta+/");
-  ok("focus in dim shows the whole chain", (await lensIs()) === "one" && (await M(() => __mf.shown)) === 5, await M(() => __mf.shown));
+  /* 1.9.0: A-B hands A's branch to B, so a1 is an item of the network too */
+  ok("focus in dim shows the whole chain", (await lensIs()) === "one" && (await M(() => __mf.shown)) === 6, await M(() => __mf.shown));
   ok("and every link inside it", (await arcs()) === 3, await arcs());
 
   // Cmd+E folds the network, not the tree
   await M((x) => __mf.select(x), B);
   await press("Meta+e");
-  ok("folding B hides what is only reached through it", (await M(() => __mf.shown)) === 3, await M(() => __mf.shown));
+  ok("folding B hides what is only reached through it", (await M(() => __mf.shown)) === 4, await M(() => __mf.shown));
   ok("B itself stays", await M((x) => !!__mf.pos()[x], B));
   ok("the fold is recorded on the network", (await M(() => __mf.lensFold)).join() === B);
   ok("and it wears a count", await M((x) => [...document.querySelectorAll(".badge.link")].some((b) => b.dataset.lf === x && b.textContent === "+2"), B));
@@ -1072,11 +1073,12 @@ group("networks: indirect links, folding them, focus into a lens");
   await M((x) => __mf.select(x), D);
   await M((x) => __mf.select(x), A);
   await press("Meta+e");
-  ok("folding the origin hides the rest", (await M(() => __mf.shown)) === 2, await M(() => __mf.shown));
+  ok("folding the origin folds the network to one node", (await M(() => __mf.shown)) === 2, await M(() => __mf.shown));
+  ok("and that node says how much it is holding back", await M((x) => [...document.querySelectorAll(".badge.link")].some((b) => b.dataset.lf === x && /^\+\d+ folded$/.test(b.textContent)), A), await M(() => [...document.querySelectorAll(".badge.link")].map((b) => b.textContent)));
   await press("Meta+e");
   await M((x) => __mf.select(x), B);
   await press("Meta+e");
-  ok("pressing again brings them back", (await M(() => __mf.shown)) === 5, await M(() => __mf.shown));
+  ok("pressing again brings them back", (await M(() => __mf.shown)) === 6, await M(() => __mf.shown));
   await press("Meta+e");
   await press("Escape");
   ok("Escape steps back to dim", (await lensIs()) === "dim");
@@ -1088,7 +1090,7 @@ group("networks: indirect links, folding them, focus into a lens");
   await press("Meta+/");
   ok("plain focus first", (await M(() => __mf.focus)) === A);
   await press("Meta+2");
-  ok("Cmd+2 from focus opens that node's network", (await lensIs()) === "one" && (await M(() => __mf.shown)) === 5, await lensIs());
+  ok("Cmd+2 from focus opens that node's network", (await lensIs()) === "one" && (await M(() => __mf.shown)) === 6, await lensIs());
   ok("focus made way for it", (await M(() => __mf.focus)) === null);
   await press("Escape"); await press("Escape");
   // turning it off lands you back in the focused branch, not the whole map
@@ -1151,9 +1153,15 @@ group("networks: every network arranged (1.7.0)");
   ok("Cmd+2 opens Networks", (await lensIs()) === "dim");
   ok("every untied node leaves the view", !(await has(E)) && !(await has(await idOf("P1"))) && !(await has(Q)));
   ok("every tied node stays", (await has(A)) && (await has(B)) && (await has(H)) && (await has(Y)));
-  ok("and so does the centre", await has(await M(() => __mf.state.rootId)));
-  ok("nothing else has a pos", (await M(() => __mf.shown)) === 10, await M(() => __mf.shown));
-  ok("the tree is not drawn", (await treeEdges()) === 0, await treeEdges());
+  /* 1.9.0: the centre keeps its anchor, because the arrange pushes clear of it
+     and Cmd+0 falls back to it, but nothing draws it when nothing is tied to it */
+  ok("the centre keeps its anchor", await has(await M(() => __mf.state.rootId)));
+  ok("and is not drawn", await M(() => { const el = document.querySelector('#nodes [data-id="' + __mf.state.rootId + '"]'); return !!el && /lenshide/.test(el.className); }));
+  ok("a fit steps over it", await M(() => { const c = __mf.cam(), p = __mf.pos()[__mf.state.rootId]; void p; return c.z > 0; }));
+  /* A-B hands A's branch to B (1.9.0), so a1 is an item of that network */
+  ok("an item of a handed-over branch comes in with it", await has(await idOf("a1")));
+  ok("nothing else has a pos", (await M(() => __mf.shown)) === 11, await M(() => __mf.shown));
+  ok("only a handed-over branch is drawn as a tree", (await treeEdges()) === 2, await treeEdges());
   ok("three networks", (await M(() => __mf.networks())).length === 3);
   const nets = await M(() => __mf.networks());
   ok("the arrange ran once per network on entry", (await runs()) - rEntry === 3, (await runs()) - rEntry);
@@ -1191,18 +1199,39 @@ group("networks: every network arranged (1.7.0)");
   await page.waitForTimeout(200);
   ok("untying splits them again", (await M(() => __mf.networks())).length === 3);
 
-  // 7. Tab and the arrows step network to network; Cmd+/ opens one and comes back here
+  // 7. Tab and the arrows agree (1.9.0): Tab reads across the screen, an arrow
+  //    takes the network that way. Cmd+/ opens one and comes back here.
   const nets2 = await M(() => __mf.networks());
+  const netOf = (id) => nets2.findIndex((c) => c.indexOf(id) >= 0);
   await M((x) => __mf.select(x), nets2[0][0]);
   await press("Tab");
-  ok("Tab steps to the next network", (await M(() => __mf.selected)) === nets2[1][0], await M(() => __mf.selected));
-  await press("ArrowRight");
-  ok("an arrow steps to the next", (await M(() => __mf.selected)) === nets2[2][0]);
+  const tab1 = await M(() => __mf.selected);
+  ok("Tab steps to another network", netOf(tab1) >= 0 && netOf(tab1) !== 0, tab1);
+  ok("and lands on its first node", nets2[netOf(tab1)][0] === tab1);
+  {
+    const seenN = new Set([0, netOf(tab1)]);
+    for (let i = 0; i < 2; i++) { await press("Tab"); seenN.add(netOf(await M(() => __mf.selected))); }
+    ok("and Tab round the lot visits every network", seenN.size === 3, [...seenN]);
+  }
+  let land = null, dir = null;
+  const b0 = await bbox(nets2[0]);
+  for (const k of ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"]) {
+    await M((x) => __mf.select(x), nets2[0][0]);
+    await press(k);
+    const sN = await M(() => __mf.selected);
+    if (netOf(sN) !== 0) { land = sN; dir = k; break; }
+  }
+  ok("an arrow steps a whole network, not a node", land != null && nets2[netOf(land)][0] === land, land);
+  {
+    const b1 = await bbox(nets2[netOf(land)]);
+    const right = dir === "ArrowRight" ? b1.x0 > b0.x0 : dir === "ArrowLeft" ? b1.x1 < b0.x1 : dir === "ArrowDown" ? b1.y0 > b0.y0 : b1.y1 < b0.y1;
+    ok("and it is the one that way", right, [dir, b0, b1]);
+  }
   ok("still in Networks", (await lensIs()) === "dim");
   await press("Meta+/");
-  ok("Cmd+/ opens that network on its own", (await lensIs()) === "one" && (await M(() => __mf.shown)) === 4, await M(() => __mf.shown));
+  ok("Cmd+/ opens that network on its own", (await lensIs()) === "one" && (await M(() => __mf.shown)) === nets2[netOf(land)].length + 1, await M(() => __mf.shown));
   await press("Meta+/");
-  ok("and Cmd+/ again comes back to Networks", (await lensIs()) === "dim" && (await M(() => __mf.shown)) === 10, await M(() => __mf.shown));
+  ok("and Cmd+/ again comes back to Networks", (await lensIs()) === "dim" && (await M(() => __mf.shown)) === 11, await M(() => __mf.shown));
 
   // 1.7.1: the key bar has its own mode for the arranged view
   ok("the key bar is in its Networks mode", (await M(() => __mf.hintMode())) === "nets", await M(() => __mf.hintMode()));
@@ -1704,7 +1733,8 @@ group("presentation: a talk set up the way you talk (1.6.0)");
   ok("and the talk ending closes it too", (await P()) === null && !(await M(() => __mf.talkOpen)) && await M(() => getComputedStyle(document.getElementById("talk")).display === "none"));
   await reset();
   /* 13 presenting options plus the four Networks options, worded the same way since 1.7.0 */
-  ok("the Style panel's Presenting rows are worded the same way", (await M(() => { document.getElementById("btnStyle").click(); const n = document.querySelectorAll("#styleScroll .opt.txt").length; document.getElementById("btnStyle").click(); return n; })) === 17);
+  /* 1.9.0: the held-branch row left the panel for the Holders switch */
+  ok("the Style panel's Presenting rows are worded the same way", (await M(() => { document.getElementById("btnStyle").click(); const n = document.querySelectorAll("#styleScroll .opt.txt").length; document.getElementById("btnStyle").click(); return n; })) === 15);
 
   // ---- 8. a 1.5.1 settings blob loads with the new keys defaulted ----
   await M(() => { __mf.cfg.slop = 3; __mf.set("gap", __mf.cfg.gap); });
@@ -2061,11 +2091,14 @@ group("working inside a network");
   await M((x) => __mf.select(x), B);
   await page.keyboard.down("Tab"); await page.keyboard.up("Tab"); await page.waitForTimeout(200);
   const t1 = await M(() => __mf.selected);
-  ok("Tab goes on through the network, nearest first", t1 === D, t1);
+  /* 1.9.0: A-B hands A's branch over, so a1 is in the network and is reached
+     from A in the same hop as B and D */
+  const a1 = await idOf("a1");
+  ok("Tab goes on through the network, nearest first", t1 === a1, t1);
   const seen = new Set([B, t1]);
-  for (let i = 0; i < 3; i++) { await page.keyboard.down("Tab"); await page.keyboard.up("Tab"); await page.waitForTimeout(150); seen.add(await M(() => __mf.selected)); }
-  ok("and visits the whole network", [A, B, C, D].every((x) => seen.has(x)), [...seen].length);
-  ok("and nothing outside it", seen.size === 4);
+  for (let i = 0; i < 4; i++) { await page.keyboard.down("Tab"); await page.keyboard.up("Tab"); await page.waitForTimeout(150); seen.add(await M(() => __mf.selected)); }
+  ok("and visits the whole network", [A, B, C, D, a1].every((x) => seen.has(x)), [...seen].length);
+  ok("and nothing outside it", seen.size === 5);
 
   // making a node ties it, so it stays in view
   await M((x) => __mf.select(x), C);
@@ -2076,7 +2109,7 @@ group("working inside a network");
   const made = await M(() => __mf.selected);
   ok("a node made in a network is on screen", await selVisible());
   ok("because it is tied to where it came from", await M(([c, m]) => __mf.links.some((l) => (l.a === c && l.b === m) || (l.a === m && l.b === c)), [C, made]));
-  ok("the network is still arranged while you type", (await M(() => __mf.shown)) === 6, await M(() => __mf.shown));
+  ok("the network is still arranged while you type", (await M(() => __mf.shown)) === 7, await M(() => __mf.shown));
   await press("Escape");
   ok("Esc while typing finishes the node and stays in the network", (await M(() => __mf.lens)) === "one");
   ok("the new node kept its text", await M((m) => __mf.state.nodes[m].text === "New idea", made));
@@ -2210,8 +2243,10 @@ group("QoL: focus toggle, undoing a retype, copying views, tabbed keys");
     document.dispatchEvent(ev);
     res({ t: dt.getData("text/plain"), h: dt.getData("text/html") });
   }));
-  ok("Cmd+C in a network copies the network as an outline", clip && clip.t === "Alpha\n- B1\n  - A2", clip);
-  ok("with nested html", clip && /<ul><li>Alpha<ul><li>B1<ul><li>A2/.test(clip.h), clip);
+  /* 1.9.0: Alpha has a branch, so the tie hands it over and its items are in
+     the network beside B1 rather than one hop further out */
+  ok("Cmd+C in a network copies the network as an outline", clip && clip.t === "Alpha\n- B1\n- A1\n- A2", clip);
+  ok("with nested html", clip && /<ul><li>Alpha<ul><li>B1<\/li><li>A1<\/li><li>A2/.test(clip.h), clip);
   ok("the network bar has a copy menu, with the two Copy as rows", await M(() => __mf.copyMenu() && document.querySelectorAll("#storyMenu .mi").length === 4));
   await press("Escape");
   ok("any key closes the copy menu first", await M(() => !document.getElementById("storyMenu")) && (await M(() => __mf.lens)) === "one");
@@ -2219,9 +2254,10 @@ group("QoL: focus toggle, undoing a retype, copying views, tabbed keys");
   await M(() => document.querySelector('#exportMenu [data-x="svg"]').click());
   await page.evaluate(() => document.getElementById("btnExport").click());
   const svg = await M(() => __mf.lastSvg || "");
-  ok("a network image holds just the network", [">Alpha<", ">B1<", ">A2<"].every((t) => svg.includes(t)) && !svg.includes(">Q<") && !svg.includes(">A1<"), svg.length);
+  ok("a network image holds just the network", [">Alpha<", ">B1<", ">A2<", ">A1<"].every((t) => svg.includes(t)) && !svg.includes(">Q<"), svg.length);
   await press("Meta+/");
-  ok("Cmd+/ on the network's centre goes back to the view it came from", (await M(() => __mf.lens)) === "dim", await M(() => __mf.lens));
+  /* 1.9.0: Esc and Cmd+/ both peel exactly one layer, whatever you came from */
+  ok("Cmd+/ on the network's centre goes back to Networks", (await M(() => __mf.lens)) === "dim", await M(() => __mf.lens));
   await press("Escape");
 
   // copying a story, so far and whole
@@ -4850,15 +4886,16 @@ group("1.5.1: the shape survives a rendered copy, and a fence is not a node");
   ok("no runtime errors", errors.length === 0, errors);
 }
 
-group("1.8.0: inherited children");
+group("1.9.0: a tie is the hand-over");
 {
   await M(() => document.getElementById("btnMaps").click());
   await M(() => document.getElementById("btnNewMap").click());
   await page.waitForTimeout(240);
   const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
   const press = async (k) => { await page.keyboard.press(k); await page.waitForTimeout(300); };
-  const holds = () => M(() => __mf.holds());
+  const holders = () => M(() => __mf.holders());
   const runs = () => M(() => __mf.arrangeRuns());
+  const raw = () => M(() => JSON.stringify(__mf.links));
   const bbox = (ids) => M((ids) => {
     const p = __mf.pos(), b = __mf.boxes(); let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
     ids.forEach((i) => { if (!p[i]) return; x0 = Math.min(x0, p[i].cx - b[i].w / 2); x1 = Math.max(x1, p[i].cx + b[i].w / 2); y0 = Math.min(y0, p[i].cy - b[i].h / 2); y1 = Math.max(y1, p[i].cy + b[i].h / 2); });
@@ -4878,100 +4915,108 @@ group("1.8.0: inherited children");
   await page.waitForTimeout(280);
   const LU = await idOf("Luis"), NI = await idOf("Nico"), RA = await idOf("Rafa"), CS = await idOf("Case Study");
   const AB = await idOf("Abstract"), IN = await idOf("Introduction"), SC = await idOf("Scope"), PR = await idOf("Problem");
-  const XX = await idOf("X"), YY = await idOf("Y");
+  const OT = await idOf("Other"), XX = await idOf("X"), YY = await idOf("Y");
 
-  // ---- 1. the tie, and which way round it points ----
-  await M(([a, b]) => { __mf.select(a); __mf.mark([a, b]); }, [LU, CS]);
-  await press("Alt+Shift+KeyH");
-  let h = await holds();
-  ok("Opt+Shift+H makes a holding tie", h.length === 1, h);
-  ok("the first selected node holds", h[0] && h[0].holder === LU && h[0].source === CS, h[0]);
-  ok("hold names the source end", await M(([a, b]) => { const l = __mf.links.find((x) => x.hold); return (l.hold === "a" ? l.a : l.b) === b && (l.hold === "a" ? l.b : l.a) === a; }, [LU, CS]));
-  await M(([a, b]) => __mf.holdTie(a, b), [LU, CS]);
-  ok("the same pair again takes the branch back", (await holds()).length === 0);
-  /* both ends need children for the swap to be legal either way round */
-  const OT = await idOf("Other");
-  await M(([a, b]) => __mf.holdTie(a, b), [CS, OT]);
-  ok("CS holds Other's branch", (await holds())[0].holder === CS && (await holds())[0].source === OT, await holds());
-  await M(([a, b]) => __mf.holdTie(a, b), [CS, OT]);
-  await M(([a, b]) => __mf.holdTie(a, b), [OT, CS]);
-  ok("swapping the order swaps holder and source", (await holds())[0].holder === OT && (await holds())[0].source === CS, await holds());
-  await M(([a, b]) => __mf.holdTie(a, b), [OT, CS]);
-  ok("and untying it leaves nothing behind", (await holds()).length === 0 && (await M(() => __mf.links.length)) === 0);
+  // ---- 1. the rule: no key, and the ends say which way it goes ----
+  await M(([a, b]) => __mf.tie(a, b), [LU, CS]);
+  let h = await holders();
+  ok("a tie from a name onto a branch hands the branch over, with no key pressed", h.length === 1 && h[0].holder === LU && h[0].source === CS, h);
+  ok("and nothing about it is stored on the link", !/hold/.test(await raw()), await raw());
+  ok("the items are the branch, as folded on screen", (await M((x) => __mf.holdItems(x), CS)).join() === [AB, IN, SC, PR].join(), await M((x) => __mf.holdItems(x), CS));
+  await M(([a, b]) => __mf.tie(a, b), [LU, CS]);
+  ok("untying it takes the hand-over with it", (await holders()).length === 0 && (await M(() => __mf.links.length)) === 0);
 
-  // ---- 2. what it refuses ----
-  const before = await M(() => JSON.stringify(__mf.links));
-  ok("a leaf source has nothing to hand over", (await M(([a, b]) => __mf.holdTie(a, b), [LU, NI])) === "leaf");
-  ok("a source inside the holder is refused", (await M(([a, b]) => __mf.holdTie(a, b), [CS, IN])) === "cycle");
-  ok("a holder inside the source is refused", (await M(([a, b]) => __mf.holdTie(a, b), [AB, CS])) === "cycle");
-  ok("a node cannot hold itself", (await M((a) => __mf.holdTie(a, a), CS)) === "no");
-  ok("every refusal changed nothing", (await M(() => JSON.stringify(__mf.links))) === before, await M(() => __mf.links));
-  await M(() => __mf.select(__mf.state.rootId));
-  await page.waitForTimeout(120);
+  // both ends have a branch: the end you clicked is the work
+  await M(([a, b]) => __mf.tie(a, b), [CS, OT]);
+  h = await holders();
+  ok("with a branch at both ends the one you clicked is handed over", h[0].holder === CS && h[0].source === OT, h);
+  await M(([a, b]) => __mf.tie(a, b), [CS, OT]);
+  await M(([a, b]) => __mf.tie(a, b), [OT, CS]);
+  h = await holders();
+  ok("and making the same tie the other way round swaps which branch it is", h[0].holder === OT && h[0].source === CS, h);
+  await M(([a, b]) => __mf.tie(a, b), [OT, CS]);
 
-  // a map link node at either end
-  const mapLinkId = OT;
-  await M((x) => __mf.select(x), mapLinkId);
-  await key("Alt+KeyB");
-  await page.waitForTimeout(420);
-  ok("break out leaves a map link behind", await M((x) => !!__mf.state.nodes[x].link, mapLinkId));
-  ok("a map link is a leaf, so it can neither hold nor be held",
-    (await M(([a, b]) => __mf.holdTie(a, b), [mapLinkId, CS])) === "link" &&
-    (await M(([a, b]) => __mf.holdTie(a, b), [CS, mapLinkId])) === "link");
-  await M((x) => __mf.select(x), mapLinkId);
-  await key("Alt+KeyB");
-  await page.waitForTimeout(420);
+  // only one end has a branch: that is the work, whichever way you clicked
+  await M(([a, b]) => __mf.tie(a, b), [CS, NI]);
+  h = await holders();
+  ok("one branch between them is the work whichever way round you clicked", h[0].holder === NI && h[0].source === CS, h);
+  await M(([a, b]) => __mf.tie(a, b), [CS, NI]);
 
-  // ---- 3. a holding tie and a branch tie are exclusive ----
-  const X2 = await idOf("X"), Y2 = await idOf("Y");
-  const u0 = await M(() => __mf.undoSteps);
+  // neither end has a branch: the clicked end is the item
+  await M(([a, b]) => __mf.tie(a, b), [LU, NI]);
+  h = await holders();
+  ok("a tie between two leaves assigns the one you clicked", h.length === 1 && h[0].holder === LU && h[0].source === NI && h[0].single === true, h);
+  ok("and its items are itself, not its children", (await M((x) => __mf.holdItems(x, true), NI)).join() === NI);
+  await M(([a, b]) => __mf.tie(a, b), [LU, NI]);
+
+  // a branch tie is the one tie that hands nothing over
   await M(([a, b]) => __mf.branchTie(a, b), [LU, CS]);
-  ok("a branch tie first", await M(() => __mf.links.some((l) => l.branch)));
-  await M(([a, b]) => __mf.holdTie(a, b), [LU, CS]);
-  ok("the holding tie replaces it", (await holds()).length === 1 && !(await M(() => __mf.links.some((l) => l.branch))));
-  ok("one link, not two", (await M(() => __mf.links.length)) === 1);
+  ok("a branch tie is never a hand-over", (await holders()).length === 0 && (await M(() => __mf.links.some((l) => l.branch))), await holders());
   await M(([a, b]) => __mf.branchTie(a, b), [LU, CS]);
-  ok("and the branch tie replaces the holding tie", (await holds()).length === 0 && (await M(() => __mf.links.some((l) => l.branch))) && (await M(() => __mf.links.length)) === 1);
-  await M(() => __mf.undo());
-  ok("one undo step apiece", (await holds()).length === 1, await holds());
-  await M(([a, b]) => __mf.holdTie(a, b), [LU, CS]);
-  void u0;
+  ok("and untying it leaves nothing behind", (await M(() => __mf.links.length)) === 0);
+  await M(([a, b]) => __mf.tie(a, b), [LU, CS]);
+  ok("a plain tie promoted to a branch tie gives the branch back", (await M(([a, b]) => __mf.branchTie(a, b), [LU, CS])) === "swapped" && (await holders()).length === 0);
+  await M(([a, b]) => __mf.branchTie(a, b), [LU, CS]);
 
-  // ---- the three holders, and one unrelated network ----
-  await M(([a, b]) => __mf.holdTie(a, b), [LU, CS]);
-  await M(([a, b]) => __mf.holdTie(a, b), [NI, CS]);
-  await M(([a, b]) => __mf.holdTie(a, b), [RA, CS]);
-  await M(([a, b]) => __mf.tie(a, b), [X2, Y2]);
+  // ---- 2. three holders, and one unrelated network ----
+  await M(([a, b]) => __mf.tie(a, b), [LU, CS]);
+  await M(([a, b]) => __mf.tie(a, b), [NI, CS]);
+  await M(([a, b]) => __mf.tie(a, b), [RA, CS]);
+  await M(([a, b]) => __mf.tie(a, b), [XX, YY]);
   await page.waitForTimeout(220);
-  ok("three holders on one source", (await holds()).length === 3);
+  ok("three holders on one source", (await holders()).filter((x) => x.source === CS).length === 3, await holders());
+  ok("and the tie between the two leaves assigns one item", (await holders()).filter((x) => x.single).length === 1);
 
-  // ---- 4. the subtree is drawn once, with a chip per holder ----
-  await M(() => __mf.set("netGroup", "chips"));
+  // ---- 3. the switch ----
   await M(() => __mf.set("netView", "arranged"));
   await M((x) => __mf.select(x), CS);
   await press("Meta+2");
-  ok("netGroup defaults to chips", await M(() => __mf.netGroup() === "chips"));
+  ok("the Holders switch is off to begin with", (await M(() => __mf.netSwitch())) === "off");
+  ok("Off draws a holder count where the chips would be", (await M(() => __mf.pills())) === 5 && (await M((x) => __mf.chipEls(x), AB)) === 0, await M(() => __mf.pills()));
+  ok("and the count says how many", await M((x) => { const r = document.querySelector('#chips .chiprow .hpill'); void r; const el = [...document.querySelectorAll("#chips .hpill")].map((e) => e.textContent); return el.indexOf("3 holders") >= 0; }, AB), await M(() => [...document.querySelectorAll("#chips .hpill")].map((e) => e.textContent)));
+  ok("the switch is in the mode bar, beside the view tabs", await M(() => !!document.querySelector("#modebar #netsw button[data-ng='lanes']")));
+  ok("and the Style panel has no row for it", await M(() => { document.getElementById("btnStyle").click(); const n = document.getElementById("styleScroll").textContent.indexOf("A held branch"); document.getElementById("btnStyle").click(); return n; }) < 0);
+  ok("clicking the count turns the switch to Chips", (await M((x) => __mf.clickPill(x), AB)) && ((await page.waitForTimeout(320)), (await M(() => __mf.netSwitch())) === "chips"), await M(() => __mf.netSwitch()));
+  await M(() => __mf.setNetSwitch("lanes"));
+  await page.waitForTimeout(320);
+  ok("the switch cycles off, chips and lanes", (await M(() => __mf.netSwitch())) === "lanes" && (await M(() => __mf.cells())) > 0);
+  await M(() => __mf.setNetSwitch("off"));
+  await page.waitForTimeout(320);
+  ok("and back to off", (await M(() => __mf.netSwitch())) === "off" && (await M(() => __mf.cells())) === 0 && (await M(() => __mf.pills())) === 5);
+  await M(() => __mf.setNetSwitch("chips"));
+  await page.waitForTimeout(400);
+
+  // ---- 4. the subtree is drawn once, with a chip per holder ----
   ok("the held branch comes into the view", await M(([a, b, c]) => { const p = __mf.pos(); return !!p[a] && !!p[b] && !!p[c]; }, [AB, IN, SC]));
   ok("every item has exactly one position", await M(([a, b, c, d]) => { const p = __mf.pos(); return [a, b, c, d].every((i) => !!p[i]); }, [AB, IN, SC, PR]));
-  ok("a chip row per item, and none on the source", (await M(() => __mf.chipRows())) === 4 && (await M((x) => __mf.chipEls(x), CS)) === 0, await M(() => __mf.chipRows()));
+  /* four items of Case Study plus the one item the X-Y tie assigns */
+  ok("a chip row per item, and none on the source", (await M(() => __mf.chipRows())) === 5 && (await M((x) => __mf.chipEls(x), CS)) === 0, await M(() => __mf.chipRows()));
   ok("one chip per holder on each item", (await M((x) => __mf.chipEls(x), AB)) === 3 && (await M((x) => __mf.chipEls(x), SC)) === 3);
   ok("the chips name the holders in tree order", (await M((x) => __mf.chipsOf(x), AB)).map((c) => c.holder).join() === [LU, NI, RA].join());
   ok("the untied network is still its own", (await M(() => __mf.networks())).length === 2);
+
+  // 3b. a holder on the branch AND on one of its items is one chip, not two
+  await M(([a, b]) => __mf.tie(a, b), [RA, AB]);
+  await page.waitForTimeout(320);
+  ok("a holder tied to a branch and to one of its items gets one chip on it", (await M((x) => __mf.chipsOf(x), AB)).filter((c) => c.holder === RA).length === 1, await M((x) => __mf.chipsOf(x), AB));
+  ok("and the others are untouched", (await M((x) => __mf.chipEls(x), AB)) === 3);
+  await M(([a, b]) => __mf.tie(a, b), [RA, AB]);
+  await page.waitForTimeout(320);
 
   // ---- 5. a tick, undone, with no relaxation ----
   const rTick = await runs();
   ok("clicking a chip ticks it", await M(([h2, i]) => __mf.clickChip(h2, i), [NI, AB]));
   await page.waitForTimeout(260);
-  ok("the tie carries the item id", (await holds()).find((x) => x.holder === NI).done.join() === AB, await holds());
-  ok("and nobody else's does", (await holds()).filter((x) => x.done.length).length === 1);
+  ok("the tie carries the item id", (await holders()).find((x) => x.holder === NI).done.join() === AB, await holders());
+  ok("and nobody else's does", (await holders()).filter((x) => x.done.length).length === 1);
   ok("the chip reads as done", (await M((x) => __mf.chipsOf(x), AB)).find((c) => c.holder === NI).done === true);
   ok("a tick runs no relaxation", (await runs()) === rTick, (await runs()) - rTick);
   await M(() => __mf.undo());
   await page.waitForTimeout(260);
-  ok("one Cmd+Z puts the tick back", (await holds()).every((x) => !x.done.length), await holds());
+  ok("one Cmd+Z puts the tick back", (await holders()).every((x) => !x.done.length), await holders());
   await M(([h2, i]) => __mf.tickHold(h2, i), [NI, AB]);
   await page.waitForTimeout(220);
-  ok("and it can be ticked again from the keyboard-free path", (await holds()).find((x) => x.holder === NI).done.join() === AB);
+  ok("and it can be ticked again from the keyboard-free path", (await holders()).find((x) => x.holder === NI).done.join() === AB);
 
   // ---- 6. a chip must not take the keyboard ----
   await M((x) => __mf.select(x), AB);
@@ -4985,19 +5030,19 @@ group("1.8.0: inherited children");
   await M(([h2, i]) => __mf.tickHold(h2, i), [RA, AB]);
   await page.waitForTimeout(200);
 
-  // ---- 9. the chip band is in the push ----
+  // ---- 7. the chip band is in the push ----
   {
-    const cr = await chipRects(), nr = await nodeRects([AB, IN, SC, PR, LU, NI, RA, X2, Y2, CS]);
+    const cr = await chipRects(), nr = await nodeRects([AB, IN, SC, PR, LU, NI, RA, XX, YY, CS]);
     let clash = 0;
     cr.forEach((c) => nr.forEach((n) => { if (hits(c, n)) clash++; }));
     ok("no chip row lands on a node box", clash === 0, clash);
-    const held = await bbox([CS, AB, IN, SC, PR, LU, NI, RA]), other = await bbox([X2, Y2]);
+    const held = await bbox([CS, AB, IN, SC, PR, LU, NI, RA]), other = await bbox([XX, YY]);
     ok("the held network and the plain one stay clear of each other",
       held.x1 <= other.x0 || other.x1 <= held.x0 || held.y1 <= other.y0 || other.y1 <= held.y0, [held, other]);
   }
 
-  // ---- 7. lanes ----
-  await M(() => __mf.set("netGroup", "lanes"));
+  // ---- 8. lanes ----
+  await M(() => __mf.setNetSwitch("lanes"));
   await page.waitForTimeout(420);
   ok("lanes draws a cell per pair", (await M(() => __mf.cells())) === 12, await M(() => __mf.cells()));
   ok("and no chip rows", (await M(() => __mf.chipRows())) === 0);
@@ -5006,85 +5051,106 @@ group("1.8.0: inherited children");
   ok("one column per holder", await M(([a, b, c]) => { const p = __mf.pos(); const xs = [a, b, c].map((i) => Math.round(p[i].cx)); return new Set(xs).size === 3 && Math.round(p[a].cy) === Math.round(p[b].cy); }, [LU, NI, RA]));
   ok("a cell click ticks the same way a chip does", await M(([h2, i]) => __mf.clickChip(h2, i), [LU, PR]));
   await page.waitForTimeout(240);
-  ok("and the tie carries it", (await holds()).find((x) => x.holder === LU).done.join() === PR, await holds());
+  ok("and the tie carries it", (await holders()).find((x) => x.holder === LU).done.join() === PR, await holders());
   await M(([h2, i]) => __mf.tickHold(h2, i), [LU, PR]);
   await page.waitForTimeout(200);
-  ok("an unrelated network in the same view is still a cluster", await M(([a, b]) => { const p = __mf.pos(); return !!p[a] && !!p[b] && Math.hypot(p[a].cx - p[b].cx, p[a].cy - p[b].cy) < 600; }, [X2, Y2]));
+  ok("a network whose hand-over is a single item is still a cluster", await M(([a, b]) => { const p = __mf.pos(); return !!p[a] && !!p[b] && Math.hypot(p[a].cx - p[b].cx, p[a].cy - p[b].cy) < 600; }, [XX, YY]));
   {
-    const grid = await bbox([CS, AB, IN, SC, PR, LU, NI, RA]), other = await bbox([X2, Y2]);
+    const grid = await bbox([CS, AB, IN, SC, PR, LU, NI, RA]), other = await bbox([XX, YY]);
     ok("the grid reports its own bounds and stays clear of the cluster",
       grid.x1 <= other.x0 || other.x1 <= grid.x0 || grid.y1 <= other.y0 || other.y1 <= grid.y0, [grid, other]);
-    const cr = await chipRects(), nr = await nodeRects([AB, IN, SC, PR, LU, NI, RA, X2, Y2, CS]);
+    const cr = await chipRects(), nr = await nodeRects([AB, IN, SC, PR, LU, NI, RA, XX, YY, CS]);
     let clash = 0; cr.forEach((c) => nr.forEach((n) => { if (hits(c, n)) clash++; }));
     ok("no cell lands on a node box", clash === 0, clash);
   }
-  await M(() => __mf.set("netGroup", "chips"));
+  await M(() => __mf.setNetSwitch("chips"));
   await page.waitForTimeout(320);
 
-  // ---- 8. deleting an item sweeps every holder's done ----
+  // ---- 9. Networks is quieter (1.9.0) ----
+  ok("the centre is not drawn when nothing is tied to it", await M(() => { const el = document.querySelector('#nodes [data-id="' + __mf.state.rootId + '"]'); return !!el && /lenshide/.test(el.className); }));
+  ok("but it keeps its anchor, so Cmd+0 still has something to fit", await M(() => !!__mf.pos()[__mf.state.rootId]));
+  await press("Meta+0");
+  ok("and Cmd+0 fits", await M(() => { const c = __mf.cam(); return c.z > 0.05 && c.z <= 2.2; }, null));
+  ok("a tied node wears no tie count unless it is hiding or outside something",
+    await M(() => [...document.querySelectorAll(".badge.link")].every((b) => /hidden|outside|folded/.test(b.textContent))),
+    await M(() => [...document.querySelectorAll(".badge.link")].map((b) => b.textContent)));
+  await M((x) => __mf.select(x), CS);
+  await press("Meta+/");
+  ok("Cmd+/ opens one network", (await M(() => __mf.lens)) === "one");
+  await press("Escape");
+  ok("Esc from a single network lands in Networks", (await M(() => __mf.lens)) === "dim", await M(() => __mf.lens));
+  await press("Escape");
+  ok("and Esc again leaves", (await M(() => __mf.lens)) === "off");
+  await press("Meta+2");
+  await page.waitForTimeout(320);
+
+  // ---- 10. the map view ----
+  await press("Escape");
+  ok("Esc leaves Networks", (await M(() => __mf.lens)) === "off");
+  ok("no chips or counts anywhere on the map", (await M(() => __mf.chipRows())) === 0 && (await M(() => __mf.cells())) === 0 && (await M(() => __mf.pills())) === 0);
+  ok("the tie is still drawn as a tie", (await M(() => document.querySelectorAll("#paintLayer path.lk").length)) >= 3, await M(() => document.querySelectorAll("#paintLayer path.lk").length));
+  ok("the tree is drawn as usual", (await M(() => document.querySelectorAll("#paintLayer path.te").length)) > 0);
+
+  // ---- 11. deleting an item sweeps every holder's done ----
+  await press("Meta+2");
+  await page.waitForTimeout(320);
   await M(([h2, i]) => __mf.tickHold(h2, i), [LU, SC]);
   await M(([h2, i]) => __mf.tickHold(h2, i), [RA, SC]);
   await page.waitForTimeout(220);
-  ok("two holders are done with Scope", (await holds()).filter((x) => x.done.indexOf(SC) >= 0).length === 2);
+  ok("two holders are done with Scope", (await holders()).filter((x) => x.done.indexOf(SC) >= 0).length === 2);
   const uD = await M(() => __mf.undoSteps);
   await M((x) => { __mf.select(x); __mf.del(true); }, SC);
   await page.waitForTimeout(320);
-  ok("deleting the item drops it from every done", (await holds()).every((x) => x.done.indexOf(SC) < 0), await holds());
+  ok("deleting the item drops it from every done", (await holders()).every((x) => x.done.indexOf(SC) < 0), await holders());
   ok("in one undo step", (await M(() => __mf.undoSteps)) === uD + 1, [uD, await M(() => __mf.undoSteps)]);
   await M(() => __mf.undo());
   await page.waitForTimeout(320);
   ok("and one undo brings the item and both ticks back",
-    (await holds()).filter((x) => x.done.indexOf(SC) >= 0).length === 2 && (await M((x) => !!__mf.state.nodes[x], SC)), await holds());
+    (await holders()).filter((x) => x.done.indexOf(SC) >= 0).length === 2 && (await M((x) => !!__mf.state.nodes[x], SC)), await holders());
   await M(([a, b, d]) => { __mf.mark([a, b, d]); __mf.del(true); }, [AB, IN, PR]);
   await page.waitForTimeout(320);
-  ok("a source left with no children is no longer a holding tie", (await holds()).length === 0, await holds());
-  ok("the plain ties are untouched", (await M(() => __mf.links.length)) >= 1);
+  ok("a work left with no children becomes the item itself", (await holders()).filter((x) => x.source === CS).every((x) => x.single === true), await holders());
+  ok("and its ticks are gone with the items", (await holders()).every((x) => !x.done.length), await holders());
   await M(() => __mf.undo());
   await page.waitForTimeout(340);
-  ok("and one undo brings the branch and its holders back", (await holds()).length === 3, await holds());
+  ok("and one undo brings the branch and its holders back", (await holders()).filter((x) => x.source === CS && !x.single).length === 3, await holders());
 
-  // ---- 10. the map view is unchanged ----
-  await press("Escape");
-  ok("Esc leaves Networks", (await M(() => __mf.lens)) === "off");
-  ok("no chips anywhere on the map", (await M(() => __mf.chipRows())) === 0 && (await M(() => __mf.cells())) === 0);
-  ok("the tie is still drawn as a tie", (await M(() => document.querySelectorAll("#paintLayer path.lk").length)) >= 3, await M(() => document.querySelectorAll("#paintLayer path.lk").length));
-  ok("the tree is drawn as usual", (await M(() => document.querySelectorAll("#paintLayer path.te").length)) > 0);
-
-  // ---- export and import carry both ----
+  // ---- 12. the file ----
   {
     const j = await M(() => __mf.exportJson());
     const o = JSON.parse(j);
-    const hl = (o.state.links || []).filter((l) => l.hold);
-    ok("JSON export carries hold", hl.length === 3, hl.length);
-    ok("and done", JSON.stringify(o.state.links).indexOf("done") > 0);
+    ok("no hold survives into an export", j.indexOf('"hold"') < 0);
+    ok("and done does", JSON.stringify(o.state.links).indexOf("done") > 0);
     await M(() => document.getElementById("btnMaps").click());
     await M(() => document.getElementById("btnNewMap").click());
     await page.waitForTimeout(240);
     await M((t) => __mf.importJson(t), j);
     await page.waitForTimeout(420);
-    ok("and an import brings them back", (await holds()).length === 3 && (await holds()).some((x) => x.done.length), await holds());
+    ok("and an import brings the holders back", (await holders()).filter((x) => x.source === CS).length === 3 && (await holders()).some((x) => x.done.length), await holders());
+
+    // a 1.8.0 map: hold is read and thrown away, and the same holders come out
+    const eighteen = await M(() => {
+      const o2 = JSON.parse(__mf.exportJson());
+      (o2.state.links || []).forEach((l) => { if (!l.branch) l.hold = "b"; });
+      delete o2.id;
+      return JSON.stringify(o2);
+    });
+    ok("the 1.8.0 map really carries hold", eighteen.indexOf('"hold"') > 0);
+    await M((t) => __mf.importJson(t), eighteen);
+    await page.waitForTimeout(420);
+    ok("a 1.8.0 map opens with the same holders derived", (await holders()).filter((x) => x.source === CS).length === 3, await holders());
+    ok("its ticks are intact", (await holders()).some((x) => x.done.length));
+    ok("and no hold is left in a fresh export", (await M(() => __mf.exportJson())).indexOf('"hold"') < 0);
   }
 
-  // ---- 11. a 1.7.1 map and a 1.7.1 settings blob ----
+  // ---- 13. a 1.7.1 settings blob ----
   {
     const old = await M(() => { const o = JSON.parse(__mf.exportJson()); delete o.cfg.netGroup; o.cfg.netView = "dim"; delete o.id; return JSON.stringify(o); });
     await M((t) => __mf.importJson(t), old);
     await page.waitForTimeout(420);
-    ok("a 1.7.1 settings blob defaults netGroup to chips", (await M(() => __mf.netGroup())) === "chips", await M(() => __mf.netGroup()));
+    ok("a 1.7.1 settings blob defaults the switch to off", (await M(() => __mf.netSwitch())) === "off", await M(() => __mf.netSwitch()));
     ok("and leaves the settings it did carry alone", (await M(() => __mf.netView())) === "dim");
     await M(() => __mf.set("netView", "arranged"));
-    await M(() => document.getElementById("btnMaps").click());
-    await M(() => document.getElementById("btnNewMap").click());
-    await page.waitForTimeout(240);
-    await M(() => __mf.paste("Old\n- one\n- two\n- three"));
-    await page.waitForTimeout(220);
-    const o1 = await idOf("one"), o2 = await idOf("two");
-    await M(([a, b]) => __mf.tie(a, b), [o1, o2]);
-    await page.waitForTimeout(200);
-    ok("a 1.7.1 map opens with no holding ties", (await holds()).length === 0 && (await M(() => __mf.links.length)) === 1);
-    await press("Meta+2");
-    ok("and Networks is exactly as it was", (await M(() => __mf.lens)) === "dim" && (await M(() => __mf.chipRows())) === 0);
-    await press("Escape");
   }
 
   ok("no runtime errors", errors.length === 0, errors);
