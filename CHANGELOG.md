@@ -3,6 +3,24 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.9.1] - 2026-09-21
+
+### Changed
+- **What a holder is ticking off is the top row of the branch, not every node
+  under it.** 1.9.0 put a chip on every node in a handed-over branch however
+  deep it went, which let you mark someone done with a section while the parts
+  of that section sat unticked underneath. There is no honest reading of that,
+  so the row is the unit now: being done with a section means being done with
+  what is in it. The branch still comes into the view whole and is still drawn
+  as a tree, and the deeper parts are still there to read. They just do not
+  carry a checklist of their own.
+- **To track something deeper on its own, tie a name straight to it.** A name
+  tied to a node with no branch of its own takes on that one node, which is
+  the rule 1.9.0 already shipped. Nothing new to learn.
+- Ticks that were sitting on a deeper node in a 1.9.0 map are cleared the
+  first time the map is drawn, in the same step as anything else that tidies
+  itself, so one undo puts them back if you were relying on them.
+
 ## [1.9.0] - 2026-09-21
 
 ### Changed

@@ -4922,7 +4922,10 @@ group("1.9.0: a tie is the hand-over");
   let h = await holders();
   ok("a tie from a name onto a branch hands the branch over, with no key pressed", h.length === 1 && h[0].holder === LU && h[0].source === CS, h);
   ok("and nothing about it is stored on the link", !/hold/.test(await raw()), await raw());
-  ok("the items are the branch, as folded on screen", (await M((x) => __mf.holdItems(x), CS)).join() === [AB, IN, SC, PR].join(), await M((x) => __mf.holdItems(x), CS));
+  /* 1.9.1: the row, not the tree under it. Scope is a grandchild, so it is
+     drawn with the branch but is not a thing to be done with on its own. */
+  ok("the items are the row of children", (await M((x) => __mf.holdItems(x), CS)).join() === [AB, IN, PR].join(), await M((x) => __mf.holdItems(x), CS));
+  ok("and a grandchild is not one of them", (await M((x) => __mf.holdItems(x), CS)).indexOf(SC) < 0);
   await M(([a, b]) => __mf.tie(a, b), [LU, CS]);
   ok("untying it takes the hand-over with it", (await holders()).length === 0 && (await M(() => __mf.links.length)) === 0);
 
@@ -4972,7 +4975,8 @@ group("1.9.0: a tie is the hand-over");
   await M((x) => __mf.select(x), CS);
   await press("Meta+2");
   ok("the Holders switch is off to begin with", (await M(() => __mf.netSwitch())) === "off");
-  ok("Off draws a holder count where the chips would be", (await M(() => __mf.pills())) === 5 && (await M((x) => __mf.chipEls(x), AB)) === 0, await M(() => __mf.pills()));
+  /* three items of Case Study plus the one the X-Y tie assigns */
+  ok("Off draws a holder count where the chips would be", (await M(() => __mf.pills())) === 4 && (await M((x) => __mf.chipEls(x), AB)) === 0, await M(() => __mf.pills()));
   ok("and the count says how many", await M((x) => { const r = document.querySelector('#chips .chiprow .hpill'); void r; const el = [...document.querySelectorAll("#chips .hpill")].map((e) => e.textContent); return el.indexOf("3 holders") >= 0; }, AB), await M(() => [...document.querySelectorAll("#chips .hpill")].map((e) => e.textContent)));
   ok("the switch is in the mode bar, beside the view tabs", await M(() => !!document.querySelector("#modebar #netsw button[data-ng='lanes']")));
   ok("and the Style panel has no row for it", await M(() => { document.getElementById("btnStyle").click(); const n = document.getElementById("styleScroll").textContent.indexOf("A held branch"); document.getElementById("btnStyle").click(); return n; }) < 0);
@@ -4982,16 +4986,17 @@ group("1.9.0: a tie is the hand-over");
   ok("the switch cycles off, chips and lanes", (await M(() => __mf.netSwitch())) === "lanes" && (await M(() => __mf.cells())) > 0);
   await M(() => __mf.setNetSwitch("off"));
   await page.waitForTimeout(320);
-  ok("and back to off", (await M(() => __mf.netSwitch())) === "off" && (await M(() => __mf.cells())) === 0 && (await M(() => __mf.pills())) === 5);
+  ok("and back to off", (await M(() => __mf.netSwitch())) === "off" && (await M(() => __mf.cells())) === 0 && (await M(() => __mf.pills())) === 4);
   await M(() => __mf.setNetSwitch("chips"));
   await page.waitForTimeout(400);
 
   // ---- 4. the subtree is drawn once, with a chip per holder ----
   ok("the held branch comes into the view", await M(([a, b, c]) => { const p = __mf.pos(); return !!p[a] && !!p[b] && !!p[c]; }, [AB, IN, SC]));
   ok("every item has exactly one position", await M(([a, b, c, d]) => { const p = __mf.pos(); return [a, b, c, d].every((i) => !!p[i]); }, [AB, IN, SC, PR]));
-  /* four items of Case Study plus the one item the X-Y tie assigns */
-  ok("a chip row per item, and none on the source", (await M(() => __mf.chipRows())) === 5 && (await M((x) => __mf.chipEls(x), CS)) === 0, await M(() => __mf.chipRows()));
-  ok("one chip per holder on each item", (await M((x) => __mf.chipEls(x), AB)) === 3 && (await M((x) => __mf.chipEls(x), SC)) === 3);
+  /* three items of Case Study plus the one the X-Y tie assigns */
+  ok("a chip row per item, and none on the source", (await M(() => __mf.chipRows())) === 4 && (await M((x) => __mf.chipEls(x), CS)) === 0, await M(() => __mf.chipRows()));
+  ok("one chip per holder on each item", (await M((x) => __mf.chipEls(x), AB)) === 3 && (await M((x) => __mf.chipEls(x), PR)) === 3);
+  ok("a deeper node is drawn with the branch but carries no chips", await M(([a, b]) => { const p = __mf.pos(); return !!p[a] && document.querySelectorAll('#chips .chip[data-item="' + a + '"]').length === 0 && !!p[b]; }, [SC, IN]));
   ok("the chips name the holders in tree order", (await M((x) => __mf.chipsOf(x), AB)).map((c) => c.holder).join() === [LU, NI, RA].join());
   ok("the untied network is still its own", (await M(() => __mf.networks())).length === 2);
 
@@ -5044,10 +5049,10 @@ group("1.9.0: a tie is the hand-over");
   // ---- 8. lanes ----
   await M(() => __mf.setNetSwitch("lanes"));
   await page.waitForTimeout(420);
-  ok("lanes draws a cell per pair", (await M(() => __mf.cells())) === 12, await M(() => __mf.cells()));
+  ok("lanes draws a cell per pair", (await M(() => __mf.cells())) === 9, await M(() => __mf.cells()));
   ok("and no chip rows", (await M(() => __mf.chipRows())) === 0);
   ok("the ticks are in the same cells", await M(([h2, i]) => { const el = document.querySelector('#chips .cell[data-holder="' + h2 + '"][data-item="' + i + '"]'); return !!el && /on/.test(el.className); }, [NI, AB]));
-  ok("one row per item", await M(([a, b, c, d]) => { const p = __mf.pos(); const ys = [a, b, c, d].map((i) => Math.round(p[i].cy)); return new Set(ys).size === 4; }, [AB, IN, SC, PR]));
+  ok("one row per item", await M(([a, b, c]) => { const p = __mf.pos(); const ys = [a, b, c].map((i) => Math.round(p[i].cy)); return new Set(ys).size === 3; }, [AB, IN, PR]));
   ok("one column per holder", await M(([a, b, c]) => { const p = __mf.pos(); const xs = [a, b, c].map((i) => Math.round(p[i].cx)); return new Set(xs).size === 3 && Math.round(p[a].cy) === Math.round(p[b].cy); }, [LU, NI, RA]));
   ok("a cell click ticks the same way a chip does", await M(([h2, i]) => __mf.clickChip(h2, i), [LU, PR]));
   await page.waitForTimeout(240);
@@ -5094,19 +5099,20 @@ group("1.9.0: a tie is the hand-over");
   // ---- 11. deleting an item sweeps every holder's done ----
   await press("Meta+2");
   await page.waitForTimeout(320);
-  await M(([h2, i]) => __mf.tickHold(h2, i), [LU, SC]);
-  await M(([h2, i]) => __mf.tickHold(h2, i), [RA, SC]);
+  ok("a grandchild cannot be ticked, because it is not an item", (await M(([h2, i]) => __mf.tickHold(h2, i), [LU, SC])) === false);
+  await M(([h2, i]) => __mf.tickHold(h2, i), [LU, PR]);
+  await M(([h2, i]) => __mf.tickHold(h2, i), [RA, PR]);
   await page.waitForTimeout(220);
-  ok("two holders are done with Scope", (await holders()).filter((x) => x.done.indexOf(SC) >= 0).length === 2);
+  ok("two holders are done with Problem", (await holders()).filter((x) => x.done.indexOf(PR) >= 0).length === 2, await holders());
   const uD = await M(() => __mf.undoSteps);
-  await M((x) => { __mf.select(x); __mf.del(true); }, SC);
+  await M((x) => { __mf.select(x); __mf.del(true); }, PR);
   await page.waitForTimeout(320);
-  ok("deleting the item drops it from every done", (await holders()).every((x) => x.done.indexOf(SC) < 0), await holders());
+  ok("deleting the item drops it from every done", (await holders()).every((x) => x.done.indexOf(PR) < 0), await holders());
   ok("in one undo step", (await M(() => __mf.undoSteps)) === uD + 1, [uD, await M(() => __mf.undoSteps)]);
   await M(() => __mf.undo());
   await page.waitForTimeout(320);
   ok("and one undo brings the item and both ticks back",
-    (await holders()).filter((x) => x.done.indexOf(SC) >= 0).length === 2 && (await M((x) => !!__mf.state.nodes[x], SC)), await holders());
+    (await holders()).filter((x) => x.done.indexOf(PR) >= 0).length === 2 && (await M((x) => !!__mf.state.nodes[x], PR)), await holders());
   await M(([a, b, d]) => { __mf.mark([a, b, d]); __mf.del(true); }, [AB, IN, PR]);
   await page.waitForTimeout(320);
   ok("a work left with no children becomes the item itself", (await holders()).filter((x) => x.source === CS).every((x) => x.single === true), await holders());

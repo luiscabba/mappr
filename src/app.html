@@ -900,7 +900,7 @@
       <tr><td><kbd>⌘</kbd> + click</td><td>Tie the selected node to the one you click, anywhere on the map. A faint arc joins them. The same pair again unties. A link says these two relate; it does not change who owns whom, so nothing moves.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd> + click</td><td><b>Tie two branches.</b> Ties the selected node to the one you click as a <em>branch tie</em>: one heavier arc with a bracket at each end, and in Networks everything under either node counts as the same network, so a whole branch relates to a whole branch without a tie per node. The same again removes it. From the keyboard, select the two nodes and press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>T</kbd>.</td></tr>
       <tr><td>The <b>∿</b> badge</td><td>How many links land on this node. Click it to walk to the other end, which is usually off screen; clicking again cycles through the rest. A folded branch carries the badge for everything tied up inside it, and walking there opens it.</td></tr>
-      <tr><td><kbd>⌘</kbd> + click</td><td><b>Tie two nodes, and hand the branch over.</b> A tie says the node you started from is on the branch you clicked. The <em>work</em> is the end with a branch; if both ends have one, or neither does, it is the end you <em>clicked</em>, so the order you click in is the direction. A node tied straight to a single item takes on that item. In <b>Networks</b> the held branch is drawn once, as a tree, and the <b>Holders</b> switch beside the view tabs says how much of that to show: <b>Off</b> puts a quiet count under each item, <b>Chips</b> a chip per holder on every item, and <b>Lanes</b> the same thing as a grid. <b>Clicking a chip</b> marks that holder done with that item; there is no key for it. On the map the tie wears a small mark at the end that holds it. A <b>branch tie</b> (<kbd>⌘</kbd><kbd>⇧</kbd> + click) is the one tie that hands nothing over.</td></tr>
+      <tr><td><kbd>⌘</kbd> + click</td><td><b>Tie two nodes, and hand the branch over.</b> A tie says the node you started from is on the branch you clicked. The <em>work</em> is the end with a branch; if both ends have one, or neither does, it is the end you <em>clicked</em>, so the order you click in is the direction. A node tied straight to a single item takes on that item. In <b>Networks</b> the held branch is drawn once, as a tree. Its <em>items</em> are its top row, since being done with a node means being done with what is under it; to track something deeper on its own, tie a name straight to it. The <b>Holders</b> switch beside the view tabs says how much of that to show: <b>Off</b> puts a quiet count under each item, <b>Chips</b> a chip per holder on every item of its top row, and <b>Lanes</b> the same thing as a grid. <b>Clicking a chip</b> marks that holder done with that item; there is no key for it. On the map the tie wears a small mark at the end that holds it. A <b>branch tie</b> (<kbd>⌘</kbd><kbd>⇧</kbd> + click) is the one tie that hands nothing over.</td></tr>
       <tr><td>A hollow end</td><td>The node you actually tied is folded away inside the one the arc reaches, or lives in the map a link stands for. Better than a line running into nothing. In a focused branch, a tie that leaves the branch is not drawn, but the ∿ badge counts it as <em>outside</em> and a click on it goes there.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>1</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>1</kbd></td><td><b>Normal view.</b> The number keys are views, and 1 is the plain map. From any other view it puts you back where you were, focus and all. The <kbd>⌥</kbd> versions are there because a browser tab may keep <kbd>⌘</kbd> plus a number for itself.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>2</kbd> / <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Networks.</b> Every network laid out by its ties, each clear of the others, and nothing else: a node with no tie on it leaves the view, so what is on screen is only what relates to something. The centre stays as a fixed point. <kbd>⌘</kbd><kbd>E</kbd> folds what is only reached through a node. Pressed while focused on a tied branch, it goes straight to that node's network. Press it again, or <kbd>Esc</kbd>, to turn it off: you land back where you were, focus and all. The Style panel's <b>Networks</b> row has the older view, <b>Dimmed</b>: the whole map stays put and everything no tie touches drops to a ghost.</td></tr>
@@ -1161,8 +1161,17 @@ function toggleBranchTie(a,b){
    The rule, in one sentence: the WORK is the end with a branch, and if both
    ends have one or neither does, the work is the end you CLICKED, which
    toggleLink already records as b. The other end is the HOLDER. The items of
-   the work are its subtree as folded on screen, or the work ITSELF when it
-   has none, so a name tied straight to one item is on that item.
+   the work are its ROW OF CHILDREN, or the work ITSELF when it has none, so a
+   name tied straight to one item is on that item.
+
+   The row rather than the whole subtree, corrected in 1.9.1: `done` is a
+   checklist, and a parent and its own descendants are not independent things
+   to be done with. Ticking Introduction while Scope sits unticked under it is
+   a state with no honest reading, which the subtree rule allowed. The branch
+   still comes into the view whole and is still drawn as a tree, because the
+   whole branch is what was handed over; only the row carries chips. To track
+   something deeper on its own, tie a name straight to it, which assigns that
+   node by the rule above.
 
    Therefore every tie hands something over, and the branch tie is the only
    one that does not, which is now what a branch tie is for. That is settled:
@@ -1185,14 +1194,12 @@ function holdList(){
   (state.links||[]).forEach(function(l){ var h=handOver(l); if(h) out.push(h); });
   return out;
 }
-/* The items a source confers: its subtree below it, as folded on screen, so a
-   folded branch hands over what you can see of it and nothing else, or the
-   source itself when it has no branch at all. */
+/* The items a source confers: its row of children, as folded on screen, so a
+   folded branch confers nothing, or the source itself when it has no branch
+   at all. */
 function holdItems(sourceId,h){
   if(h && h.single) return [sourceId];
-  var out=[];
-  (function w(id){ kids(N(id)).forEach(function(c){ out.push(c); w(c); }); })(sourceId);
-  return out;
+  return kids(N(sourceId)).slice();
 }
 /* A 1.8.0 map carries `hold` on some of its links. Read it and drop it: the
    derivation above reproduces the same picture in every case the old gesture
@@ -1210,7 +1217,7 @@ function stripHolds(){
    or reparents a node is covered by one rule and the repair lands inside the
    same undo step as the edit that caused it.
 
-   Membership is read off the whole subtree rather than holdItems, which is
+   Membership is read off node.children rather than holdItems, which is
    fold-aware: folding a branch must not throw away what people ticked. */
 function sweepHolds(){
   var changed=0;
@@ -1220,7 +1227,7 @@ function sweepHolds(){
     var h=handOver(l), inside={};
     if(h && N(h.source)){
       if(h.single) inside[h.source]=1;
-      else subtree(h.source).forEach(function(i){ if(i!==h.source) inside[i]=1; });
+      else N(h.source).children.forEach(function(i){ inside[i]=1; });
     }
     Object.keys(l.done).forEach(function(i){
       if(N(i) && inside[i]) return;
