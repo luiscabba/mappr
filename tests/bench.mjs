@@ -441,6 +441,50 @@ console.log("\na talk step (__mf.presNext) in a 1500-node map (median of 9)");
   }
 }
 
+/* ---------- 7. orbital zoom: what a pinch costs ----------
+   Zooming was free before 1.10.0 and has to stay that way. A gesture inside
+   one band must render nothing at all; a gesture that crosses four thresholds
+   gets four renders and no more, whatever the wheel emitted. */
+console.log("\na pinch in a 1500-node map (60 wheel steps, one animation frame apart; the time is the zoom's own work)");
+{
+  results.orbit = {};
+  const page = await build(1500);
+  const r = await page.evaluate(async () => {
+    if (!__mf.curtain) return null;
+    const hasRC = typeof __mf.renderCount === "function";
+    const frame = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    /* only the work the zoom itself does is timed; the frame waits in between
+       are the harness standing in for a real gesture, not part of the cost */
+    let work = 0;
+    const zoomTo = async (z) => { const v = __mf.cam(), t = performance.now(); __mf.setView(v.x, v.y, z); work += performance.now() - t; await frame(); };
+    const out = {};
+    for (const mode of ["shrink", "hold"]) {
+      __mf.set("orbitSize", mode);
+      await zoomTo(1); await frame();
+      /* inside one band: 100% down to 86%, which never crosses 84% */
+      let n0 = hasRC ? __mf.renderCount() : 0; work = 0;
+      for (let i = 0; i < 60; i++) await zoomTo(1 - i * 0.0023);
+      out[mode + "Band"] = { ms: Math.round(work * 10) / 10, renders: hasRC ? __mf.renderCount() - n0 : null };
+      /* the whole pinch: 100% to 20%, four thresholds */
+      await zoomTo(1); await frame();
+      n0 = hasRC ? __mf.renderCount() : 0; work = 0;
+      for (let i = 0; i < 60; i++) await zoomTo(1 - i * (0.8 / 59));
+      await frame();
+      out[mode + "Pinch"] = { ms: Math.round(work * 10) / 10, renders: hasRC ? __mf.renderCount() - n0 : null, hidden: __mf.curtainHidden().length, floor: Math.round(__mf.orbitFloor() * 100) / 100 };
+    }
+    __mf.set("orbitSize", "shrink");
+    return out;
+  });
+  if (r == null) row("  orbital zoom", "n/a", "not in this build");
+  else {
+    results.orbit = r;
+    row("  inside one band, shrink", r.shrinkBand.ms, r.shrinkBand.renders + " renders");
+    row("  100% to 20%, shrink", r.shrinkPinch.ms, r.shrinkPinch.renders + " renders, " + r.shrinkPinch.hidden + " nodes off screen at the end");
+    row("  inside one band, hold", r.holdBand.ms, r.holdBand.renders + " renders");
+    row("  100% to 20%, hold", r.holdPinch.ms, r.holdPinch.renders + " renders, floor " + r.holdPinch.floor);
+  }
+}
+
 await browser.close();
 if (jsonAt) { fs.writeFileSync(jsonAt, JSON.stringify(results, null, 2)); console.log("\nwrote " + jsonAt); }
 console.log("");

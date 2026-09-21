@@ -248,6 +248,10 @@
   #here .hsketch .foot b{font-family:var(--font-sketch);font-size:12.5px;font-weight:400;color:var(--ink)}
   /* not reached yet: invisible but still measured, so the layout is the real one */
   .node.preshide{visibility:hidden}
+  /* taken off screen by the depth curtain, not by a talk: still measured, so
+     the layout underneath is the real one, and the class says which feature
+     hid it when a screenshot of a bug turns up */
+  .node.curtain{visibility:hidden}
   .node.skipped{opacity:.3;text-decoration:line-through;text-decoration-thickness:1px}
   #presProgress{position:fixed;left:0;bottom:0;height:3px;width:0;background:var(--sel);z-index:30;
     transition:width .45s ease;display:none}
@@ -347,7 +351,7 @@
   #startHint .sh[data-sh="top"] .sharrow{margin-top:2px}
   #startHint .sh[data-sh="bottom"] .sharrow{margin-bottom:2px;transform:scaleX(-1)}
   .badge{white-space:nowrap;
-    position:absolute;left:0;top:0;
+    position:absolute;left:0;top:0;transform-origin:0 0;
     min-width:24px;height:20px;padding:0 6px;
     display:flex;align-items:center;justify-content:center;
     font-family:var(--font-sketch);font-size:11px;line-height:1;
@@ -359,6 +363,10 @@
   /* A link's far end is often off screen, so a tied node carries its count.
      Same machinery as the fold badge, different colour, and it is a button:
      clicking it walks you to the other end. */
+  /* what the curtain is holding back. Not a fold, so clicking it dives in
+     rather than unfolding anything. */
+  .badge.deep{color:var(--muted);border-style:dashed}
+  .badge.deep:hover{color:var(--ink);border-color:var(--sel);border-style:solid}
   .badge.link{color:var(--tie);border-color:var(--tie-soft);background:var(--tie-soft)}
   .badge.link:hover{color:var(--tie);border-color:var(--tie)}
 
@@ -941,6 +949,7 @@
     <table class="keys">
       <tr><td>The camera</td><td>Follows on its own. It holds still while you work mid-screen and slides only when you are about to run off an edge.</td></tr>
       <tr><td>Drag / scroll</td><td>Pan. <kbd>⌘</kbd>+scroll zooms.</td></tr>
+      <tr><td>Zooming out</td><td>Past about 84% the map starts shedding its depth, a layer at a time, and each parent at the edge says how much it is holding. Nothing re-packs and nothing you folded by hand is unfolded: zoom back in and it all comes back exactly where it was. Click a count to dive into what it is hiding. The Style panel decides whether what survives shrinks with the camera or holds its size on screen.</td></tr>
       <tr><td>Right-click</td><td>Mappr's own menu. On a node: everything that can be done to it, each row with its key beside it, so the menu teaches the keys. On empty canvas: the views, the camera and the maps. Any key closes it and still does what it does.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>,</kbd></td><td>Style panel. It never takes the keyboard, so shortcuts keep working while it is open.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>⇧</kbd><kbd>K</kbd></td><td>Walk the key bar through the other modes without leaving the one you are in, so you can read the selection keys while you are on the map. Any other key, or five seconds, brings your own keys back, and the key you pressed still does what it does.</td></tr>
@@ -990,6 +999,10 @@ var DEFAULTS = {
      because every tie hands something over now and most of them are not
      worth a chip row. */
   netGroup:"off",
+  /* orbital zoom (1.10.0): shrink is the camera as it has always been, hold
+     keeps a surviving node at its size on screen while the map spreads out
+     underneath it. Pure view either way; nothing about the curtain is saved. */
+  orbitSize:"shrink",
   /* a talk: the defaults are exactly the 1.5.1 talk */
   presStyle:"map", presReach:"told", presBack:"fade", presStep:"node", presCam:"follow"
 };
@@ -1498,8 +1511,11 @@ function lensArr(){ return !!lensOne || (lens && lensKind==="links" && CFG.netVi
    still the arrange's fixed point and still what \u23180 falls back to, so it
    keeps its pos; it just is not drawn, and a fit steps over it (1.9.0). */
 function netRootHidden(){ return lensArr() && !linkTally(VR()); }
+/* \u23180 fits the whole map, however deep you were, which is what the key has
+   always promised: the bounds are taken before the curtain filter, so fitting
+   never reveals more depth than it measured. */
 function fitSet(){
-  var all=Object.keys(pos);
+  var all=Object.keys(pos).concat(Object.keys(curtainPos));
   if(!netRootHidden()) return all;
   var out=all.filter(function(i){ return i!==VR(); });
   return out.length?out:all;
@@ -2931,6 +2947,245 @@ function lensLayout(){
   if(lensOne) arrangeNetwork(lensReach(lensOne,netMap().adj).order);
   else arrangeNetworks();
 }
+/* ---------- Orbital zoom: the depth curtain (1.10.0) ----------
+   Zoom out far enough and the map sheds its depth, so what is left on screen
+   is the shape of the thing rather than its words.
+
+   The one rule this lives or dies by: the curtain must never change where a
+   surviving node sits. layout() runs over the whole tree and places
+   everything; only afterwards are the positions of what is not on screen
+   thrown away, which is exactly what lensLayout() already does for a talk. If
+   the tidy tree re-packed as nodes left, the map would slide under the cursor
+   on every zoom frame and every frame would be a full layout at 1500 nodes.
+
+   Pure view, house rule 6: no node gains a field, state is not touched,
+   nothing is saved with the map and undo knows nothing about it. A curtain is
+   not a fold: kids() and n.collapsed are untouched, the two hide sets simply
+   union, and unfolding stays a model change that goes through snap().
+
+   Phase 8 note: the depth is counted from VR(), which two layers keeps (one
+   root, two branch sets under it), so depth still means depth there. A frame
+   holds nodes at several depths, so a curtain can cut a frame in half; that
+   is frame-aware layout's problem and is deliberately not solved here. The
+   hidden set is kept on ORB rather than inlined in the render, so the cluster
+   halo has something to draw over if it is ever unpinned. */
+var ORBIT_BANDS=[[.84,Infinity],[.66,3],[.48,2],[.30,1]];
+var ORBIT_HYST=.03;     /* a trackpad emits dozens of wheel events a second */
+var ORB={lim:null, hid:null, deep:null, dc:null, dep:null, maxd:0, bite:1, floor:0, s:1, raf:0, saidSel:false, suspend:false};
+var curtainPos={};      /* where a hidden node would have been, so ⌘0 still fits the whole map */
+
+function curtainLimitRaw(z){
+  for(var i=0;i<ORBIT_BANDS.length;i++) if(z>=ORBIT_BANDS[i][0]) return ORBIT_BANDS[i][1];
+  return 0;
+}
+function orbitBandFloor(lim){
+  for(var i=0;i<ORBIT_BANDS.length;i++) if(ORBIT_BANDS[i][1]===lim) return ORBIT_BANDS[i][0];
+  return 0;
+}
+/* the zoom that first shows depth d, which is what a badge click has to reach */
+function orbitZoomFor(d){
+  for(var i=ORBIT_BANDS.length-1;i>=0;i--) if(ORBIT_BANDS[i][1]>=d) return ORBIT_BANDS[i][0];
+  return ORBIT_BANDS[0][0];
+}
+/* A boundary crossed exactly on the line would flicker, so each one has a dead
+   band: once a limit is in force it holds until the zoom passes the boundary
+   by that much. The test is always against the limit in force, so a big jump
+   still lands in one move rather than getting stuck a band behind. */
+function curtainLimit(z){
+  var raw=curtainLimitRaw(z);
+  if(ORB.lim==null || raw===ORB.lim) return raw;
+  if(raw>ORB.lim) return z>=orbitBandFloor(raw)+ORBIT_HYST ? raw : ORB.lim;
+  return z<=orbitBandFloor(ORB.lim)-ORBIT_HYST ? raw : ORB.lim;
+}
+/* Nothing during a talk and nothing in a network, arranged or dimmed. Both
+   already own the camera, both already delete pos entries, and two hide rules
+   on one screen is unreadable. An export lifts it too, because exports ignore
+   every view (house rule 6). */
+function curtainOff(){ return !state || ORB.suspend || !!pres || !!lens || !!lensOne; }
+
+/* Run at the top of render, before the classes are written: what the curtain
+   hides is read off the tree rather than off pos, so it is known before
+   layout() has run and the class can go on with everything else. */
+function curtainCompute(){
+  ORB.hid=null; ORB.deep=null; ORB.dc=null; ORB.dep=null; ORB.maxd=0;
+  if(curtainOff()) return;
+  if(ORB.lim==null) ORB.lim=curtainLimitRaw(view.z);
+  if(ORB.lim===Infinity) return;
+  /* One post-order pass for every count the badges need. descCount walks a
+     whole subtree, so calling it per surviving node would be quadratic near
+     the root of a big map. Depth is recorded only down the unfolded path, so
+     a hand-folded branch never earns a curtain badge on top of its fold one. */
+  var dc={}, dep={}, maxd=0;
+  (function w(id,d,vis){
+    var n=N(id), c=0, kv=vis && !n.collapsed;
+    if(vis){ dep[id]=d; if(d>maxd) maxd=d; }
+    for(var i=0;i<n.children.length;i++) c+=1+w(n.children[i],d+1,kv);
+    dc[id]=c; return c;
+  })(VR(),0,true);
+  ORB.maxd=maxd; ORB.dc=dc; ORB.dep=dep;
+  /* the zoom at which this map first starts shedding depth, which is where
+     hold takes over: see orbitScale */
+  ORB.bite=orbitZoomFor(maxd);
+  if(ORB.lim>=maxd) return;
+  /* The selection and the node being typed in are never taken off screen, nor
+     is the way down to them: ⌘K can jump deep while the camera is out, and
+     navi and hereOnView both assume the selection has a pos. */
+  var keep={}, deep=false;
+  [selected,editing].forEach(function(id){ while(id && N(id)){ keep[id]=1; id=N(id).parent; } });
+  var hid={}, any=false;
+  Object.keys(dep).forEach(function(id){
+    if(dep[id]<=ORB.lim) return;
+    if(keep[id]){ deep=true; return; }
+    hid[id]=1; any=true;
+  });
+  if(deep && !ORB.saidSel){ ORB.saidSel=true; setTimeout(function(){ flashSave("what you are on stays, however far out"); },0); }
+  if(!any) return;
+  ORB.hid=hid;
+  var d2={};
+  Object.keys(hid).forEach(function(id){ var p=N(id).parent; if(p && !hid[p] && dep[p]!=null) d2[p]=1; });
+  ORB.deep=d2;
+}
+
+/* Run after layout(), beside lensLayout(): the survivors keep the coordinates
+   the full tree gave them and only the positions of what is not on screen are
+   thrown away. Nothing else is touched. */
+function curtainLayout(){
+  curtainPos={};
+  if(ORB.hid) Object.keys(ORB.hid).forEach(function(id){
+    if(pos[id]){ curtainPos[id]=pos[id]; delete pos[id]; }
+  });
+  ORB.floor=(CFG.orbitSize==="hold" && !curtainOff() && ORB.hid) ? Math.min(1,orbitFloorCalc()*ORB.bite) : 0;
+  ORB.s=orbitScale();
+}
+/* Constant reading size collides below about 45%: the positions shrink with
+   the camera and the boxes do not. The floor is read off the map rather than
+   picked out of the air. Two boxes overlap only when they overlap on both
+   axes, so a pair meets at the smaller of its two per-axis zooms, and the
+   floor is the largest of those over the pairs that can actually meet: a node
+   and its parent, and neighbours in a row. One pass over what is on screen.
+   Below the floor the scale simply stops growing, so hold goes back to
+   shrinking with the camera with no jump at the line. */
+function orbitFloorCalc(){
+  var f=0;
+  function pair(a,b){
+    var pa=pos[a], pb=pos[b], ba=box[a], bb=box[b];
+    if(!pa||!pb||!ba||!bb) return;
+    var dx=Math.abs(pa.cx-pb.cx), dy=Math.abs(pa.cy-pb.cy);
+    var zx=dx>.01 ? (ba.w+bb.w)/2/dx : Infinity;
+    var zy=dy>.01 ? (ba.h+bb.h)/2/dy : Infinity;
+    var z=Math.min(zx,zy);
+    if(z!==Infinity && z>f) f=z;
+  }
+  Object.keys(pos).forEach(function(id){
+    var n=N(id); if(!n) return;
+    var ks=kids(n), prev=null;
+    for(var i=0;i<ks.length;i++){
+      if(!pos[ks[i]]) continue;
+      pair(id,ks[i]);
+      if(prev) pair(prev,ks[i]);
+      prev=ks[i];
+    }
+  });
+  /* a hair of daylight rather than exactly touching, so the floor reads as
+     boxes that stopped short of each other rather than boxes that met */
+  return Math.min(1,f*1.06);
+}
+/* hold takes over exactly where the curtain starts holding something back,
+   and the size it holds is the size the map had at that moment. Starting it at
+   100% instead was both wrong and expensive: wrong because holding is only
+   worth anything once the map is shedding depth, and expensive because in the
+   band where every node still survives it is a transform per node on every
+   frame of a gesture for a scale that never grows past about 1.2. Ramping from
+   the bite means the scale is 1 at the line, so there is no jump, and the only
+   nodes it touches are the ones the curtain left. Below the floor it stops
+   growing, so the boxes shrink with the camera from there and never overlap. */
+function orbitScale(){
+  if(CFG.orbitSize!=="hold" || curtainOff() || !ORB.hid) return 1;
+  var b=ORB.bite||1;
+  if(view.z>=b) return 1;
+  return Math.max(1, Math.min(8, b/Math.max(view.z, ORB.floor||.05)));
+}
+
+/* Zooming is free today: zoomBy sets view.z, applyView writes one CSS
+   transform and nothing renders. That has to stay true. The limit for the new
+   zoom is worked out here and compared with the one in force; unchanged, which
+   is almost every frame of a gesture, this returns having done nothing. When
+   it did change, one render is scheduled on the next animation frame and any
+   further changes in that frame coalesce into it. Never a render from inside
+   the wheel handler, and never a hardRender: no position moved, so every
+   surviving node's painted shape is still exactly where it belongs. */
+function orbitTick(){
+  if(!state) return;
+  if(curtainOff()){ if(!ORB.suspend) ORB.lim=curtainLimitRaw(view.z); ORB.s=1; return; }
+  var lim=curtainLimit(view.z);
+  if(lim!==ORB.lim){
+    ORB.lim=lim;
+    if(!ORB.raf) ORB.raf=requestAnimationFrame(function(){
+      ORB.raf=0; if(state && !curtainOff()) render(true);
+    });
+  }
+  orbitRescale();
+}
+/* hold is one transform per surviving node and per painted shape, which the
+   browser composites. It is not a layout pass and it rewrites no width and no
+   font size; if it ever is, it is wrong. */
+var holdShapes=[];
+function orbitRescale(){
+  var s=orbitScale();
+  if(Math.abs(s-ORB.s)<.002) return;
+  ORB.s=s;
+  var sp=s===1?"":" scale("+Math.round(s*1000)/1000+")";
+  Object.keys(els).forEach(function(id){
+    var el=els[id]; if(el._tb==null) return;
+    var t=el._tb+sp;
+    if(el._t!==t){ el.style.transform=t; el._t=t; }
+  });
+  for(var i=0;i<holdShapes.length;i++) shapeTransform(holdShapes[i],s);
+  Object.keys(bdEls).forEach(function(k){ var el=bdEls[k]; if(el._bo) badgePlace(el,el._bo[0],el._bo[1],el._bo[2],el._bo[3]); });
+}
+/* A shape is drawn where it first appeared and moved by a transform of the
+   difference. Holding its size adds a scale about the node's own centre, which
+   in the shape's own coordinates is where it was drawn. */
+function shapeTransform(r,s){
+  function rd(v){ return Math.round(v*100)/100; }
+  var t;
+  if(s===1) t=(Math.abs(r.tx)>.01||Math.abs(r.ty)>.01) ? "translate("+rd(r.tx)+","+rd(r.ty)+")" : "";
+  else t="translate("+rd(r.c0x+r.tx)+","+rd(r.c0y+r.ty)+") scale("+Math.round(s*1000)/1000+") translate("+rd(-r.c0x)+","+rd(-r.c0y)+")";
+  if(r.el._t!==t){ if(t) r.el.setAttribute("transform",t); else r.el.removeAttribute("transform"); r.el._t=t; }
+}
+/* A badge belongs to its node, so under hold it rides the same scale about the
+   node's centre: it keeps its size on screen and its gap from the box, and the
+   offsets it is placed at never have to know about the scale. */
+function badgePlace(el,x,y,cx,cy){
+  var s=ORB.s;
+  var t=(s===1||cx==null) ? "translate("+x+"px,"+y+"px)"
+    : "translate("+cx+"px,"+cy+"px) scale("+Math.round(s*1000)/1000+") translate("+(x-cx)+"px,"+(y-cy)+"px)";
+  if(el._t!==t){ el.style.transform=t; el._t=t; }
+  el._bo=[x,y,cx,cy];
+}
+/* A curtain badge is not a fold, so there is nothing to unfold: clicking it
+   dives into what the count is holding back, and the zoom it lands on has to
+   be above the one that reveals those children or the click does nothing you
+   can see and reads as a bug. */
+function curtainDive(id){
+  if(!N(id)) return;
+  var d=(ORB.dep&&ORB.dep[id]!=null)?ORB.dep[id]:0;
+  var need=orbitZoomFor(d+1)+ORBIT_HYST;
+  var ids=subtree(id).filter(function(i){ return pos[i]||curtainPos[i]; });
+  fitIds(ids.length>1?ids:[id]);
+  if(view.z<need){
+    var LI=leftInset(), cx=LI+(innerWidth-LI)/2, cy=innerHeight/2, k=need/view.z;
+    view.x=cx-(cx-view.x)*k; view.y=cy-(cy-view.y)*k; view.z=need;
+    applyView();
+  }
+}
+/* A view saves nothing and exports ignore all of it, so an export runs with
+   the curtain lifted and the boxes back at their own size. */
+function withoutOrbit(fn){
+  if(ORB.suspend || (!ORB.hid && ORB.s===1)) return fn();
+  ORB.suspend=true; render(true);
+  try{ return fn(); } finally{ ORB.suspend=false; render(true); }
+}
 function subtree(id,out){ out=out||[]; out.push(id); N(id).children.forEach(function(c){ subtree(c,out); }); return out; }
 function kids(n){ return n.collapsed ? [] : n.children; }
 function descCount(id){ var c=0; (function w(x){ N(x).children.forEach(function(k){ c++; w(k); }); })(id); return c; }
@@ -3478,6 +3733,9 @@ function render(keepView,lead){
   sweepHolds();
   /* a link view with nothing left to show drops back to the map, with a word */
   if(lensLinks() && !state.links.length) lensDrop();
+  /* before the classes go on: what the curtain hides is read off the tree, so
+     it is known without a position having been worked out yet */
+  curtainCompute();
   var showing={};
   (function walk(id){ showing[id]=1; kids(N(id)).forEach(walk); })(VR());
   /* A solo view HIDES rather than removes: layout needs a measured box for
@@ -3539,6 +3797,12 @@ function render(keepView,lead){
       (presSkip(id) ? " skipped" : "")+
       (carry && carry.set[id] ? " carried" : "")+
       (n.link ? " link"+(CFG.linkStyle==="arrow"?" la":"")+(linkInfo(n.link).missing?" missing":"") : "");
+    /* The curtain hides with visibility, which changes no measurement, so it
+       is kept out of the key the measure cache is looked up by: otherwise
+       every node crossing a threshold would re-measure and one zoom frame
+       would reflow the map. */
+    el._base=cls;
+    if(ORB.hid && ORB.hid[id]) cls+=" curtain";
     if(el.className!==cls) el.className=cls;
     /* the in-the-box number is a ::before from data-num, so it is never part
        of the text being typed; written only when it changed, like the class */
@@ -3552,7 +3816,7 @@ function render(keepView,lead){
   box={};
   var stale=[];
   Object.keys(els).forEach(function(id){
-    var el=els[id], m=meas[id], k=el.className+"\u0001"+el.textContent+"\u0001"+(el.dataset.num||"");
+    var el=els[id], m=meas[id], k=(el._base||el.className)+"\u0001"+el.textContent+"\u0001"+(el.dataset.num||"");
     /* The node being typed in changes size as you type, so never trust a cached
        measurement for it. */
     if(m && m.k===k && id!==editing) box[id]={w:m.w,h:m.h};
@@ -3565,10 +3829,10 @@ function render(keepView,lead){
     /* The key stored here has to be the key looked up above, dataset.num
        included. Without the figure it could never match on a numbered node,
        so every numbered node re-measured on every render. */
-    meas[id]={k:el.className+"\u0001"+el.textContent+"\u0001"+(el.dataset.num||""), w:w, h:h};
+    meas[id]={k:(el._base||el.className)+"\u0001"+el.textContent+"\u0001"+(el.dataset.num||""), w:w, h:h};
   });
 
-  layout(); lensLayout(); reposition(); paint(); drawBadges(); drawChips(); drawFrameTitles(); drawCrumbs(); drawFrameBar(); drawStartHint(); drawHere(true); drawCard();
+  layout(); lensLayout(); curtainLayout(); reposition(); paint(); drawBadges(); drawChips(); drawFrameTitles(); drawCrumbs(); drawFrameBar(); drawStartHint(); drawHere(true); drawCard();
   if(!keepView && CFG.follow) cameraTo(selected,lead);
   applyView();
 }
@@ -3592,7 +3856,13 @@ function reposition(){
     var el=els[id], o=org[wrapTop[id]||""]||[0,0];
     /* rounded, so a branch that moved as a block does not touch its nodes
        over floating-point dust in the difference */
-    var t="translate("+Math.round((p.cx-box[id].w/2-o[0])*100)/100+"px,"+Math.round((p.cy-box[id].h/2-o[1])*100)/100+"px)";
+    /* the translate is kept on the element so a zoom under hold can rewrite
+       the scale beside it without a render and without recomputing anything */
+    var tb="translate("+Math.round((p.cx-box[id].w/2-o[0])*100)/100+"px,"+Math.round((p.cy-box[id].h/2-o[1])*100)/100+"px)";
+    el._tb=tb;
+    /* scaled about the node's own centre, which is where translate put it, so
+       the node holds its size on screen without its box or its place moving */
+    var t=ORB.s===1 ? tb : tb+" scale("+Math.round(ORB.s*1000)/1000+")";
     if(el._t!==t){ el.style.transform=t; el._t=t; nodeMoves++; }
   });
 }
@@ -3625,6 +3895,7 @@ function badgeAt(id,key,cls,text){
   if(!el){ el=document.createElement("div"); elBadges.appendChild(el); bdEls[key]=el; }
   el.dataset.b = cls==="badge link" ? "" : id;
   el.dataset.tie = cls==="badge link" ? id : "";
+  if(el.dataset.deep) el.dataset.deep="";
   el.className=cls;
   if(el.textContent!==text) el.textContent=text;
   return el;
@@ -3673,7 +3944,24 @@ function drawBadges(){
       var isOrigin=arr && lh && netOrigin(id)===id;
       var fb=badgeAt(id,id,lh?"badge link":"badge","+"+(lh||descCount(id))+(isOrigin?" folded":""));
       fb.dataset.lf=lh?id:""; if(lh) fb.dataset.tie="";
-      fb.style.transform="translate("+x+"px,"+y+"px)";
+      badgePlace(fb,x,y,p.cx,p.cy);
+    }
+    /* What the curtain is holding back, on the node at the edge of it. The
+       count is descCount's, the same number a manual fold badge shows, so one
+       badge never means two things; it is read out of the one pass render made
+       rather than walking a subtree per node. Its own class and key prefix, so
+       it can never collide with a fold badge or a story badge on the same
+       node, and a screenshot says which of them drew it. */
+    if(!arr && ORB.deep && ORB.deep[id]){
+      var dk="dp"+id; live[dk]=1;
+      var dx,dy;
+      if(d==="R"){ dx=p.cx+b.w/2+7; dy=p.cy-10; }
+      else if(d==="L"){ dx=p.cx-b.w/2-31; dy=p.cy-10; }
+      else if(d==="D"){ dx=p.cx-12; dy=p.cy+b.h/2+7; }
+      else { dx=p.cx-12; dy=p.cy-b.h/2-27; }
+      var db=badgeAt(id,dk,"badge deep","+"+((ORB.dc&&ORB.dc[id])||0));
+      db.dataset.b=""; db.dataset.deep=id;
+      badgePlace(db,dx,dy,p.cx,p.cy);
     }
     if(arr && isRoot(n) && netRootHidden()) return;
     /* In an arranged view every node on screen is tied, so a plain count says
@@ -3690,8 +3978,7 @@ function drawBadges(){
       var parts=[]; if(tn-th) parts.push("\u223f"+(tn-th)); if(th) parts.push(th+" hidden"); if(to) parts.push(to+" outside");
       if(!(tn-th)) parts[0]="\u223f"+parts[0];
       /* opposite corner from the fold badge, so the two never collide */
-      badgeAt(id,tk,"badge link",parts.join(" \u00b7 "))
-        .style.transform="translate("+(p.cx-b.w/2-8)+"px,"+(p.cy+b.h/2-4)+"px)";
+      badgePlace(badgeAt(id,tk,"badge link",parts.join(" \u00b7 ")),p.cx-b.w/2-8,p.cy+b.h/2-4,p.cx,p.cy);
     }
   });
   Object.keys(bdEls).forEach(function(k){ if(!live[k]){ bdEls[k].remove(); delete bdEls[k]; } });
@@ -3700,6 +3987,7 @@ elBadges.addEventListener("mousedown",function(e){ e.preventDefault(); e.stopPro
 elBadges.addEventListener("click",function(e){
   var el=e.target.closest(".badge"); if(!el) return;
   e.stopPropagation();
+  if(el.dataset.deep){ selected=el.dataset.deep; curtainDive(el.dataset.deep); return; }
   if(el.dataset.tie){ hopLink(el.dataset.tie); return; }
   if(el.dataset.lf){ selected=el.dataset.lf; toggleLensFold(el.dataset.lf); return; }
   selected=el.dataset.b; toggleCollapse(el.dataset.b);
@@ -3923,10 +4211,13 @@ function shapes(ids, opt){
      carry no transform, which keeps the browser's own paint cheap, and a hard
      render (a fold, a focus, a switch) draws everything afresh where it now
      stands. Export never caches, so it never sees a transform. */
-  function emit(k,h,tx,ty,grp){
+  function emit(k,h,tx,ty,grp,c0x,c0y){
     var t=(Math.abs(tx)>.01||Math.abs(ty)>.01) ? "translate("+rd(tx)+","+rd(ty)+")" : "";
     body.push(t ? '<g transform="'+t+'">'+h+'</g>' : h);
-    if(cache) items.push({k:k,h:h,tx:tx,ty:ty,g:grp||""});
+    /* c0 is where the node's centre was when the shape was drawn, which is the
+       point hold scales a body about; only body shapes carry it, because an
+       edge spans two nodes and has no centre of its own to hold */
+    if(cache) items.push({k:k,h:h,tx:tx,ty:ty,g:grp||"",c0x:c0x,c0y:c0y});
   }
   function rd(v){ return Math.round(v*100)/100; }
   function geo(i){ var q=pos[i], z=box[i]; return q.cx+","+q.cy+","+z.w+","+z.h; }
@@ -4093,7 +4384,7 @@ function shapes(ids, opt){
           "|"+((lensQuiet && !lensGhosts[id] && !isVR(n))?1:0)+"|"+presFade(id)+
           "|"+(n.link?CFG.linkStyle+(linkInfo(n.link).missing?"m":""):"");
       var hit=SC.body[key];
-      if(hit!==undefined){ nBody[key]=hit; emit(key,hit.b,p.cx-hit.x,p.cy-hit.y,wrapTop[id]); if(hit.d) defs.push(hit.d); return; }
+      if(hit!==undefined){ nBody[key]=hit; emit(key,hit.b,p.cx-hit.x,p.cy-hit.y,wrapTop[id],hit.x,hit.y); if(hit.d) defs.push(hit.d); return; }
     }
     var x=p.cx-b.w/2, y=p.cy-b.h/2;
     var rad=CFG.edges==="round"?(isVR(n)?14:11):1;
@@ -4130,7 +4421,7 @@ function shapes(ids, opt){
       else if(presFade(id)) pbody='<g opacity="'+(presFade(id)>1?'.16':'.38')+'">'+pbody+'</g>';
       var prec={b:pbody, d:"", x:p.cx, y:p.cy};
       if(cache){ nBody[key]=prec; SC.drawn++; }
-      emit(key,prec.b,0,0,wrapTop[id]);
+      emit(key,prec.b,0,0,wrapTop[id],p.cx,p.cy);
       return;
     }
     var lk=n.link ? (dark()?"#66d9e8":"#0c8599") : null;
@@ -4177,7 +4468,7 @@ function shapes(ids, opt){
     else if(presFade(id)) body='<g opacity="'+(presFade(id)>1?'.16':'.38')+'">'+body+'</g>';
     var rec={b:body, d:def, x:p.cx, y:p.cy};
     if(cache){ nBody[key]=rec; SC.drawn++; }
-    emit(key,rec.b,0,0,wrapTop[id]); if(rec.d) defs.push(rec.d);
+    emit(key,rec.b,0,0,wrapTop[id],p.cx,p.cy); if(rec.d) defs.push(rec.d);
   });
   if(cache){ SC.body=nBody; SC.edge=nEdge; }
   return {defs:defs, body:body, items:items};
@@ -4210,8 +4501,14 @@ function shapeNode(html){ var g=svgNode("g"); g.innerHTML=html; return g; }
    group. A shape's own transform is what is left of its drift after the
    group's, set only when it changed; for most shapes that is nothing. */
 function placeAll(G,items,gx,gy){
+  var hold=(CFG.orbitSize==="hold");
   for(var i=0;i<items.length;i++){
     var el=G.els[i], it=items[i], dx=it.tx-gx, dy=it.ty-gy;
+    if(hold && it.c0x!=null){
+      var r={el:el, c0x:it.c0x, c0y:it.c0y, tx:dx, ty:dy};
+      holdShapes.push(r); shapeTransform(r,ORB.s);
+      continue;
+    }
     var t=(Math.abs(dx)>.01||Math.abs(dy)>.01) ? "translate("+Math.round(dx*100)/100+","+Math.round(dy*100)/100+")" : "";
     if(el._t!==t){ if(t) el.setAttribute("transform",t); else el.removeAttribute("transform"); el._t=t; }
   }
@@ -4254,6 +4551,7 @@ function reconcileGroup(G,items,gx,gy){
   G.els=nEls; G.keys=nKeys; reindex(G); placeAll(G,items,gx,gy);
 }
 function reconcile(items){
+  holdShapes=[];
   var lists={}, order=[];
   for(var i=0;i<items.length;i++){ var g=items[i].g||""; if(!lists[g]){ lists[g]=[]; order.push(g); } lists[g].push(items[i]); }
   Object.keys(pGroups).forEach(function(g){ if(!lists[g]){ pGroups[g].el.remove(); delete pGroups[g]; } });
@@ -4406,7 +4704,11 @@ function panTo(tx,ty){
 }
 function applyView(){
   elWorld.style.transform="translate("+view.x+"px,"+view.y+"px) scale("+view.z+")";
-  document.getElementById("zoomLabel").textContent=Math.round(view.z*100)+"%";
+  /* the depth is appended only while a curtain is actually holding something
+     back. flashSave here would fire on every frame of a pinch; this is the
+     whole indicator. */
+  var zdeep=(ORB.hid && ORB.lim!==Infinity) ? " \u00b7 "+(ORB.lim?ORB.lim+" deep":"centre only") : "";
+  document.getElementById("zoomLabel").textContent=Math.round(view.z*100)+"%"+zdeep;
   var g=24*view.z,G=120*view.z;
   if(CFG.paper==="graph") elStage.style.backgroundSize=g+"px "+g+"px, "+g+"px "+g+"px, "+G+"px "+G+"px, "+G+"px "+G+"px";
   else if(CFG.paper==="lines") elStage.style.backgroundSize="100% "+(g*1.4)+"px";
@@ -4414,11 +4716,15 @@ function applyView(){
   else elStage.style.backgroundSize="auto";
   elStage.style.backgroundPosition=view.x+"px "+view.y+"px";
   hereOnView();
+  orbitTick();
 }
+/* Where a node is, including one the curtain took off screen: a fit is about
+   the map, not about what the camera happens to be showing. */
+function posOf(id){ return pos[id]||curtainPos[id]; }
 function boundsOf(ids){
   var x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
   ids.forEach(function(id){
-    var p=pos[id],b=box[id]; if(!p||!b) return;
+    var p=posOf(id),b=box[id]; if(!p||!b) return;
     x0=Math.min(x0,p.cx-b.w/2); x1=Math.max(x1,p.cx+b.w/2);
     y0=Math.min(y0,p.cy-b.h/2); y1=Math.max(y1,p.cy+b.h/2);
   });
@@ -4458,7 +4764,7 @@ function fitHere(){
     var f=frameById(selFrame), fb=f&&frameBounds(f);
     if(fb){ fitIds(fb.ids,FPAD+50); return; }
   }
-  var ids=subtree(selected).filter(function(i){ return pos[i]; });
+  var ids=subtree(selected).filter(function(i){ return posOf(i); });
   fitIds(ids.length>1?ids:fitSet());
 }
 
@@ -6660,8 +6966,7 @@ function doExport(kind){
     copyText(lastJson,"copied as JSON"); return;
   }
   if(pres && kind==="png-copy"){ storyImage(presScope()); return; }
-  var t=exportTargets();
-  imageOut(buildSvg(t.ids,t.frame), kind, t.name);
+  withoutOrbit(function(){ var t=exportTargets(); imageOut(buildSvg(t.ids,t.frame), kind, t.name); });
 }
 var lastSvg=null, lastJson=null;
 function imageOut(svgText,kind,name,label){
@@ -7946,6 +8251,12 @@ var PANEL=[
   {h:"Numbers",key:"numStyle",opts:[["gutter",I.ngut,"In the gutter"],["box",I.nbox,"In the box"],["edge",I.nedge,"On the edge"]]},
   {h:"Number scheme",key:"numScheme",opts:[["docs",lt("1a"),"1. a. i."],["legal",lt("1.1"),"1.1.1"],["formal",lt("IA"),"I. A. 1."]]},
   {h:"Paragraphs",key:"prose",opts:[["rule",I.prule,"A rule down the side"],["dotted",I.pdot,"A dotted box"]]},
+  {sect:"Zoom"},
+  /* worded like the Networks row: it needs a sentence under it rather than an
+     icon. words:true, not talk:true, which would put it in the mid-talk panel. */
+  {h:"Zooming out",key:"orbitSize",words:true,opts:[
+    ["shrink","Shrinks","The deeper branches step away as you pull back, and what is left shrinks with the camera."],
+    ["hold","Holds its size","The same, with the nodes that survive holding their size on screen while the map spreads out underneath them."]]},
   {sect:"Networks"},
   /* worded like the Presenting rows (words:true), but not one of them: talk:true would put it in the mid-talk T panel */
   {h:"\u23182 shows",key:"netView",words:true,opts:[["arranged","Arranged","Every network laid out by its ties, clear of the others. Nodes with no tie leave the view."],["dim","Dimmed","The whole map where it is, with everything no tie touches faded in place."]]},
@@ -8358,7 +8669,7 @@ elNodes.addEventListener("input",function(){
   }
   N(editing).text=ie.innerText.replace(/\u00a0/g," ").replace(/\u200b/g,"");
   box[editing]={w:els[editing].offsetWidth,h:els[editing].offsetHeight};
-  layout(); lensLayout(); reposition(); paint(); drawBadges(); drawChips(); drawFrameTitles();
+  layout(); lensLayout(); curtainLayout(); reposition(); paint(); drawBadges(); drawChips(); drawFrameTitles();
   if(CFG.follow) cameraTo(editing);
   saveSoon();
 });
@@ -8928,6 +9239,26 @@ window.__mf={
     el.dispatchEvent(new MouseEvent("click",{bubbles:true,cancelable:true}));
     return true;
   },
+  /* orbital zoom (1.10.0) */
+  curtain:function(){ return ORB.lim; },
+  curtainHidden:function(){ return ORB.hid?Object.keys(ORB.hid):[]; },
+  curtainDeep:function(){ return ORB.deep?Object.keys(ORB.deep):[]; },
+  curtainMaxDepth:function(){ return ORB.maxd; },
+  renderCount:function(){ return renderGen; },
+  orbitFloor:function(){ return ORB.floor; },
+  orbitBite:function(){ return ORB.bite; },
+  orbitScale:function(){ return ORB.s; },
+  nodeRect:function(id){ var el=els[id]; if(!el) return null; var r=el.getBoundingClientRect(); return {w:r.width,h:r.height,x:r.left,y:r.top}; },
+  badgeText:function(id,cls){
+    var el=document.querySelector('#badges .badge'+(cls?"."+cls:"")+'[data-'+(cls==="deep"?"deep":"b")+'="'+id+'"]');
+    return el?el.textContent:null;
+  },
+  clickDeep:function(id){
+    var el=document.querySelector('#badges .badge.deep[data-deep="'+id+'"]');
+    if(!el) return false;
+    el.dispatchEvent(new MouseEvent("click",{bubbles:true,cancelable:true}));
+    return true;
+  },
   tickHold:tickHold, netGroup:function(){ return CFG.netGroup; },
   netSwitch:function(){ return CFG.netGroup; },
   setNetSwitch:function(v){ setNetGroup(v); return CFG.netGroup; },
@@ -8983,8 +9314,8 @@ window.__mf={
   storyOutlineOf:storyOutlineOf, netOutlineOf:netOutlineOf,
   paste:function(t){ return insertOutline(parseOutline(t)); },
   pasteRich:function(html,text){ return insertOutline(bestOutline(html,text||"")); },
-  svg:function(){ var t=exportTargets(); return buildSvg(t.ids,t.frame); },
-  png:function(cb){ var t=exportTargets(); svgToPng(buildSvg(t.ids,t.frame),2,cb); },
+  svg:function(){ return withoutOrbit(function(){ var t=exportTargets(); return buildSvg(t.ids,t.frame); }); },
+  png:function(cb){ withoutOrbit(function(){ var t=exportTargets(); svgToPng(buildSvg(t.ids,t.frame),2,cb); }); },
   panel:function(on){ toggleStyle(on); },
   boxes:function(){ return box; }, pos:function(){ return pos; }, fit:fit,
   get drawn(){ return SC.drawn; },

@@ -3,6 +3,36 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.10.0] - 2026-09-21
+
+### Added
+- **Zoom out and the map sheds its detail.** Pull the camera back and the
+  deeper branches step away, leaving the parents with a count of what they are
+  holding, so at 30% you are reading the shape of the map rather than squinting
+  at its words. Zoom back in and they come back exactly where they were:
+  nothing re-packs, nothing slides under you, and a branch you folded by hand
+  stays folded. Click a count to dive into what it is hiding.
+- **The Style panel has the Google Earth version of it.** Under Zoom, "Holds
+  its size" keeps the nodes that survive at their size on screen while the map
+  spreads out underneath them. It takes over at the zoom your map starts
+  shedding depth, so there is no jump at the line, and it stops growing before
+  the boxes would run into each other.
+- The zoom reading says how deep you are seeing while the map is holding
+  something back, and nothing else: no message, no flash, nothing to dismiss.
+
+### Changed
+- **The centre, whatever you are on and the way down to it are never taken off
+  screen**, however far out the camera goes, so jumping somewhere deep and then
+  zooming out never loses you.
+- `⌘0` still fits the whole map, however far out you were, and `⌘⇧0` still fits
+  the branch you are in, all of it.
+- Nothing changes during a talk or inside a network. Both already decide what
+  is on screen, and two rules at once is unreadable.
+- An ordinary render got a little quicker along the way: a keystroke in a
+  1500-node map went from about 6.3ms to 2.2ms and a full render of a
+  1200-node map from about 15ms to 4.9ms, because the render stopped reading
+  each node's class back off the browser to look up its measurement.
+
 ## [1.9.1] - 2026-09-21
 
 ### Changed

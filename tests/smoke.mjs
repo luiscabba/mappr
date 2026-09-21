@@ -1732,9 +1732,10 @@ group("presentation: a talk set up the way you talk (1.6.0)");
   await press("Escape"); await press("Escape");
   ok("and the talk ending closes it too", (await P()) === null && !(await M(() => __mf.talkOpen)) && await M(() => getComputedStyle(document.getElementById("talk")).display === "none"));
   await reset();
-  /* 13 presenting options plus the four Networks options, worded the same way since 1.7.0 */
+  /* 13 presenting options plus the two Networks ones, worded the same way since 1.7.0 */
   /* 1.9.0: the held-branch row left the panel for the Holders switch */
-  ok("the Style panel's Presenting rows are worded the same way", (await M(() => { document.getElementById("btnStyle").click(); const n = document.querySelectorAll("#styleScroll .opt.txt").length; document.getElementById("btnStyle").click(); return n; })) === 15);
+  /* 1.10.0: the two Zooming out options joined them */
+  ok("the Style panel's Presenting rows are worded the same way", (await M(() => { document.getElementById("btnStyle").click(); const n = document.querySelectorAll("#styleScroll .opt.txt").length; document.getElementById("btnStyle").click(); return n; })) === 17);
 
   // ---- 8. a 1.5.1 settings blob loads with the new keys defaulted ----
   await M(() => { __mf.cfg.slop = 3; __mf.set("gap", __mf.cfg.gap); });
@@ -5157,6 +5158,227 @@ group("1.9.0: a tie is the hand-over");
     ok("a 1.7.1 settings blob defaults the switch to off", (await M(() => __mf.netSwitch())) === "off", await M(() => __mf.netSwitch()));
     ok("and leaves the settings it did carry alone", (await M(() => __mf.netView())) === "dim");
     await M(() => __mf.set("netView", "arranged"));
+  }
+
+  ok("no runtime errors", errors.length === 0, errors);
+}
+
+
+/* ============================================================
+   Orbital zoom, the depth curtain (1.10.0)
+   ============================================================ */
+group("orbital zoom");
+{
+  const press = (k) => page.keyboard.press(k);
+  const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
+  const zoom = async (z) => { await M((z) => { const v = __mf.cam(); __mf.setView(v.x, v.y, z); }, z); await page.waitForTimeout(140); };
+  const posOf = (id) => M((id) => { const p = __mf.pos()[id]; return p ? { cx: p.cx, cy: p.cy } : null; }, id);
+  const hidden = () => M(() => __mf.curtainHidden());
+  const rects = () => M(() => Object.keys(__mf.pos()).map((id) => { const r = __mf.nodeRect(id); return r && { id, x: r.x, y: r.y, w: r.w, h: r.h }; }).filter(Boolean));
+
+  await M(() => { document.getElementById("btnNewMap").click(); });
+  await page.waitForTimeout(280);
+  await M(() => __mf.paste("Orbit\n- A\n  - A1\n    - A1a\n  - A2\n- B\n  - B1\n- C"));
+  await page.waitForTimeout(320);
+  const root = await M(() => __mf.state.rootId);
+  const [A, A1, A1a, A2, B, B1, C] = await Promise.all(["A", "A1", "A1a", "A2", "B", "B1", "C"].map(idOf));
+  const deep1 = [A, B, C], deep2 = [A1, A2, B1];
+  /* the selection is never taken off screen, so it sits on the centre for the
+     tests that are about the curtain rather than about that rule */
+  await M((r) => __mf.select(r), root);
+  await zoom(1);
+
+  // ---- 1. what the curtain takes, and what it leaves ----
+  ok("at 100% every node has a pos", (await M(() => Object.keys(__mf.state.nodes).every((id) => !!__mf.pos()[id]))));
+  ok("and nothing is hidden", (await hidden()).length === 0);
+  const at100 = {};
+  for (const id of deep1) at100[id] = await posOf(id);
+  await zoom(.4);
+  ok("at 40% the limit is one deep", (await M(() => __mf.curtain())) === 1, await M(() => __mf.curtain()));
+  ok("depth 2 and beyond lost their pos", (await M((ids) => ids.every((i) => !__mf.pos()[i]), deep2.concat([A1a]))));
+  ok("depth 1 kept theirs", (await M((ids) => ids.every((i) => !!__mf.pos()[i]), deep1)));
+  ok("every hidden node still has a box", (await M((ids) => ids.every((i) => { const b = __mf.boxes()[i]; return b && b.w > 0 && b.h > 0; }), deep2)));
+  ok("and still has an element, hidden rather than removed",
+    (await M((ids) => ids.every((i) => { const el = document.querySelector('#nodes [data-id="' + i + '"]'); return el && el.classList.contains("curtain") && getComputedStyle(el).visibility === "hidden"; }), deep2)));
+
+  // ---- 2. the one rule: survivors do not move ----
+  let moved = false;
+  for (const id of deep1) { const p = await posOf(id); if (!p || p.cx !== at100[id].cx || p.cy !== at100[id].cy) moved = true; }
+  ok("survivors sit exactly where the whole tree put them", !moved, { at100, now: await posOf(A) });
+
+  // ---- 3. what a zoom costs ----
+  await zoom(1);
+  const r0 = await M(() => __mf.renderCount());
+  for (const z of [.97, .94, .91, .88, .86]) await zoom(z);
+  ok("a zoom inside one band renders nothing at all", (await M(() => __mf.renderCount())) - r0 === 0, (await M(() => __mf.renderCount())) - r0);
+  const r1 = await M(() => __mf.renderCount());
+  await zoom(.7);
+  ok("crossing one threshold renders once", (await M(() => __mf.renderCount())) - r1 === 1, (await M(() => __mf.renderCount())) - r1);
+
+  // ---- 4. the dead band ----
+  await zoom(.70);
+  const limAt70 = await M(() => __mf.curtain());
+  await zoom(.655);
+  ok("a hair under the boundary holds the limit it had", (await M(() => __mf.curtain())) === limAt70, await M(() => __mf.curtain()));
+  const r2 = await M(() => __mf.renderCount());
+  for (let i = 0; i < 4; i++) { await zoom(.655); await zoom(.665); }
+  ok("and oscillating across it never flips", (await M(() => __mf.curtain())) === limAt70 && (await M(() => __mf.renderCount())) - r2 === 0);
+  await zoom(.60);
+  ok("passing it by the dead band does move the limit", (await M(() => __mf.curtain())) === 2, await M(() => __mf.curtain()));
+
+  // ---- 5. the badge, and the number on it ----
+  await zoom(.4);
+  ok("the node at the edge of the curtain wears one", (await M(() => __mf.curtainDeep())).sort().join() === [A, B].sort().join(), await M(() => __mf.curtainDeep()));
+  ok("a node with nothing hidden under it wears none", (await M((c) => __mf.curtainDeep().indexOf(c) < 0, C)));
+  const deepText = await M((i) => __mf.badgeText(i, "deep"), A);
+  ok("and it counts the whole subtree", deepText === "+3", deepText);
+  await zoom(1);
+  await M((a) => { __mf.select(a); __mf.fold(a); }, A);
+  await page.waitForTimeout(220);
+  const foldText = await M((i) => __mf.badgeText(i, ""), A);
+  ok("the same number a fold badge shows, so one badge never means two things", foldText === deepText, { foldText, deepText });
+  await M((a) => __mf.fold(a), A);
+  await page.waitForTimeout(220);
+  await M((r) => __mf.select(r), root);
+
+  // ---- 6. clicking one dives in ----
+  await zoom(.4);
+  ok("the badge is there to click", (await M((i) => __mf.clickDeep(i), A)));
+  await page.waitForTimeout(450);
+  ok("clicking it ends with that subtree on screen", (await M((ids) => ids.every((i) => !!__mf.pos()[i]), [A, A1, A2])), { z: await M(() => __mf.cam().z), lim: await M(() => __mf.curtain()) });
+  ok("and at a zoom that actually shows them", (await M(() => __mf.cam().z)) >= .33);
+
+  // ---- 7. a curtain is not a fold ----
+  await zoom(1);
+  await M((b) => { __mf.select(b); __mf.fold(b); }, B);
+  await page.waitForTimeout(220);
+  const steps = await M(() => __mf.undoSteps);
+  await M((r) => __mf.select(r), root);
+  await zoom(.28);
+  await zoom(1);
+  ok("a branch folded by hand is still folded when the curtain lifts", (await node("B")).collapsed);
+  ok("and the curtain put nothing on the undo stack", (await M(() => __mf.undoSteps)) === steps, { was: steps, now: await M(() => __mf.undoSteps) });
+  ok("nor did it unfold anything", (await M((i) => !__mf.pos()[i], B1)));
+  await M((b) => { __mf.select(b); __mf.fold(b); }, B);
+  await page.waitForTimeout(220);
+  await M((r) => __mf.select(r), root);
+
+  // ---- 8. where it does nothing ----
+  await zoom(.28);
+  ok("the curtain is biting on the map", (await hidden()).length > 0);
+  await M((r) => __mf.present(r), root);
+  await page.waitForTimeout(400);
+  ok("nothing during a talk", (await hidden()).length === 0, await M(() => __mf.curtain()));
+  await M(() => __mf.presEnd());
+  await page.waitForTimeout(350);
+  await zoom(.28);
+  ok("and the curtain is back on the map", (await hidden()).length > 0);
+  /* a tie, so there is a network to open */
+  await M(([x, y]) => __mf.tie(x, y), [A1a, B1]);
+  await page.waitForTimeout(250);
+  await M(() => __mf.set("netView", "arranged"));
+  await page.keyboard.press("Meta+Digit2");
+  await page.waitForTimeout(500);
+  ok("nothing in an arranged network", (await hidden()).length === 0, await M(() => __mf.curtain()));
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(400);
+  await M(() => __mf.set("netView", "dim"));
+  await page.keyboard.press("Meta+Digit2");
+  await page.waitForTimeout(500);
+  ok("nothing in a dimmed network either, where the tree is still in its tidy shape",
+    (await hidden()).length === 0 && (await M((ids) => ids.every((i) => !!__mf.pos()[i]), deep2)), await hidden());
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(400);
+  await M(() => __mf.set("netView", "arranged"));
+  await M(([x, y]) => __mf.tie(y, x), [A1a, B1]);
+  await page.waitForTimeout(300);
+  await zoom(1);
+
+  // ---- 9. the selection and the node being typed in survive ----
+  await zoom(.28);
+  await M((i) => __mf.select(i), A1a);
+  await page.waitForTimeout(250);
+  ok("the selection is never taken off screen", (await M((i) => !!__mf.pos()[i], A1a)));
+  ok("nor is the way down to it", (await M((ids) => ids.every((i) => !!__mf.pos()[i]), [A, A1])));
+  ok("and everything else still went", (await M((ids) => ids.every((i) => !__mf.pos()[i]), [A2, B1])));
+  await press("Space");
+  await page.waitForTimeout(220);
+  ok("the node being typed in stays put", (await M(() => !!__mf.editing && !!__mf.pos()[__mf.editing])));
+  await press("Escape");
+  await page.waitForTimeout(200);
+  await M((r) => __mf.select(r), root);
+
+  // ---- 10. Cmd+0 is still the whole map ----
+  await zoom(1);
+  await page.keyboard.press("Meta+Digit0");
+  await page.waitForTimeout(500);
+  const zWhole = await M(() => __mf.cam().z);
+  await zoom(.2);
+  await page.keyboard.press("Meta+Digit0");
+  await page.waitForTimeout(500);
+  ok("Cmd+0 fits the whole map, not just what was on screen", Math.abs((await M(() => __mf.cam().z)) - zWhole) < .01, { zWhole, now: await M(() => __mf.cam().z) });
+
+  // ---- 11. constant reading size ----
+  await M((r) => __mf.select(r), root);
+  await zoom(1);
+  const w100 = (await M((r) => __mf.nodeRect(r), root)).w;
+  const boxWas = await M((r) => __mf.boxes()[r].w, root);
+  await M(() => __mf.set("orbitSize", "hold"));
+  await page.waitForTimeout(280);
+  /* hold takes over at the zoom this map first starts shedding depth, and the
+     size it holds is the size the map had right there */
+  const bite = await M(() => __mf.orbitBite());
+  await zoom(bite - .005);
+  const wBite = (await M((r) => __mf.nodeRect(r), root)).w;
+  ok("the scale is 1 at the line, so nothing jumps", Math.abs((await M(() => __mf.orbitScale())) - 1) < .02, await M(() => __mf.orbitScale()));
+  const floor = await M(() => __mf.orbitFloor());
+  ok("the floor is read off the map rather than picked out of the air", floor > 0 && floor < bite, { floor, bite });
+  const zHold = (floor + bite) / 2;
+  await zoom(zHold);
+  const wHeld = (await M((r) => __mf.nodeRect(r), root)).w;
+  ok("hold keeps a node's size on screen as the camera pulls back", Math.abs(wHeld - wBite) < 2, { wBite, wHeld, zHold, floor, bite, scale: await M(() => __mf.orbitScale()) });
+  ok("and its box is untouched", (await M((r) => __mf.boxes()[r].w, root)) === boxWas);
+  /* the floor is read off what is on screen, so it moves as the curtain takes
+     more away; what holds either side of it is the promise, not the number */
+  await zoom(Math.max(.16, floor * .6));
+  ok("below the floor hold stops holding and shrinks with the camera again",
+    (await M((r) => __mf.nodeRect(r), root)).w < wBite - 1,
+    { wBite, now: (await M((r) => __mf.nodeRect(r), root)).w, floor, scale: await M(() => __mf.orbitScale()) });
+  const rs = await rects();
+  let over = false;
+  for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
+    const a = rs[i], b = rs[j];
+    if (a.x < b.x + b.w - 1 && b.x < a.x + a.w - 1 && a.y < b.y + b.h - 1 && b.y < a.y + a.h - 1) over = true;
+  }
+  ok("and nothing overlaps", !over, rs);
+  await M(() => __mf.set("orbitSize", "shrink"));
+  await page.waitForTimeout(250);
+  await zoom(.7);
+  ok("shrink puts the size back on the camera", Math.abs((await M((r) => __mf.nodeRect(r), root)).w - w100 * .7) < 2);
+  ok("and nothing is scaled at all", (await M(() => __mf.orbitScale())) === 1);
+
+  // ---- 12. inside a focus ----
+  await zoom(1);
+  await M((a) => __mf.select(a), A);
+  await page.keyboard.press("Meta+Slash");
+  await page.waitForTimeout(400);
+  ok("focused on A", (await M(() => __mf.focus)) === A, await M(() => __mf.focus));
+  await M((i) => __mf.select(i), A);
+  await zoom(.4);
+  ok("the curtain counts from the focus root", (await M((i) => !!__mf.pos()[i], A1)) && (await M((i) => !__mf.pos()[i], A1a)), await hidden());
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(400);
+  await zoom(1);
+
+  // ---- 13. a 1.9.1 settings blob ----
+  {
+    const old = await M(() => { const o = JSON.parse(__mf.exportJson()); delete o.cfg.orbitSize; o.cfg.netGroup = "chips"; delete o.id; return JSON.stringify(o); });
+    ok("the blob really has no orbitSize", old.indexOf('"orbitSize"') < 0);
+    await M((t) => __mf.importJson(t), old);
+    await page.waitForTimeout(450);
+    ok("a 1.9.1 settings blob defaults it to shrink", (await M(() => __mf.cfg.orbitSize)) === "shrink", await M(() => __mf.cfg.orbitSize));
+    ok("and leaves the settings it did carry alone", (await M(() => __mf.cfg.netGroup)) === "chips");
+    await M(() => { __mf.cfg.netGroup = "off"; __mf.set("netGroup", "off"); });
   }
 
   ok("no runtime errors", errors.length === 0, errors);
