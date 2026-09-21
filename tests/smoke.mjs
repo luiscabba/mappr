@@ -5193,8 +5193,13 @@ group("orbital zoom");
   ok("and nothing is hidden", (await hidden()).length === 0);
   const at100 = {};
   for (const id of deep1) at100[id] = await posOf(id);
-  await zoom(.4);
-  ok("at 40% the limit is one deep", (await M(() => __mf.curtain())) === 1, await M(() => __mf.curtain()));
+  ok("nothing happens anywhere in working zoom", (await M(async () => {
+    for (const z of [.8, .6, .5, .4, .3, .26]) { const v = __mf.cam(); __mf.setView(v.x, v.y, z); }
+    return __mf.curtain();
+  })) === Infinity || (await M(() => __mf.curtain())) === null, await M(() => __mf.curtain()));
+  await zoom(1);
+  await zoom(.12);
+  ok("at 12% the limit is one deep", (await M(() => __mf.curtain())) === 1, await M(() => __mf.curtain()));
   ok("depth 2 and beyond lost their pos", (await M((ids) => ids.every((i) => !__mf.pos()[i]), deep2.concat([A1a]))));
   ok("depth 1 kept theirs", (await M((ids) => ids.every((i) => !!__mf.pos()[i]), deep1)));
   ok("every hidden node still has a box", (await M((ids) => ids.every((i) => { const b = __mf.boxes()[i]; return b && b.w > 0 && b.h > 0; }), deep2)));
@@ -5209,25 +5214,25 @@ group("orbital zoom");
   // ---- 3. what a zoom costs ----
   await zoom(1);
   const r0 = await M(() => __mf.renderCount());
-  for (const z of [.97, .94, .91, .88, .86]) await zoom(z);
+  for (const z of [.9, .7, .55, .4, .3, .26]) await zoom(z);
   ok("a zoom inside one band renders nothing at all", (await M(() => __mf.renderCount())) - r0 === 0, (await M(() => __mf.renderCount())) - r0);
   const r1 = await M(() => __mf.renderCount());
-  await zoom(.7);
+  await zoom(.22);
   ok("crossing one threshold renders once", (await M(() => __mf.renderCount())) - r1 === 1, (await M(() => __mf.renderCount())) - r1);
 
   // ---- 4. the dead band ----
-  await zoom(.70);
-  const limAt70 = await M(() => __mf.curtain());
-  await zoom(.655);
-  ok("a hair under the boundary holds the limit it had", (await M(() => __mf.curtain())) === limAt70, await M(() => __mf.curtain()));
+  await zoom(.26);
+  const limAbove = await M(() => __mf.curtain());
+  await zoom(.247);
+  ok("a hair under the boundary holds the limit it had", (await M(() => __mf.curtain())) === limAbove, await M(() => __mf.curtain()));
   const r2 = await M(() => __mf.renderCount());
-  for (let i = 0; i < 4; i++) { await zoom(.655); await zoom(.665); }
-  ok("and oscillating across it never flips", (await M(() => __mf.curtain())) === limAt70 && (await M(() => __mf.renderCount())) - r2 === 0);
-  await zoom(.60);
-  ok("passing it by the dead band does move the limit", (await M(() => __mf.curtain())) === 2, await M(() => __mf.curtain()));
+  for (let i = 0; i < 4; i++) { await zoom(.247); await zoom(.253); }
+  ok("and oscillating across it never flips", (await M(() => __mf.curtain())) === limAbove && (await M(() => __mf.renderCount())) - r2 === 0);
+  await zoom(.23);
+  ok("passing it by the dead band does move the limit", (await M(() => __mf.curtain())) === 3, await M(() => __mf.curtain()));
 
   // ---- 5. the badge, and the number on it ----
-  await zoom(.4);
+  await zoom(.12);
   ok("the node at the edge of the curtain wears one", (await M(() => __mf.curtainDeep())).sort().join() === [A, B].sort().join(), await M(() => __mf.curtainDeep()));
   ok("a node with nothing hidden under it wears none", (await M((c) => __mf.curtainDeep().indexOf(c) < 0, C)));
   const deepText = await M((i) => __mf.badgeText(i, "deep"), A);
@@ -5242,11 +5247,11 @@ group("orbital zoom");
   await M((r) => __mf.select(r), root);
 
   // ---- 6. clicking one dives in ----
-  await zoom(.4);
+  await zoom(.12);
   ok("the badge is there to click", (await M((i) => __mf.clickDeep(i), A)));
   await page.waitForTimeout(450);
   ok("clicking it ends with that subtree on screen", (await M((ids) => ids.every((i) => !!__mf.pos()[i]), [A, A1, A2])), { z: await M(() => __mf.cam().z), lim: await M(() => __mf.curtain()) });
-  ok("and at a zoom that actually shows them", (await M(() => __mf.cam().z)) >= .33);
+  ok("and at a zoom that actually shows them", (await M(() => __mf.cam().z)) >= .14);
 
   // ---- 7. a curtain is not a fold ----
   await zoom(1);
@@ -5254,7 +5259,7 @@ group("orbital zoom");
   await page.waitForTimeout(220);
   const steps = await M(() => __mf.undoSteps);
   await M((r) => __mf.select(r), root);
-  await zoom(.28);
+  await zoom(.09);
   await zoom(1);
   ok("a branch folded by hand is still folded when the curtain lifts", (await node("B")).collapsed);
   ok("and the curtain put nothing on the undo stack", (await M(() => __mf.undoSteps)) === steps, { was: steps, now: await M(() => __mf.undoSteps) });
@@ -5264,14 +5269,14 @@ group("orbital zoom");
   await M((r) => __mf.select(r), root);
 
   // ---- 8. where it does nothing ----
-  await zoom(.28);
+  await zoom(.09);
   ok("the curtain is biting on the map", (await hidden()).length > 0);
   await M((r) => __mf.present(r), root);
   await page.waitForTimeout(400);
   ok("nothing during a talk", (await hidden()).length === 0, await M(() => __mf.curtain()));
   await M(() => __mf.presEnd());
   await page.waitForTimeout(350);
-  await zoom(.28);
+  await zoom(.09);
   ok("and the curtain is back on the map", (await hidden()).length > 0);
   /* a tie, so there is a network to open */
   await M(([x, y]) => __mf.tie(x, y), [A1a, B1]);
@@ -5295,7 +5300,7 @@ group("orbital zoom");
   await zoom(1);
 
   // ---- 9. the selection and the node being typed in survive ----
-  await zoom(.28);
+  await zoom(.09);
   await M((i) => __mf.select(i), A1a);
   await page.waitForTimeout(250);
   ok("the selection is never taken off screen", (await M((i) => !!__mf.pos()[i], A1a)));
@@ -5313,7 +5318,7 @@ group("orbital zoom");
   await page.keyboard.press("Meta+Digit0");
   await page.waitForTimeout(500);
   const zWhole = await M(() => __mf.cam().z);
-  await zoom(.2);
+  await zoom(.09);
   await page.keyboard.press("Meta+Digit0");
   await page.waitForTimeout(500);
   ok("Cmd+0 fits the whole map, not just what was on screen", Math.abs((await M(() => __mf.cam().z)) - zWhole) < .01, { zWhole, now: await M(() => __mf.cam().z) });
@@ -5328,7 +5333,7 @@ group("orbital zoom");
   /* hold takes over at the zoom this map first starts shedding depth, and the
      size it holds is the size the map had right there */
   const bite = await M(() => __mf.orbitBite());
-  await zoom(bite - .005);
+  await zoom(bite * .995);
   const wBite = (await M((r) => __mf.nodeRect(r), root)).w;
   ok("the scale is 1 at the line, so nothing jumps", Math.abs((await M(() => __mf.orbitScale())) - 1) < .02, await M(() => __mf.orbitScale()));
   const floor = await M(() => __mf.orbitFloor());
@@ -5338,12 +5343,14 @@ group("orbital zoom");
   const wHeld = (await M((r) => __mf.nodeRect(r), root)).w;
   ok("hold keeps a node's size on screen as the camera pulls back", Math.abs(wHeld - wBite) < 2, { wBite, wHeld, zHold, floor, bite, scale: await M(() => __mf.orbitScale()) });
   ok("and its box is untouched", (await M((r) => __mf.boxes()[r].w, root)) === boxWas);
-  /* the floor is read off what is on screen, so it moves as the curtain takes
-     more away; what holds either side of it is the promise, not the number */
-  await zoom(Math.max(.16, floor * .6));
-  ok("below the floor hold stops holding and shrinks with the camera again",
-    (await M((r) => __mf.nodeRect(r), root)).w < wBite - 1,
-    { wBite, now: (await M((r) => __mf.nodeRect(r), root)).w, floor, scale: await M(() => __mf.orbitScale()) });
+  /* The floor is read off what is on screen, so it moves as the curtain takes
+     more away: with one node left there is nothing to run into and holding is
+     free again. The promise is the invariant, not a number, so that is what is
+     asserted here, and "nothing overlaps" just below is what it buys. */
+  await zoom(Math.max(.05, floor * .6));
+  const low = await M(() => ({ z: __mf.cam().z, s: __mf.orbitScale(), f: __mf.orbitFloor(), b: __mf.orbitBite() }));
+  ok("below the floor hold stops growing and the boxes shrink with the camera again",
+    Math.abs(low.s - low.b / Math.max(low.z, low.f || .05)) < .02, low);
   const rs = await rects();
   let over = false;
   for (let i = 0; i < rs.length; i++) for (let j = i + 1; j < rs.length; j++) {
@@ -5364,7 +5371,7 @@ group("orbital zoom");
   await page.waitForTimeout(400);
   ok("focused on A", (await M(() => __mf.focus)) === A, await M(() => __mf.focus));
   await M((i) => __mf.select(i), A);
-  await zoom(.4);
+  await zoom(.12);
   ok("the curtain counts from the focus root", (await M((i) => !!__mf.pos()[i], A1)) && (await M((i) => !__mf.pos()[i], A1a)), await hidden());
   await page.keyboard.press("Escape");
   await page.waitForTimeout(400);

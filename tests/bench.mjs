@@ -461,14 +461,15 @@ console.log("\na pinch in a 1500-node map (60 wheel steps, one animation frame a
     for (const mode of ["shrink", "hold"]) {
       __mf.set("orbitSize", mode);
       await zoomTo(1); await frame();
-      /* inside one band: 100% down to 86%, which never crosses 84% */
+      /* inside one band: 100% down to 26%, the whole working range, which
+         never crosses the 25% the curtain now starts at */
       let n0 = hasRC ? __mf.renderCount() : 0; work = 0;
-      for (let i = 0; i < 60; i++) await zoomTo(1 - i * 0.0023);
+      for (let i = 0; i < 60; i++) await zoomTo(1 - i * (0.74 / 59));
       out[mode + "Band"] = { ms: Math.round(work * 10) / 10, renders: hasRC ? __mf.renderCount() - n0 : null };
-      /* the whole pinch: 100% to 20%, four thresholds */
+      /* the whole pinch: 100% to 8%, four thresholds */
       await zoomTo(1); await frame();
       n0 = hasRC ? __mf.renderCount() : 0; work = 0;
-      for (let i = 0; i < 60; i++) await zoomTo(1 - i * (0.8 / 59));
+      for (let i = 0; i < 60; i++) await zoomTo(1 - i * (0.92 / 59));
       await frame();
       out[mode + "Pinch"] = { ms: Math.round(work * 10) / 10, renders: hasRC ? __mf.renderCount() - n0 : null, hidden: __mf.curtainHidden().length, floor: Math.round(__mf.orbitFloor() * 100) / 100 };
     }
@@ -479,9 +480,9 @@ console.log("\na pinch in a 1500-node map (60 wheel steps, one animation frame a
   else {
     results.orbit = r;
     row("  inside one band, shrink", r.shrinkBand.ms, r.shrinkBand.renders + " renders");
-    row("  100% to 20%, shrink", r.shrinkPinch.ms, r.shrinkPinch.renders + " renders, " + r.shrinkPinch.hidden + " nodes off screen at the end");
+    row("  100% to 8%, shrink", r.shrinkPinch.ms, r.shrinkPinch.renders + " renders, " + r.shrinkPinch.hidden + " nodes off screen at the end");
     row("  inside one band, hold", r.holdBand.ms, r.holdBand.renders + " renders");
-    row("  100% to 20%, hold", r.holdPinch.ms, r.holdPinch.renders + " renders, floor " + r.holdPinch.floor);
+    row("  100% to 8%, hold", r.holdPinch.ms, r.holdPinch.renders + " renders, floor " + r.holdPinch.floor);
   }
 }
 

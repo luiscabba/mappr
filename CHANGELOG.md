@@ -3,6 +3,27 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.10.1] - 2026-09-21
+
+### Changed
+- **The map stays whole through the zooms you actually work in.** 1.10.0
+  started shedding depth at 84%, which ate the range a map is read in: 50% to
+  30% is working zoom, not overview zoom, and a map that has already dropped
+  two layers by the time you get there is a map you are lost in. Nothing
+  happens now until 25%, and the shedding all happens below that, a layer at a
+  time down to the centre alone. A three-deep map keeps everything until 19%,
+  since it has less to shed.
+- **The camera goes out to 8%.** It stopped at 15% before, which was fine when
+  15% was already past the far end of the curtain and is not now that the whole
+  feature lives down there. `⌘0` on a very large map can also settle further
+  out than it could.
+- The dead band that stops a boundary flickering is a share of the boundary
+  rather than a flat number of percentage points, because zooming is
+  multiplicative: one wheel notch moves the zoom by a proportion of where it
+  already is, so a band that suits 84% is wider than a whole band down at 10%.
+- Holding size is unchanged in spirit and cheaper in practice, since it now
+  takes over further out where fewer nodes are left to hold.
+
 ## [1.10.0] - 2026-09-21
 
 ### Added

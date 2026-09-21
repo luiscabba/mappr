@@ -949,7 +949,7 @@
     <table class="keys">
       <tr><td>The camera</td><td>Follows on its own. It holds still while you work mid-screen and slides only when you are about to run off an edge.</td></tr>
       <tr><td>Drag / scroll</td><td>Pan. <kbd>⌘</kbd>+scroll zooms.</td></tr>
-      <tr><td>Zooming out</td><td>Past about 84% the map starts shedding its depth, a layer at a time, and each parent at the edge says how much it is holding. Nothing re-packs and nothing you folded by hand is unfolded: zoom back in and it all comes back exactly where it was. Click a count to dive into what it is hiding. The Style panel decides whether what survives shrinks with the camera or holds its size on screen.</td></tr>
+      <tr><td>Zooming out</td><td>Below 25% the map starts shedding its depth, a layer at a time, and each parent at the edge says how much it is holding. Nothing re-packs and nothing you folded by hand is unfolded: zoom back in and it all comes back exactly where it was. Click a count to dive into what it is hiding. The Style panel decides whether what survives shrinks with the camera or holds its size on screen.</td></tr>
       <tr><td>Right-click</td><td>Mappr's own menu. On a node: everything that can be done to it, each row with its key beside it, so the menu teaches the keys. On empty canvas: the views, the camera and the maps. Any key closes it and still does what it does.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>,</kbd></td><td>Style panel. It never takes the keyboard, so shortcuts keep working while it is open.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>⇧</kbd><kbd>K</kbd></td><td>Walk the key bar through the other modes without leaving the one you are in, so you can read the selection keys while you are on the map. Any other key, or five seconds, brings your own keys back, and the key you pressed still does what it does.</td></tr>
@@ -2969,8 +2969,17 @@ function lensLayout(){
    is frame-aware layout's problem and is deliberately not solved here. The
    hidden set is kept on ORB rather than inlined in the render, so the cluster
    halo has something to draw over if it is ever unpinned. */
-var ORBIT_BANDS=[[.84,Infinity],[.66,3],[.48,2],[.30,1]];
-var ORBIT_HYST=.03;     /* a trackpad emits dozens of wheel events a second */
+/* Where each layer goes. 1.10.0 started shedding at 84%, which ate the range
+   you actually read a map in: 50% to 30% is working zoom, not overview zoom,
+   and a map that has already dropped two layers by the time you get there is
+   a map you are lost in. Nothing happens now until 25%, and the shedding
+   happens below that, which is why the camera goes out to 8% rather than 15%. */
+var ORBIT_BANDS=[[.25,Infinity],[.19,3],[.14,2],[.10,1]];
+/* The dead band is a share of the boundary rather than a flat number of
+   percentage points, because zooming is multiplicative: one wheel notch moves
+   the zoom by a proportion of where it already is, so a flat band that suits
+   84% is wider than a whole band down at 10%. */
+var ORBIT_HYST=.05;
 var ORB={lim:null, hid:null, deep:null, dc:null, dep:null, maxd:0, bite:1, floor:0, s:1, raf:0, saidSel:false, suspend:false};
 var curtainPos={};      /* where a hidden node would have been, so ⌘0 still fits the whole map */
 
@@ -2994,8 +3003,8 @@ function orbitZoomFor(d){
 function curtainLimit(z){
   var raw=curtainLimitRaw(z);
   if(ORB.lim==null || raw===ORB.lim) return raw;
-  if(raw>ORB.lim) return z>=orbitBandFloor(raw)+ORBIT_HYST ? raw : ORB.lim;
-  return z<=orbitBandFloor(ORB.lim)-ORBIT_HYST ? raw : ORB.lim;
+  if(raw>ORB.lim) return z>=orbitBandFloor(raw)*(1+ORBIT_HYST) ? raw : ORB.lim;
+  return z<=orbitBandFloor(ORB.lim)*(1-ORBIT_HYST) ? raw : ORB.lim;
 }
 /* Nothing during a talk and nothing in a network, arranged or dimmed. Both
    already own the camera, both already delete pos entries, and two hide rules
@@ -3170,7 +3179,7 @@ function badgePlace(el,x,y,cx,cy){
 function curtainDive(id){
   if(!N(id)) return;
   var d=(ORB.dep&&ORB.dep[id]!=null)?ORB.dep[id]:0;
-  var need=orbitZoomFor(d+1)+ORBIT_HYST;
+  var need=orbitZoomFor(d+1)*(1+ORBIT_HYST);
   var ids=subtree(id).filter(function(i){ return pos[i]||curtainPos[i]; });
   fitIds(ids.length>1?ids:[id]);
   if(view.z<need){
@@ -4734,7 +4743,7 @@ function fit(){
   stopCam();
   var b=boundsOf(fitSet()); if(!b) return;
   var pad=90,LI=leftInset(),W=innerWidth-LI;
-  view.z=Math.max(.15,Math.min(2.2,Math.min((W-pad*2)/Math.max(1,b.w),(innerHeight-pad*2)/Math.max(1,b.h),1.5)));
+  view.z=Math.max(.08,Math.min(2.2,Math.min((W-pad*2)/Math.max(1,b.w),(innerHeight-pad*2)/Math.max(1,b.h),1.5)));
   view.x=LI+W/2-(b.x+b.w/2)*view.z;
   view.y=innerHeight/2-(b.y+b.h/2)*view.z;
   applyView();
@@ -4745,7 +4754,7 @@ function fitIds(ids,pad){
   var b=boundsOf(ids); if(!b) return;
   pad=pad||90;
   var LI=leftInset(), W=innerWidth-LI;
-  view.z=Math.max(.15,Math.min(2.2,Math.min((W-pad*2)/Math.max(1,b.w),(innerHeight-pad*2)/Math.max(1,b.h),1.6)));
+  view.z=Math.max(.08,Math.min(2.2,Math.min((W-pad*2)/Math.max(1,b.w),(innerHeight-pad*2)/Math.max(1,b.h),1.6)));
   view.x=LI+W/2-(b.x+b.w/2)*view.z;
   view.y=innerHeight/2-(b.y+b.h/2)*view.z;
   applyView();
@@ -8870,7 +8879,7 @@ elStage.addEventListener("touchmove",function(e){
   if(tpinch && e.touches.length===2){
     e.preventDefault();
     var m=tmid(e.touches[0],e.touches[1]);
-    var z=Math.max(.15,Math.min(2.5, tpinch.z*(tdist(e.touches[0],e.touches[1])/(tpinch.d||1))));
+    var z=Math.max(.08,Math.min(2.5, tpinch.z*(tdist(e.touches[0],e.touches[1])/(tpinch.d||1))));
     var k=z/tpinch.z;
     view.z=z;
     view.x=m.x-(tpinch.m.x-tpinch.x)*k;
@@ -8892,7 +8901,7 @@ elStage.addEventListener("touchcancel",endTouch);
 function zoomBy(f,ox,oy){
   stopCam();
   ox=ox==null?innerWidth/2:ox; oy=oy==null?innerHeight/2:oy;
-  var z2=Math.max(.15,Math.min(2.5,view.z*f)), k=z2/view.z;
+  var z2=Math.max(.08,Math.min(2.5,view.z*f)), k=z2/view.z;
   view.x=ox-(ox-view.x)*k; view.y=oy-(oy-view.y)*k; view.z=z2; applyView();
 }
 
