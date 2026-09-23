@@ -3,6 +3,16 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.11.0] - 2026-09-23
+
+### Added
+- **Opening Mappr from arghtools.com no longer ends in a jump.** Pressing
+  Open Mappr on the site covers the page in Mappr's yellow tiles on the way
+  here. Mappr now lays the same tiles the moment it opens, so there is no
+  seam, and rolls them back up off your map once it has drawn, bottom row
+  first. Open Mappr any other way and nothing changes. If you have asked your
+  system for less motion, the tiles simply go.
+
 ## [1.10.1] - 2026-09-21
 
 ### Changed

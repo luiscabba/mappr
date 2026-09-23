@@ -5391,6 +5391,25 @@ group("orbital zoom");
   ok("no runtime errors", errors.length === 0, errors);
 }
 
+group("the arrival plate from arghtools.com");
+{
+  const pg = await browser.newPage({ viewport: { width: 1500, height: 920 } });
+  const perr = [];
+  pg.on("pageerror", (e) => perr.push(String(e)));
+  await pg.goto(APP + "#glaze=-640,63");
+  const early = await pg.evaluate(() => { const g = document.getElementById("glaze"); return g ? g.querySelectorAll("i").length : 0; });
+  ok("the plate is laid before the map draws", early > 100, early);
+  ok("the hash is gone at once, so a reload does not replay it", await pg.evaluate(() => location.hash === ""), await pg.evaluate(() => location.hash));
+  const tile = await pg.evaluate(() => { const i = document.querySelector("#glaze i"); return i && { l: parseFloat(i.style.left), t: parseFloat(i.style.top) }; });
+  ok("it sits on the band's grid", tile && ((tile.l + 640) % 68 === 0) && ((tile.t - 63) % 68 === 0), tile);
+  await pg.waitForTimeout(1800);
+  ok("it rolls up once the map has drawn", await pg.evaluate(() => !document.getElementById("glaze")));
+  await pg.goto(APP); await pg.reload(); await pg.waitForTimeout(300);
+  ok("without the hash nothing is laid", await pg.evaluate(() => !document.getElementById("glaze")));
+  ok("no runtime errors on the way in", perr.length === 0, perr);
+  await pg.close();
+}
+
 group("console");
 ok("no runtime errors", errors.length === 0, errors);
 
