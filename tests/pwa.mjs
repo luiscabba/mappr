@@ -69,7 +69,9 @@ group("favicon");
 const icon = await page.getAttribute('link[rel="icon"]', "href");
 ok("favicon is inlined as an SVG data URI", !!icon && icon.startsWith("data:image/svg+xml;base64,"));
 const svg = Buffer.from(icon.split(",")[1], "base64").toString();
-ok("favicon adapts to dark mode", svg.includes("prefers-color-scheme"));
+// 1.12.0: the favicon is the mark, Mappr's tile, which carries its own Field
+// ground, so it reads on a light tab and a dark one without a variant
+ok("favicon is the tile on its own ground", svg.includes("#ffd43b") && svg.includes("#121212"));
 
 group("service worker");
 await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller !== undefined, null, { timeout: 15000 });

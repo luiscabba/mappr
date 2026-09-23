@@ -6,8 +6,7 @@
 <title>Mappr</title>
 <meta name="description" content="A keyboard-first mindmap app. Everything is a key, the layout tidies itself, the camera follows you.">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#faf7f1" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#14141c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#121212">
 <!-- The favicon is the SVG mark, inlined so it works from a file:// URL too. It
      carries its own prefers-color-scheme rule, so it stays legible in a dark tab
      strip. The PNGs and the manifest below only resolve when the app is served. -->
@@ -23,6 +22,13 @@
     src:url(data:font/woff2;base64,__FONT_B64__) format("woff2");
     font-weight:400;font-style:normal;font-display:block;
   }
+  /* ARGH!'s three faces (brand book board 03): Bricolage for the name and
+     panel titles, Plex Sans for words, Plex Mono for keys, counts and
+     versions. The map keeps Excalifont: a node is a hand, the chrome is not. */
+  @font-face{font-family:"Bricolage Grotesque";src:url(data:font/woff2;base64,__DISP800_B64__) format("woff2");font-weight:800;font-style:normal;font-display:block}
+  @font-face{font-family:"IBM Plex Sans";src:url(data:font/woff2;base64,__SANS400_B64__) format("woff2");font-weight:400;font-style:normal;font-display:block}
+  @font-face{font-family:"IBM Plex Sans";src:url(data:font/woff2;base64,__SANS600_B64__) format("woff2");font-weight:600;font-style:normal;font-display:block}
+  @font-face{font-family:"IBM Plex Mono";src:url(data:font/woff2;base64,__MONO500_B64__) format("woff2");font-weight:500;font-style:normal;font-display:block}
 
   :root{
     --paper:#fefefd;
@@ -41,7 +47,9 @@
     --panel:#ffffff;
     --panel-line:#e9ecef;
     --panel-hover:#f1f3f5;
-    --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+    --font-ui:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --font-disp:"Bricolage Grotesque","IBM Plex Sans",sans-serif;
     --font-sketch:"Excalifont","Virgil","Chalkboard SE","Bradley Hand","Comic Sans MS",cursive;
     --font-plain:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
     --font-code:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
@@ -60,13 +68,13 @@
     --rule-strong:rgba(160,195,230,.19);
     --ink:#e3e3e3;
     --muted:#8d949b;
-    --sel:#a5a1ff;
+    --sel:#b197fc;
     --danger:#ff8b7a;
     --tie:#ff9f6e; --tie-soft:#4a2a1c;
     --okline:#69db7c; --okfill:#16301d;
     --pin:#ffa94d;
     --link:#66d9e8; --link-soft:#0b3b42;
-    --sel-soft:#2a2856;
+    --sel-soft:#332e48;
     --panel:#1e1e1e;
     --panel-line:#343434;
     --panel-hover:#2b2b2b;
@@ -121,7 +129,6 @@
     background:transparent;border:0;
     white-space:pre-wrap;word-break:break-word;
     cursor:default;user-select:none;outline:none;
-    transition:transform .17s cubic-bezier(.2,.7,.3,1);
   }
   .node.root{font-size:calc(var(--node-size) + 3px);padding:12px 20px}
   /* A paragraph. Wider, smaller, left aligned whatever the text align is,
@@ -137,7 +144,7 @@
     text-align:left;
   }
   .node.editing{user-select:text;cursor:text}
-  .node.nudge{animation:nudge .24s ease}
+  .node.nudge{animation:nudge .24s steps(2,end)}
   @keyframes nudge{0%,100%{opacity:1}50%{opacity:.4}}
 
   .node.done{opacity:.5;text-decoration:line-through;text-decoration-thickness:1.5px}
@@ -151,12 +158,12 @@
      them and fade out instead of blinking away, and fade back in on the way
      out. Not display:none: the box has to stay measurable (house rule 5). */
   .node.lenshide{opacity:0;pointer-events:none}
-  .node{transition:opacity .18s ease}
+  .node{transition:opacity .12s steps(2,end)}
   @media (prefers-reduced-motion:reduce){ .node{transition:none} }
   /* already covered in a presentation: still there, stepped back */
-  .node.past{opacity:.38;transition:opacity .35s}
+  .node.past{opacity:.38;transition:opacity .24s steps(2,end)}
   /* not reached yet, in a talk that shows the whole map from the start: fainter still */
-  .node.far{opacity:.16;transition:opacity .35s}
+  .node.far{opacity:.16;transition:opacity .24s steps(2,end)}
   .node.carried{opacity:.4}
   .node.link{flex-direction:column;align-items:center;justify-content:center}
   .node.link .lmeta{display:block;font:10.5px var(--font-ui);color:var(--link);margin-top:2px;white-space:nowrap;font-style:normal;text-decoration:none}
@@ -191,7 +198,7 @@
   #rail .rr.d1{padding-left:22px}#rail .rr.d2{padding-left:36px}#rail .rr.d3{padding-left:50px}#rail .rr.d4{padding-left:64px}
   #rail .rf{padding:6px 8px 0;color:var(--muted);font-size:10.5px}
   /* navi (1.2): the way up and the row you are on, never children */
-  #here{font:12.5px var(--font-ui);transition:opacity .4s}
+  #here{font:12.5px var(--font-ui);transition:opacity .24s steps(2,end)}
   #here[hidden]{display:none}
   #mapbar #here.sec{border-top:1px solid var(--panel-line)}
   #herebar{top:62px;left:14px;padding:0;max-width:calc(100vw - 28px);overflow:hidden}
@@ -254,7 +261,7 @@
   .node.curtain{visibility:hidden}
   .node.skipped{opacity:.3;text-decoration:line-through;text-decoration-thickness:1px}
   #presProgress{position:fixed;left:0;bottom:0;height:3px;width:0;background:var(--sel);z-index:30;
-    transition:width .45s ease;display:none}
+    transition:width .18s steps(3,end);display:none}
   body.presenting #presProgress{display:block}
   body.presenting.arranging #presProgress{display:none}
   /* Cards: the map is still rendered and measured underneath (layout needs
@@ -268,7 +275,7 @@
   #card .big{font-family:var(--font-node);font-size:calc(var(--node-size) * 2.4);line-height:1.15;color:var(--ink);max-width:24em}
   #card .cbody{font-family:var(--font-node);font-size:calc(var(--node-size) * 1.15);line-height:1.6;color:var(--ink);
     max-width:36em;text-align:left;display:flex;flex-direction:column;gap:.7em}
-  #card .cbody p{margin:0;opacity:.62;transition:opacity .35s}
+  #card .cbody p{margin:0;opacity:.62;transition:opacity .24s steps(2,end)}
   #card .cbody p.here{opacity:1}
   #card .kids{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:4px;max-width:60vw}
   #card .kids span{font-family:var(--font-node);font-size:calc(var(--node-size) * .9);color:var(--muted);
@@ -278,7 +285,7 @@
   .badge.skip{pointer-events:none;font-family:var(--font-ui);color:var(--muted);background:var(--panel);border-style:dashed}
   body.presenting #topbar, body.presenting #hint, body.presenting #zoombar,
   body.presenting #framebar, body.presenting #startHint{display:none}
-  body.presenting:not(.arranging) #crumbs{transition:opacity .5s}
+  body.presenting:not(.arranging) #crumbs{transition:opacity .24s steps(2,end)}
   body.presenting.idle:not(.arranging) #crumbs{opacity:0}
   body.presenting.idle:not(.arranging), body.presenting.idle:not(.arranging) *{cursor:none !important}
   body.presenting #frames{pointer-events:none}
@@ -335,7 +342,7 @@
      it can never reach an export. */
   #startHint{
     position:absolute;left:0;top:0;width:0;height:0;
-    pointer-events:none;opacity:0;transition:opacity .22s ease;
+    pointer-events:none;opacity:0;transition:opacity .12s steps(2,end);
   }
   #startHint.on{opacity:1}
   #startHint .sh{
@@ -391,8 +398,60 @@
     background:var(--panel);border:1px solid var(--panel-line);
     border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.09);
   }
+  /*hand:start*/
+  /* Generated by tools/build-hand.py. Do not hand-edit. */
+  :root{
+    --hand-w:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 450 40' preserveAspectRatio='none'%3E%3Cpath d='M142.3 2.9 L146.7 9.4 L148.8 23.1 L147.4 34.3 L137.5 38.3 L127.2 38.7 L114.7 37.6 L103.4 37.1 L91.4 37.0 L82.1 38.4 L69.3 37.0 L59.1 37.0 L47.5 38.7 L32.9 37.6 L20.7 37.8 L9.8 36.8 L3.0 30.7 L1.9 19.1 L1.1 8.9 L9.8 1.9 L21.4 3.3 L34.9 2.3 L45.7 2.2 L56.1 3.0 L67.9 2.9 L77.4 1.8 L88.2 3.1 L100.5 1.1 L113.9 1.0 L126.5 2.3 L142.3 2.9 Z' fill='none' stroke='%23000' stroke-width='1.5' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M143.3 1.8 L146.6 10.7 L148.2 21.8 L147.4 33.3 L137.2 38.2 L126.3 37.9 L115.1 37.8 L103.1 37.8 L89.5 37.6 L80.0 37.3 L68.0 37.5 L54.9 36.6 L42.3 36.6 L31.4 36.5 L19.1 37.1 L9.2 37.5 L3.3 29.0 L3.1 16.5 L3.3 5.9 L13.0 3.4 L25.2 2.1 L35.6 3.5 L46.1 3.0 L57.7 2.8 L68.6 3.8 L81.9 3.0 L93.6 2.0 L105.5 1.5 L118.3 3.6 L129.4 3.0 L143.3 1.8 Z' fill='none' stroke='%23000' stroke-width='0.93' vector-effect='non-scaling-stroke' stroke-linejoin='round' opacity='.5'/%3E%3Cpath d='M293.4 3.0 L297.9 11.2 L298.6 23.4 L297.3 33.2 L287.8 38.1 L275.5 37.6 L265.4 37.7 L254.8 37.7 L242.4 37.9 L231.0 37.8 L220.5 38.6 L210.9 37.5 L199.2 37.1 L187.7 38.4 L175.3 37.8 L164.3 37.7 L153.9 35.8 L153.3 24.6 L151.8 14.9 L155.4 3.0 L164.9 1.9 L177.2 2.9 L188.5 2.1 L197.9 2.9 L208.1 3.1 L219.0 1.6 L231.7 2.2 L242.1 1.6 L253.3 1.5 L264.3 1.3 L275.1 2.4 L293.4 3.0 Z' fill='none' stroke='%23000' stroke-width='1.5' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M292.0 2.5 L298.2 9.7 L298.1 23.6 L296.9 34.3 L286.0 36.2 L274.6 38.2 L261.8 36.9 L249.6 37.7 L238.3 36.3 L225.8 37.4 L215.2 38.2 L204.8 36.9 L195.4 38.4 L181.7 38.1 L170.7 38.1 L156.4 37.5 L151.8 29.5 L151.8 18.1 L151.9 7.4 L163.1 3.8 L175.1 1.7 L186.3 3.6 L197.1 1.6 L209.1 2.9 L221.4 3.5 L232.8 3.5 L247.0 3.0 L257.3 1.5 L268.4 1.7 L279.7 2.6 L292.0 2.5 Z' fill='none' stroke='%23000' stroke-width='0.93' vector-effect='non-scaling-stroke' stroke-linejoin='round' opacity='.5'/%3E%3Cpath d='M443.9 2.0 L448.7 11.1 L448.3 21.5 L447.1 31.5 L440.0 38.7 L430.4 37.2 L419.7 37.0 L405.7 37.1 L395.1 37.2 L386.1 39.0 L372.9 38.4 L362.8 37.0 L353.4 36.7 L340.3 37.4 L329.3 38.8 L316.9 38.2 L305.2 38.4 L302.0 27.1 L302.2 16.2 L303.9 5.8 L312.1 2.2 L322.7 3.2 L331.7 2.4 L345.8 2.1 L355.0 2.6 L365.9 1.3 L377.0 1.8 L387.6 1.9 L400.7 3.2 L411.1 1.6 L423.9 2.1 L443.9 2.0 Z' fill='none' stroke='%23000' stroke-width='1.5' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M441.5 1.9 L447.5 11.1 L448.4 20.6 L446.3 32.5 L439.7 38.1 L427.6 37.3 L415.9 37.1 L406.2 38.2 L393.0 36.4 L382.2 36.5 L371.5 38.4 L361.2 37.7 L349.3 37.9 L335.7 36.3 L324.2 37.9 L314.0 38.4 L304.3 35.4 L302.0 22.8 L303.7 12.2 L307.2 2.5 L319.6 2.7 L333.4 1.5 L344.6 1.8 L354.3 2.7 L367.2 2.9 L377.5 2.6 L388.8 2.4 L401.2 3.3 L413.3 2.0 L425.4 2.7 L441.5 1.9 Z' fill='none' stroke='%23000' stroke-width='0.93' vector-effect='non-scaling-stroke' stroke-linejoin='round' opacity='.5'/%3E%3C/svg%3E");
+    --hand-wf:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 450 40' preserveAspectRatio='none'%3E%3Cpath d='M142.3 2.9 L146.7 9.4 L148.8 23.1 L147.4 34.3 L137.5 38.3 L127.2 38.7 L114.7 37.6 L103.4 37.1 L91.4 37.0 L82.1 38.4 L69.3 37.0 L59.1 37.0 L47.5 38.7 L32.9 37.6 L20.7 37.8 L9.8 36.8 L3.0 30.7 L1.9 19.1 L1.1 8.9 L9.8 1.9 L21.4 3.3 L34.9 2.3 L45.7 2.2 L56.1 3.0 L67.9 2.9 L77.4 1.8 L88.2 3.1 L100.5 1.1 L113.9 1.0 L126.5 2.3 L142.3 2.9 Z' fill='%23000'/%3E%3Cpath d='M293.4 3.0 L297.9 11.2 L298.6 23.4 L297.3 33.2 L287.8 38.1 L275.5 37.6 L265.4 37.7 L254.8 37.7 L242.4 37.9 L231.0 37.8 L220.5 38.6 L210.9 37.5 L199.2 37.1 L187.7 38.4 L175.3 37.8 L164.3 37.7 L153.9 35.8 L153.3 24.6 L151.8 14.9 L155.4 3.0 L164.9 1.9 L177.2 2.9 L188.5 2.1 L197.9 2.9 L208.1 3.1 L219.0 1.6 L231.7 2.2 L242.1 1.6 L253.3 1.5 L264.3 1.3 L275.1 2.4 L293.4 3.0 Z' fill='%23000'/%3E%3Cpath d='M443.9 2.0 L448.7 11.1 L448.3 21.5 L447.1 31.5 L440.0 38.7 L430.4 37.2 L419.7 37.0 L405.7 37.1 L395.1 37.2 L386.1 39.0 L372.9 38.4 L362.8 37.0 L353.4 36.7 L340.3 37.4 L329.3 38.8 L316.9 38.2 L305.2 38.4 L302.0 27.1 L302.2 16.2 L303.9 5.8 L312.1 2.2 L322.7 3.2 L331.7 2.4 L345.8 2.1 L355.0 2.6 L365.9 1.3 L377.0 1.8 L387.6 1.9 L400.7 3.2 L411.1 1.6 L423.9 2.1 L443.9 2.0 Z' fill='%23000'/%3E%3C/svg%3E");
+    --hand-s:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 40' preserveAspectRatio='none'%3E%3Cpath d='M33.5 1.6 L38.6 11.2 L38.0 23.1 L35.0 37.4 L25.8 38.4 L14.5 38.0 L4.6 36.3 L3.2 26.7 L2.3 12.2 L5.8 3.6 L17.6 3.4 L33.5 1.6 Z' fill='none' stroke='%23000' stroke-width='1.5' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M32.3 2.9 L38.6 9.6 L36.6 22.5 L36.1 34.0 L25.2 36.5 L12.5 36.4 L2.7 34.5 L2.2 22.9 L1.8 11.4 L6.7 3.2 L17.8 2.6 L32.3 2.9 Z' fill='none' stroke='%23000' stroke-width='0.93' vector-effect='non-scaling-stroke' stroke-linejoin='round' opacity='.5'/%3E%3Cpath d='M73.7 3.0 L78.4 12.4 L78.1 21.8 L77.7 34.4 L67.9 38.4 L56.2 37.9 L44.7 35.7 L41.3 26.1 L42.4 11.6 L46.3 3.6 L58.4 2.3 L73.7 3.0 Z' fill='none' stroke='%23000' stroke-width='1.5' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M71.4 2.4 L78.1 9.1 L78.3 23.3 L76.4 34.0 L67.3 37.7 L55.6 38.6 L43.6 35.4 L42.6 22.9 L42.3 11.3 L49.5 1.6 L61.2 2.5 L71.4 2.4 Z' fill='none' stroke='%23000' stroke-width='0.93' vector-effect='non-scaling-stroke' stroke-linejoin='round' opacity='.5'/%3E%3Cpath d='M113.7 2.3 L117.5 10.7 L118.9 23.0 L117.7 33.2 L108.8 38.2 L95.6 37.8 L86.8 36.8 L82.6 27.1 L82.5 17.2 L82.2 5.5 L93.0 2.3 L113.7 2.3 Z' fill='none' stroke='%23000' stroke-width='1.5' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M113.4 1.8 L117.6 11.0 L117.6 23.4 L117.2 33.3 L108.4 37.3 L96.9 37.5 L87.1 36.9 L82.7 26.9 L82.0 17.4 L85.0 4.4 L95.5 3.6 L113.4 1.8 Z' fill='none' stroke='%23000' stroke-width='0.93' vector-effect='non-scaling-stroke' stroke-linejoin='round' opacity='.5'/%3E%3C/svg%3E");
+    --hand-sf:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 40' preserveAspectRatio='none'%3E%3Cpath d='M33.5 1.6 L38.6 11.2 L38.0 23.1 L35.0 37.4 L25.8 38.4 L14.5 38.0 L4.6 36.3 L3.2 26.7 L2.3 12.2 L5.8 3.6 L17.6 3.4 L33.5 1.6 Z' fill='%23000'/%3E%3Cpath d='M73.7 3.0 L78.4 12.4 L78.1 21.8 L77.7 34.4 L67.9 38.4 L56.2 37.9 L44.7 35.7 L41.3 26.1 L42.4 11.6 L46.3 3.6 L58.4 2.3 L73.7 3.0 Z' fill='%23000'/%3E%3Cpath d='M113.7 2.3 L117.5 10.7 L118.9 23.0 L117.7 33.2 L108.8 38.2 L95.6 37.8 L86.8 36.8 L82.6 27.1 L82.5 17.2 L82.2 5.5 L93.0 2.3 L113.7 2.3 Z' fill='%23000'/%3E%3C/svg%3E");
+    --hand-c:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 170' preserveAspectRatio='none'%3E%3Cpath d='M311.8 2.5 L317.6 10.2 L317.9 21.8 L317.4 33.6 L318.1 47.1 L316.7 57.7 L318.7 67.0 L317.4 79.5 L318.8 91.0 L317.5 100.6 L318.1 110.2 L317.0 122.8 L317.0 132.5 L318.1 145.2 L318.4 157.4 L315.9 167.0 L303.9 168.4 L291.6 167.4 L277.3 168.7 L266.8 166.7 L255.3 168.4 L244.7 167.5 L235.1 166.7 L222.2 168.1 L210.8 168.1 L200.6 167.9 L186.2 167.1 L177.0 168.4 L164.7 167.8 L153.1 168.0 L139.7 169.0 L129.5 168.6 L117.5 167.3 L106.8 166.8 L95.7 168.2 L85.3 167.8 L73.4 167.9 L62.3 167.5 L50.3 167.7 L38.9 166.9 L27.0 168.8 L16.6 168.1 L4.0 165.5 L2.4 156.0 L3.0 144.2 L2.3 133.7 L2.2 123.4 L3.2 108.9 L2.6 97.1 L2.6 85.9 L3.2 74.1 L2.4 61.6 L2.7 50.1 L1.8 39.0 L1.8 29.5 L2.8 15.3 L1.7 6.0 L13.0 1.4 L22.4 2.5 L34.7 2.3 L45.0 2.0 L54.7 1.0 L66.7 3.3 L78.4 1.5 L88.9 3.2 L99.3 1.2 L112.1 2.2 L122.9 3.1 L133.5 3.2 L146.1 1.2 L158.4 2.6 L169.2 1.7 L181.0 2.2 L193.3 1.2 L205.3 2.8 L218.1 1.6 L227.8 1.5 L239.9 3.1 L249.5 2.2 L262.3 2.1 L275.6 2.4 L286.7 1.7 L298.2 2.1 L311.8 2.5 Z' fill='none' stroke='%23000' stroke-width='1.4' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M311.2 1.6 L316.5 11.4 L316.9 22.7 L317.1 33.9 L318.4 45.8 L318.4 60.0 L318.4 70.5 L318.1 81.5 L317.6 91.8 L317.2 104.6 L317.1 117.1 L317.8 126.7 L317.3 140.7 L317.4 149.6 L318.1 163.8 L308.5 167.7 L296.7 167.3 L284.3 166.7 L270.8 168.5 L261.1 167.7 L247.9 167.1 L236.3 167.1 L223.9 168.5 L212.0 166.9 L201.0 167.7 L189.8 166.8 L176.0 168.0 L167.1 166.8 L152.7 166.7 L140.9 166.2 L131.1 167.7 L120.1 168.2 L108.1 167.6 L95.0 168.1 L82.6 167.5 L71.3 167.9 L59.0 166.8 L49.5 166.8 L37.9 167.2 L27.8 168.6 L13.0 166.5 L4.3 165.7 L2.8 154.3 L3.6 141.6 L3.8 130.7 L3.6 119.2 L2.7 108.5 L2.8 96.9 L1.7 85.9 L3.5 73.1 L2.1 62.8 L3.4 51.4 L2.4 41.1 L2.6 27.8 L3.8 14.7 L4.1 2.6 L18.6 2.8 L31.8 3.3 L42.0 3.6 L51.9 2.3 L62.4 2.9 L74.0 1.5 L84.5 1.4 L96.6 1.6 L105.1 3.6 L118.7 1.5 L129.6 3.2 L139.2 2.1 L152.7 2.7 L165.3 1.6 L175.9 2.1 L188.2 3.2 L201.9 3.1 L213.8 2.8 L226.7 3.3 L238.4 2.1 L250.7 3.6 L261.4 2.3 L273.1 3.3 L282.5 3.6 L293.2 3.3 L311.2 1.6 Z' fill='none' stroke='%23000' stroke-width='0.87' vector-effect='non-scaling-stroke' stroke-linejoin='round' opacity='.5'/%3E%3Cpath d='M633.8 1.9 L637.3 9.8 L637.2 24.0 L637.3 35.6 L639.0 46.2 L638.3 56.7 L638.0 68.4 L637.4 79.6 L637.4 91.1 L637.1 103.6 L639.0 116.4 L638.7 127.8 L637.5 139.9 L638.3 150.7 L638.3 162.4 L628.7 167.7 L619.3 166.9 L607.4 167.8 L597.6 166.8 L586.4 168.6 L573.5 167.5 L564.1 167.6 L553.5 166.7 L541.0 169.0 L529.9 166.7 L518.2 167.1 L509.2 167.8 L496.3 167.3 L486.5 168.6 L473.8 168.2 L463.8 167.5 L452.0 167.8 L440.6 168.2 L428.1 168.6 L416.9 168.6 L407.0 168.5 L393.9 167.9 L384.4 168.3 L374.7 168.4 L361.7 167.5 L349.1 168.0 L337.2 167.1 L325.2 168.4 L322.8 156.8 L321.2 145.7 L323.0 135.8 L322.7 122.8 L321.3 111.6 L322.6 100.2 L322.8 88.3 L321.1 77.0 L321.2 65.2 L321.1 55.2 L322.8 41.9 L322.3 28.6 L321.2 20.5 L322.2 6.6 L332.7 1.6 L343.6 2.5 L355.8 2.4 L368.1 1.8 L378.8 3.0 L389.1 1.0 L400.8 2.0 L411.1 1.3 L422.9 3.1 L434.4 1.5 L444.4 3.0 L455.8 3.2 L467.1 1.6 L478.5 1.0 L490.5 2.8 L502.2 3.2 L515.4 3.0 L525.6 2.2 L538.6 1.5 L548.4 2.4 L560.2 2.4 L572.3 2.9 L585.7 2.7 L597.6 3.1 L608.8 1.3 L619.3 3.0 L633.8 1.9 Z' fill='none' stroke='%23000' stroke-width='1.4' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M633.6 2.7 L638.5 12.8 L637.7 23.8 L638.1 37.5 L637.3 51.1 L637.6 64.0 L637.6 74.0 L636.9 85.9 L638.5 99.1 L638.0 110.5 L636.5 122.1 L637.3 133.6 L637.9 145.2 L637.7 154.9 L635.4 165.7 L623.0 167.5 L611.7 167.0 L600.5 166.3 L588.1 167.3 L576.7 167.1 L566.4 168.3 L554.3 166.7 L544.6 167.8 L530.9 168.4 L518.9 166.7 L507.8 166.8 L497.2 168.3 L486.0 166.5 L473.2 168.4 L461.4 166.5 L449.8 166.4 L439.6 167.3 L428.5 166.6 L416.9 166.8 L404.4 168.6 L390.5 168.3 L378.6 168.5 L367.5 167.9 L356.8 168.4 L343.7 168.1 L330.4 166.9 L322.9 162.0 L321.8 152.0 L321.8 139.8 L322.1 127.3 L322.1 116.9 L323.2 107.9 L322.2 96.0 L322.3 83.7 L322.3 72.1 L321.6 61.7 L321.8 48.4 L321.9 37.9 L323.3 25.9 L322.2 12.8 L327.1 3.7 L338.8 2.7 L350.0 3.1 L360.7 3.5 L374.2 3.5 L383.9 3.8 L395.2 2.4 L407.8 2.6 L418.4 3.4 L431.6 3.1 L443.9 1.9 L452.9 2.7 L465.4 1.8 L477.6 2.7 L492.1 3.5 L503.7 2.1 L515.2 2.7 L527.2 2.3 L537.4 2.8 L550.0 2.6 L563.4 3.0 L571.7 1.9 L586.4 1.9 L596.6 2.0 L610.3 3.5 L633.6 2.7 Z' fill='none' stroke='%23000' stroke-width='0.87' vector-effect='non-scaling-stroke' stroke-linejoin='round' opacity='.5'/%3E%3Cpath d='M952.6 3.3 L957.1 10.6 L957.1 22.6 L958.8 34.8 L956.8 45.7 L958.8 58.6 L957.3 69.4 L956.6 80.6 L957.3 93.4 L957.9 105.3 L956.9 116.2 L958.2 127.9 L958.1 140.2 L958.2 151.8 L958.6 162.6 L948.9 167.3 L934.8 167.6 L925.8 168.8 L916.4 168.4 L903.7 167.5 L894.6 167.4 L882.2 168.8 L871.0 168.6 L861.2 168.9 L849.9 167.8 L839.6 168.4 L824.9 168.0 L816.4 166.6 L803.9 168.7 L791.7 167.8 L780.5 167.8 L770.7 167.4 L758.9 167.3 L749.0 168.1 L739.4 167.7 L726.8 168.1 L714.9 167.0 L702.6 168.7 L691.4 168.0 L678.9 167.2 L665.3 167.8 L652.7 168.9 L643.6 167.3 L643.0 155.1 L642.8 144.3 L642.5 132.9 L641.2 120.5 L643.1 108.4 L641.7 98.4 L641.8 86.0 L642.9 73.7 L641.3 64.3 L641.5 52.7 L641.0 41.8 L642.9 30.2 L641.3 19.7 L642.6 6.6 L652.0 1.3 L663.7 1.5 L672.6 2.8 L686.1 1.3 L698.9 3.2 L707.9 2.8 L719.6 3.2 L733.2 3.3 L745.4 1.5 L753.8 1.6 L765.9 2.7 L776.4 2.2 L788.2 2.2 L799.5 1.8 L810.1 1.5 L822.3 2.3 L836.7 3.0 L846.9 3.0 L856.9 3.0 L868.8 2.8 L878.7 2.6 L891.5 2.6 L902.8 2.6 L914.5 2.4 L925.3 3.0 L937.6 1.8 L952.6 3.3 Z' fill='none' stroke='%23000' stroke-width='1.4' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M953.0 1.6 L958.6 11.2 L957.7 24.2 L957.1 36.8 L958.2 50.2 L958.3 60.6 L957.4 70.6 L957.0 84.1 L957.7 96.5 L958.0 107.6 L957.1 118.8 L956.5 131.0 L957.2 140.5 L956.6 152.8 L956.9 165.0 L946.3 167.3 L934.4 168.6 L922.3 166.5 L910.6 166.7 L899.0 168.6 L886.0 168.3 L875.0 167.4 L864.5 167.3 L853.6 168.4 L843.3 166.4 L831.7 168.3 L821.5 166.6 L809.4 167.3 L797.7 168.5 L786.4 167.3 L777.7 167.7 L766.6 167.7 L755.6 168.6 L741.2 168.3 L731.2 167.8 L718.6 168.4 L705.6 167.4 L694.8 167.9 L682.4 166.8 L669.4 168.0 L658.4 167.5 L647.9 167.0 L642.6 157.7 L642.0 145.1 L643.3 133.8 L642.0 121.5 L641.7 110.5 L641.7 99.8 L642.1 88.3 L642.1 75.9 L641.5 63.1 L642.8 52.1 L643.0 41.4 L643.3 30.9 L642.4 17.9 L641.9 5.9 L651.8 2.2 L664.2 2.7 L674.9 1.9 L688.2 1.7 L698.2 2.8 L711.1 3.6 L722.7 3.5 L734.0 3.4 L745.2 3.8 L757.3 2.0 L767.6 3.7 L779.0 1.4 L789.7 3.6 L801.5 3.2 L813.6 1.7 L824.7 3.7 L835.8 2.9 L848.3 1.8 L857.8 2.0 L870.1 3.3 L880.6 2.8 L893.2 2.3 L904.2 1.9 L913.1 3.2 L927.2 2.9 L936.5 2.8 L953.0 1.6 Z' fill='none' stroke='%23000' stroke-width='0.87' vector-effect='non-scaling-stroke' stroke-linejoin='round' opacity='.5'/%3E%3C/svg%3E");
+    --hand-k:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 24' preserveAspectRatio='none'%3E%3Cpath d='M24.0 2.5 L27.9 10.8 L24.7 22.4 L13.1 21.6 L1.9 18.8 L2.5 5.7 L24.0 2.5 Z' fill='none' stroke='%23000' stroke-width='1.3' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M23.3 3.4 L26.3 9.6 L22.7 20.8 L10.5 21.8 L3.0 18.1 L3.6 3.8 L23.3 3.4 Z' fill='none' stroke='%23000' stroke-width='0.81' vector-effect='non-scaling-stroke' stroke-linejoin='round' opacity='.5'/%3E%3C/svg%3E");
+    --hand-kf:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 24' preserveAspectRatio='none'%3E%3Cpath d='M24.0 2.5 L27.9 10.8 L24.7 22.4 L13.1 21.6 L1.9 18.8 L2.5 5.7 L24.0 2.5 Z' fill='%23000'/%3E%3C/svg%3E");
+  }
+  /*hand:end*/
+  /* ---------- the hand on every control (1.12.0, brand book 05, 06, 25) ----------
+     Anything you can click wears a drawn edge. At rest it is an outline in a
+     quiet grey (--edge); under the cursor it turns the colour that acts and
+     runs its three frames, stepped; picked means glazed: --glaze ground, Field
+     text. The edge is a mask from tools/build-hand.py, so the colour stays here. */
+  :root{--edge:#c2c2c2;--acts:#e8990c;--glaze:#ffd43b;--on-glaze:#121212;--kbd-bg:#f3f3f1;--kbd-edge:#c9c9c9}
+  html[data-theme="dark"]{--edge:#565656;--acts:#ffd43b;--kbd-bg:#191919;--kbd-edge:#4d4d4d}
+  :is(button.tb,#modebar button[data-mode],#netsw button,#styleFoot button,.opt.txt,#btnNewMap,#btnSwitch,#helpTabs button),.opt:not(.txt){position:relative;isolation:isolate;border:0 !important;background:transparent !important;border-radius:0 !important}
+  :is(button.tb,#modebar button[data-mode],#netsw button,#styleFoot button,.opt.txt,#btnNewMap,#btnSwitch,#helpTabs button)::before,.opt:not(.txt)::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:var(--edge);
+    -webkit-mask:var(--hand-w) 0 0/300% 100% no-repeat;mask:var(--hand-w) 0 0/300% 100% no-repeat}
+  .opt:not(.txt)::before{-webkit-mask-image:var(--hand-s);mask-image:var(--hand-s)}
+  :is(button.tb,#modebar button[data-mode],#netsw button,#styleFoot button,.opt.txt,#btnNewMap,#btnSwitch,#helpTabs button):hover::before,:is(button.tb,#modebar button[data-mode],#netsw button,#styleFoot button,.opt.txt,#btnNewMap,#btnSwitch,#helpTabs button):focus-visible::before,.opt:not(.txt):hover::before,.opt:not(.txt):focus-visible::before{background:var(--acts);animation:hand .36s steps(1,end) infinite}
+  :is(button.tb,#modebar button[data-mode],#netsw button,#styleFoot button,.opt.txt,#btnNewMap,#btnSwitch,#helpTabs button):hover,.opt:not(.txt):hover{color:var(--ink)}
+  :is(button.tb,#modebar button[data-mode],#netsw button,#styleFoot button,.opt.txt,#btnNewMap,#btnSwitch,#helpTabs button).on::before{background:var(--glaze);-webkit-mask-image:var(--hand-wf);mask-image:var(--hand-wf)}
+  .opt:not(.txt).on::before{background:var(--glaze);-webkit-mask-image:var(--hand-sf);mask-image:var(--hand-sf)}
+  :is(button.tb,#modebar button[data-mode],#netsw button,#styleFoot button,.opt.txt,#btnNewMap,#btnSwitch,#helpTabs button).on,.opt:not(.txt).on{color:var(--on-glaze) !important}
+  .opt:not(.txt).on svg *{stroke:var(--on-glaze)}
+  :is(button.tb,#modebar button[data-mode],#netsw button,#styleFoot button,.opt.txt,#btnNewMap,#btnSwitch,#helpTabs button):active,.opt:not(.txt):active{transform:translateY(2px)}
+  :is(button.tb,#modebar button[data-mode],#netsw button,#styleFoot button,.opt.txt,#btnNewMap,#btnSwitch,#helpTabs button):focus-visible,.opt:not(.txt):focus-visible{outline:2px solid #74c0fc;outline-offset:3px}
+  @keyframes hand{
+    0%{-webkit-mask-position:0 0;mask-position:0 0}
+    33.3%{-webkit-mask-position:50% 0;mask-position:50% 0}
+    66.6%{-webkit-mask-position:100% 0;mask-position:100% 0}
+  }
+  @media (prefers-reduced-motion:reduce){ :is(button.tb,#modebar button[data-mode],#netsw button,#styleFoot button,.opt.txt,#btnNewMap,#btnSwitch,#helpTabs button)::before,.opt:not(.txt)::before{animation:none !important} }
+  /* a key inside a control is part of its label, not a keycap of its own */
+  :is(button.tb,#modebar button[data-mode],#netsw button,#styleFoot button,.opt.txt,#btnNewMap,#btnSwitch,#helpTabs button) kbd{all:unset;font:500 10px var(--font-mono);opacity:.72;margin-left:2px}
+  :is(button.tb,#modebar button[data-mode],#netsw button,#styleFoot button,.opt.txt,#btnNewMap,#btnSwitch,#helpTabs button) kbd::before,
+  :is(button.tb,#modebar button[data-mode],#netsw button,#styleFoot button,.opt.txt,#btnNewMap,#btnSwitch,#helpTabs button) kbd::after{display:none}
+  /* a keycap, drawn: Plex Mono on a filled key with an outline pass over it */
+  kbd{position:relative;isolation:isolate;display:inline-block;font:500 10.5px/1 var(--font-mono) !important;color:var(--ink);
+    background:none !important;border:0 !important;border-radius:0 !important;padding:4px 6px 5px !important;min-width:9px;text-align:center}
+  kbd::before,kbd::after{content:"";position:absolute;inset:0;pointer-events:none}
+  kbd::before{z-index:-2;background:var(--kbd-bg);-webkit-mask:var(--hand-kf) 0 0/100% 100% no-repeat;mask:var(--hand-kf) 0 0/100% 100% no-repeat}
+  kbd::after{z-index:-1;background:var(--kbd-edge);-webkit-mask:var(--hand-k) 0 0/100% 100% no-repeat;mask:var(--hand-k) 0 0/100% 100% no-repeat}
+  /* the mark and the name (board 22 A): the tile, then Mappr in Bricolage */
+  #topbar .brand{display:flex;align-items:center;gap:9px;font:800 17px var(--font-disp);letter-spacing:-.5px;padding:0 12px 0 4px;color:var(--ink)}
+  #topbar .brand .mark{width:24px;height:24px;display:block;flex:none}
+  #topbar .brand:hover{color:var(--ink)}
+  .bar{border-radius:8px}
+  #saveState{font:500 10.5px var(--font-mono)}
   #topbar{top:14px;left:14px;display:flex;align-items:center;gap:4px;padding:6px}
-  #topbar .brand{font-family:var(--font-sketch);font-size:17px;padding:0 12px 0 8px;color:var(--ink)}
   #topbar .sep{width:1px;height:20px;background:var(--panel-line);margin:0 3px}
   button.tb{
     font:inherit;font-size:12px;
@@ -432,18 +491,18 @@
   .grp{margin-bottom:13px}
   .grp.hide{display:none}
   #styleScroll h3.sect{margin:18px 0 8px;padding-top:12px;border-top:1px solid var(--panel-line);font-size:10.5px;font-weight:700;color:var(--sel);text-transform:uppercase;letter-spacing:.7px}
-  .grp > h4{margin:0 0 6px;font-size:10.5px;font-weight:600;color:var(--muted);letter-spacing:.2px}
+  .grp > h4{margin:0 0 7px;font:500 10px var(--font-mono);text-transform:uppercase;color:var(--muted);letter-spacing:.12em}
   /* worded options: sized to their word, with the picked one's meaning under the row */
   .grp.txt .row{gap:4px}
   .opt.txt{width:auto;height:27px;padding:0 9px;font-size:12px;font-weight:500;letter-spacing:.1px;border-color:var(--panel-line);background:transparent;color:var(--ink)}
   html[data-theme="dark"] .opt.txt{background:transparent}
   .opt.txt:hover{background:var(--panel-hover)}
   .opt.txt.on{background:var(--sel-soft);border-color:var(--sel);color:var(--sel)}
-  .grp .desc{margin-top:6px;font-size:11px;line-height:1.45;color:var(--muted);min-height:1.45em}
+  .grp .desc{margin-top:6px;font-size:11px;line-height:1.45;color:var(--ink);opacity:.72;min-height:1.45em}
   /* the talk panel: the same rows, under the presenting bar, T opens it */
   #talk{top:104px;left:14px;width:252px;padding:10px 14px 8px;display:none;z-index:31}
   body.presenting:not(.arranging) #talk.on{display:block}
-  body.presenting.idle:not(.arranging) #talk{transition:opacity .5s;opacity:0}
+  body.presenting.idle:not(.arranging) #talk{transition:opacity .24s steps(2,end);opacity:0}
   #talk .tt{display:flex;align-items:center;justify-content:space-between;margin:0 0 10px;font-size:11px;font-weight:700;color:var(--sel);text-transform:uppercase;letter-spacing:.7px}
   #talk .tt kbd{font:11px var(--font-ui);color:var(--muted);border:1px solid var(--panel-line);border-radius:5px;padding:1px 6px}
   #talk .grp:last-child{margin-bottom:4px}
@@ -471,8 +530,8 @@
     padding:5px 2px;cursor:pointer;border-radius:7px;
   }
   .tog:hover{background:var(--panel-hover)}
-  .pill{width:30px;height:17px;border-radius:9px;background:var(--panel-line);position:relative;flex:none;transition:background .14s}
-  .pill::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .14s}
+  .pill{width:30px;height:17px;border-radius:9px;background:var(--panel-line);position:relative;flex:none;transition:background .12s steps(2,end)}
+  .pill::after{content:"";position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .12s steps(2,end)}
   .tog.on .pill{background:var(--sel)}
   .tog.on .pill::after{transform:translateX(13px)}
   #styleFoot{
@@ -647,10 +706,10 @@
   #hint{
     bottom:14px;left:14px;padding:10px 12px;font-size:11.5px;color:var(--muted);
     display:flex;gap:6px 14px;align-items:center;flex-wrap:wrap;
-    max-width:min(820px,calc(100vw - 210px));
+    max-width:min(1120px,calc(100vw - 230px));
   }
   #hint b{color:var(--ink);font-weight:600}
-  #hint{flex-wrap:nowrap;overflow:hidden;gap:4px 14px}
+  #hint{flex-wrap:nowrap;overflow:hidden;gap:4px 12px}
   #hint > span{white-space:nowrap}
   #hint .hm{font-weight:700;color:var(--sel);text-transform:uppercase;font-size:10px;letter-spacing:.05em}
   #hint.browsing{border-style:dashed}
@@ -659,6 +718,19 @@
   #hint .hx:hover{color:var(--ink)}
   #hint.min{padding:6px 10px;gap:6px}
   body.presenting.arranging #hint{display:flex}
+  /* ghosts (1.12.0): dashed where a node would land, a drawn key on what a key would act on */
+  #ghostLayer .gbox{fill:rgba(227,227,227,.03);stroke:var(--muted);stroke-width:1.6;stroke-dasharray:6 5}
+  #ghostLayer .gedge{fill:none;stroke:var(--muted);stroke-width:1.6;stroke-dasharray:5 5;stroke-linecap:round}
+  #ghostLayer .ghalo{fill:color-mix(in srgb,var(--sel) 12%,transparent);stroke:var(--sel);stroke-width:1.4;stroke-dasharray:4 4}
+  #ghostLayer .gback{fill:var(--paper);opacity:.9}
+  #ghostLayer .gfill{fill:var(--glaze)}
+  #ghostLayer .gcap{fill:none;stroke:var(--glaze);stroke-width:1.6;stroke-linecap:round}
+  #ghostLayer .gkey{font:500 12px var(--font-mono);fill:var(--on-glaze)}
+  #ghostLayer .gword{font:500 11.5px var(--font-mono);fill:var(--acts)}
+  #ghostLayer{pointer-events:none}
+  #hint .hm{color:var(--acts);font:500 10px var(--font-mono);letter-spacing:.12em}
+  #hint.held .hm{color:var(--on-glaze);background:var(--glaze);padding:3px 6px}
+
   kbd{
     font-family:var(--font-ui);font-size:10.5px;
     background:var(--panel-hover);border:1px solid var(--panel-line);
@@ -697,18 +769,59 @@
   table.keys td{padding:5px 0;vertical-align:top}
   table.keys td:first-child{width:190px;padding-right:14px}
   table.keys td:last-child{opacity:.82}
+  /* the key list as moves (1.12.0) */
+  #helpCard{max-width:1080px;height:min(720px,88vh);border-radius:10px;padding:20px 22px 14px}
+  #helpCard .hhead{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  #helpCard .hhead .mark{width:24px;height:24px;flex:none}
+  #helpCard .hhead h2{margin:0;font:800 22px var(--font-disp);letter-spacing:-.6px}
+  #helpCard .hhead .ver{font:500 10.5px var(--font-mono);color:var(--muted)}
+  #helpCard .hhead .grow{flex:1}
+  #helpHits{font:500 10.5px var(--font-mono);color:var(--muted)}
+  #helpFind{position:relative;isolation:isolate;min-width:260px;padding:7px 12px;font:12.5px var(--font-ui);color:var(--muted)}
+  #helpFind::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--edge);-webkit-mask:var(--hand-w) 0 0/300% 100% no-repeat;mask:var(--hand-w) 0 0/300% 100% no-repeat}
+  #helpFind.on{color:var(--ink)}
+  #helpFind.on::before{background:#74c0fc}
+  #helpBody{flex-direction:column;gap:12px}
+  #helpTabs{flex-direction:row !important;flex-wrap:wrap;flex:none !important;border:0 !important;padding:0 !important;gap:5px !important}
+  #helpTabs button{padding:6px 11px !important;font:500 12.5px var(--font-ui) !important;color:var(--ink) !important}
+  #helpTabs button.on{color:var(--on-glaze) !important}
+  #helpTabs .n{font:500 10px var(--font-mono);opacity:.6;width:auto}
+  #help.finding #helpTabs{opacity:.35;pointer-events:none}
+  #help.finding .hpane{display:none}
+  #help.finding .hpane.hit{display:block}
+  .mvg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:6px}
+  @media (max-width:900px){ .mvg{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (max-width:560px){ .mvg{grid-template-columns:minmax(0,1fr)} }
+  .mv{position:relative;isolation:isolate;padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:12.5px;line-height:1.5}
+  .mv.miss{display:none}
+  .mv::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:var(--edge);-webkit-mask:var(--hand-c) 0 0/300% 100% no-repeat;mask:var(--hand-c) 0 0/300% 100% no-repeat}
+  .mv.play:hover::before{background:var(--acts);animation:hand .36s steps(1,end) infinite}
+  .mvk{display:flex;flex-wrap:wrap;gap:3px;align-items:center;font:500 11.5px var(--font-mono);color:var(--muted)}
+  .mvt{color:var(--ink);opacity:.85}
+  .mvt b{font-weight:600}
+  .mvd{position:relative;height:104px;border:1px solid var(--panel-line);background-color:var(--paper);overflow:hidden}
+  .mvd > div{position:absolute;inset:0}
+  .mvd svg{display:block;width:100%;height:100%}
+  .mvd .fb{opacity:0}
+  .mv.play:hover .fa{animation:mvfa 2.4s steps(1,end) infinite}
+  .mv.play:hover .fb{animation:mvfb 2.4s steps(1,end) infinite}
+  .mv.play:hover .mvk kbd{animation:mvpress 2.4s steps(1,end) infinite}
+  @keyframes mvfa{0%,49.9%{opacity:1}50%,100%{opacity:0}}
+  @keyframes mvfb{0%,49.9%{opacity:0}50%,100%{opacity:1}}
+  @keyframes mvpress{0%,35%{transform:translateY(0)}35.1%,50%{transform:translateY(2px);color:var(--acts)}50.1%,100%{transform:translateY(0)}}
+  @media (prefers-reduced-motion:reduce){ .mv.play:hover .fa,.mv.play:hover .fb,.mv.play:hover .mvk kbd,.mv.play:hover::before{animation:none} .mv.play:hover .fa{opacity:0} .mv.play:hover .fb{opacity:1} }
   #notes{position:fixed;inset:0;z-index:21;background:rgba(10,10,14,.5);display:none;align-items:center;justify-content:center;padding:20px}
   #notes.open{display:flex}
-  #notesCard{background:var(--panel);color:var(--ink);border-radius:16px;padding:22px 26px;max-width:640px;width:100%;max-height:86vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
-  #notesCard h2{margin:0 0 4px;font-size:22px;font-family:var(--font-sketch);font-weight:400}
+  #notesCard{background:var(--panel);color:var(--ink);border-radius:10px;padding:22px 26px;max-width:640px;width:100%;max-height:86vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+  #notesCard h2{margin:0 0 4px;font:800 22px var(--font-disp);letter-spacing:-.6px}
   #notesCard p.sub{margin:0 0 16px;font-size:12.5px;color:var(--muted)}
   #notesBody h3.rel{
-    margin:20px 0 2px;font-size:15px;font-family:var(--font-sketch);font-weight:400;
+    margin:20px 0 2px;font:800 15px var(--font-disp);letter-spacing:-.3px;
     border-top:1px solid var(--panel-line);padding-top:14px;
   }
   #notesBody h3.rel:first-child{border-top:0;padding-top:0;margin-top:4px}
-  #notesBody h3.rel span{font-family:var(--font-ui);font-size:11px;color:var(--muted);margin-left:7px}
-  #notesBody h4{margin:10px 0 4px;font-size:10.5px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)}
+  #notesBody h3.rel span{font:500 10.5px var(--font-mono);letter-spacing:0;color:var(--muted);margin-left:7px}
+  #notesBody h4{margin:10px 0 4px;font:500 10px var(--font-mono);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
   #notesBody ul{margin:0;padding-left:17px}
   #notesBody li{font-size:13px;line-height:1.55;margin-bottom:7px;opacity:.88}
   #notesBody code{font-size:12px;background:var(--panel-hover);border-radius:4px;padding:1px 4px}
@@ -726,7 +839,8 @@
   #glaze i{position:absolute;display:block;width:68px;height:68px;transform-origin:50% 0}
   #glaze i svg{display:block;width:100%;height:100%}
   #glaze.up{background:transparent}
-  #glaze.up i{animation:glazeup 80ms steps(2,start) forwards}
+  #glaze.up i:not(.stay){animation:glazeup 80ms steps(2,start) forwards}
+  #glaze i.land{transform-origin:0 0;transition:transform 150ms steps(3,end)}
   @keyframes glazeup{to{transform:scaleY(0)}}
 </style>
 </head>
@@ -751,25 +865,53 @@
   el.innerHTML=html;
   document.body.appendChild(el);
   var gone=false;
+  /* 1.12.0, brand book board 24 B: the last tile lands. Every row but the top
+     rolls up as before; the top row holds a beat, steps away right to left, and
+     its tile nearest the corner lands where the mark sits, so the mark is the
+     thing you came through. Anything that goes wrong just clears the plate. */
   function off(){
     if(gone) return; gone=true;
-    if(matchMedia("(prefers-reduced-motion: reduce)").matches){ el.remove(); return; }
-    var n=r1-r0, t=el.querySelectorAll("i");
-    for(var i=0;i<t.length;i++) t[i].style.animationDelay=((n-1-(+t[i].getAttribute("data-r")))*40)+"ms";
+    var mark=document.querySelector("#brand .mark");
+    function done(){ el.remove(); if(mark) mark.style.visibility=""; }
+    if(matchMedia("(prefers-reduced-motion: reduce)").matches){ done(); return; }
+    setTimeout(done, 2400);
+    var n=r1-r0, t=el.querySelectorAll("i"), top=[];
+    for(var i=0;i<t.length;i++){
+      var rr=+t[i].getAttribute("data-r");
+      if(rr===0){ top.push(t[i]); t[i].className="stay"; }
+      else t[i].style.animationDelay=((n-1-rr)*40)+"ms";
+    }
     el.className="up";
-    setTimeout(function(){ el.remove(); }, n*40+120);
+    var mr=mark && mark.getBoundingClientRect();
+    if(!mr || !mr.width || !top.length){ setTimeout(done, n*40+120); return; }
+    mark.style.visibility="hidden";
+    var lead=top[0], best=1e9;
+    top.forEach(function(x){ var d=Math.abs(parseFloat(x.style.left)-mr.left); if(d<best){ best=d; lead=x; } });
+    var rest=top.filter(function(x){ return x!==lead; }).sort(function(a,b){ return parseFloat(b.style.left)-parseFloat(a.style.left); });
+    var t1=(n-1)*40+120+200, S=16;
+    rest.forEach(function(x,i){ setTimeout(function(){ x.style.visibility="hidden"; }, t1+i*S); });
+    var t2=t1+rest.length*S;
+    setTimeout(function(){
+      var g=lead.querySelector("g"); if(g) g.setAttribute("transform","rotate(0 60 60)");
+      var dx=mr.left-parseFloat(lead.style.left), dy=mr.top-parseFloat(lead.style.top);
+      lead.className="stay land";
+      lead.style.transform="translate("+dx+"px,"+dy+"px) scale("+(mr.width/M)+")";
+    }, t2);
+    setTimeout(done, t2+170);
   }
   window.__glazeOff=function(){ requestAnimationFrame(function(){ requestAnimationFrame(off); }); };
   setTimeout(off,2500);
 })();
 </script>
 
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="mappr-tile" viewBox="0 0 120 120"><rect x="-1" y="-1" width="122" height="122" fill="#121212"/><path d="M1.1 -0.4 L-0.1 10.3 L1.0 18.2 L-0.1 28.7 L0.5 37.1 L-1.2 46.8 L0.3 55.0 L-0.8 63.4 L-0.8 73.0 L-0.3 83.6 L0.8 91.4 L1.1 101.4 L0.5 110.9 L0.8 119.5 L6.1 118.8 L12.1 119.2 L18.0 118.8 L23.6 118.6 L30.2 115.6 L33.9 116.0 L40.4 113.5 L45.6 111.1 L52.2 107.2 L55.9 106.1 L61.7 103.6 L66.8 99.3 L71.0 96.8 L75.3 93.0 L80.3 88.0 L85.2 83.9 L89.7 81.6 L92.9 76.2 L95.5 71.5 L99.1 67.1 L102.3 60.5 L106.5 56.9 L108.4 52.3 L111.7 45.0 L112.1 41.0 L115.4 36.0 L116.7 28.6 L118.5 23.3 L117.6 16.5 L119.9 11.8 L120.3 6.3 L119.2 1.1 L111.0 -0.3 L101.1 0.4 L91.8 -0.3 L83.3 -0.1 L72.8 -0.0 L64.7 0.1 L55.1 0.7 L45.4 0.6 L37.0 1.2 L26.7 0.7 L19.0 -0.7 L9.1 1.0 L0.5 -0.2 Z" fill="#ffd43b"/><path d="M119.3 120.2 L120.6 109.8 L120.6 101.5 L120.9 93.1 L119.7 83.5 L120.2 73.9 L120.4 65.1 L119.4 55.0 L120.1 45.9 L120.5 36.3 L119.4 27.6 L118.9 19.0 L119.4 8.0 L120.4 -0.3 L114.1 -0.5 L108.5 0.5 L101.4 1.9 L95.6 2.7 L91.1 3.6 L84.5 6.2 L80.8 7.5 L74.8 8.7 L69.8 11.5 L63.7 13.8 L58.8 16.7 L54.4 21.3 L47.9 23.2 L44.5 27.4 L40.3 31.9 L35.2 34.3 L30.6 39.1 L27.2 43.8 L23.7 47.4 L20.4 52.7 L16.5 58.5 L14.1 64.1 L12.1 69.9 L9.3 73.6 L7.7 78.9 L4.5 84.9 L3.8 91.8 L2.9 96.9 L0.6 102.7 L0.6 107.6 L-0.8 114.5 L0.9 120.6 L8.9 119.3 L17.3 120.7 L28.5 119.7 L37.4 120.4 L47.3 120.0 L55.9 120.9 L65.6 119.3 L74.2 120.8 L83.1 119.7 L91.7 119.7 L101.4 119.3 L111.7 118.9 L120.2 119.4 Z" fill="#ffd43b" opacity=".45"/></symbol></svg>
 <div id="sink" contenteditable="true" inputmode="none" aria-hidden="true" tabindex="-1"></div>
 <div id="stage">
   <div id="world">
     <svg id="paint" xmlns="http://www.w3.org/2000/svg">
       <g id="paintLayer" transform="translate(10000,10000)"></g>
       <g id="overlayLayer" transform="translate(10000,10000)"></g>
+      <g id="ghostLayer" transform="translate(10000,10000)"></g>
     </svg>
     <div id="frames"></div>
     <div id="badges"></div>
@@ -796,7 +938,7 @@
 </div>
 
 <div id="topbar" class="bar">
-  <span class="brand" id="brand" title="Mappr v__VERSION__">Mappr</span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
+  <span class="brand" id="brand" title="Mappr v__VERSION__, what's new"><svg class="mark" viewBox="0 0 120 120" aria-hidden="true"><use href="#mappr-tile"/></svg><span class="wm">Mappr</span></span><span id="pinMark" title="Pinned (⌥P to unpin)" hidden></span>
   <span class="sep"></span>
   <button class="tb" id="btnMaps">Maps ▾</button>
   <button class="tb" id="btnJump" title="Jump to a node (⌘K)">Jump ⌘K</button>
@@ -886,23 +1028,24 @@
 
 <div id="help">
   <div id="helpCard">
-    <h2>Mappr keys <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v__VERSION__</span></h2>
-    <p class="sub">Everything is reachable from the keyboard. Your hands never leave home row.</p>
+    <div class="hhead"><svg class="mark" viewBox="0 0 120 120" aria-hidden="true"><use href="#mappr-tile"/></svg><h2>Keys</h2><span class="ver">v__VERSION__</span>
+      <span class="grow"></span><span id="helpHits"></span><span id="helpFind">Find a move: fold, number, present…</span></div>
+    <p class="sub">Every move, by task. Hover a card to watch it. Hold ⌘, ⌥ or ⇧ on the map to see them where you are.</p>
 
     <div id="helpBody">
       <nav id="helpTabs"><button data-tab="create"><span class="n">1</span>Create</button><button data-tab="move"><span class="n">2</span>Move</button><button data-tab="edit"><span class="n">3</span>Edit</button><button data-tab="frames"><span class="n">4</span>Select and frames</button><button data-tab="links"><span class="n">5</span>Links</button><button data-tab="present"><span class="n">6</span>Present</button><button data-tab="maps"><span class="n">7</span>Maps and files</button><button data-tab="canvas"><span class="n">8</span>Canvas</button></nav>
       <div id="helpPanes">
     <section class="hpane" data-tab="create"><h3>Create</h3>
     <table class="keys">
-      <tr><td><kbd>⏎</kbd></td><td>A new node beside this one, same level, same branch. Type, Enter, type, Enter lays down a whole level without stopping.</td></tr>
-      <tr><td><kbd>⇧</kbd><kbd>⏎</kbd></td><td>A new node at the same level but in the <em>next branch along</em>, so you can fill a level across the whole map without walking back to each parent. It goes in the order you see: top to bottom on a sideways branch, left to right on an up or down one, and wraps round on the same side.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>⏎</kbd></td><td>A child, one level deeper.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>←↑→↓</kbd></td><td>From the centre: start a branch that way. On a branch: the same direction again goes deeper, a sideways direction adds a sibling on that side.</td></tr>
-      <tr><td>hold <kbd>Tab</kbd> + <kbd>←↑→↓</kbd></td><td>With a selection up, the arrow back toward the centre <b>groups</b> it: a new parent slides in above every selected branch, wherever they were, and they all become its children, in map order. Type its name. Otherwise: insert a node <em>in between</em>. Point back toward the centre and the new node becomes this one's parent. Point outward and it slides in above this node's children, adopting them. This is how you backtrack and add a layer you did not plan for.</td></tr>
+      <tr data-demo="sib"><td><kbd>⏎</kbd></td><td>A new node beside this one, same level, same branch. Type, Enter, type, Enter lays down a whole level without stopping.</td></tr>
+      <tr data-demo="next"><td><kbd>⇧</kbd><kbd>⏎</kbd></td><td>A new node at the same level but in the <em>next branch along</em>, so you can fill a level across the whole map without walking back to each parent. It goes in the order you see: top to bottom on a sideways branch, left to right on an up or down one, and wraps round on the same side.</td></tr>
+      <tr data-demo="child"><td><kbd>⌘</kbd><kbd>⏎</kbd></td><td>A child, one level deeper.</td></tr>
+      <tr data-demo="branch"><td><kbd>⌘</kbd><kbd>←↑→↓</kbd></td><td>From the centre: start a branch that way. On a branch: the same direction again goes deeper, a sideways direction adds a sibling on that side.</td></tr>
+      <tr data-demo="between"><td>hold <kbd>Tab</kbd> + <kbd>←↑→↓</kbd></td><td>With a selection up, the arrow back toward the centre <b>groups</b> it: a new parent slides in above every selected branch, wherever they were, and they all become its children, in map order. Type its name. Otherwise: insert a node <em>in between</em>. Point back toward the centre and the new node becomes this one's parent. Point outward and it slides in above this node's children, adopting them. This is how you backtrack and add a layer you did not plan for.</td></tr>
     </table></section>
     <section class="hpane" data-tab="move"><h3>Move</h3>
     <table class="keys">
-      <tr><td><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></td><td>Walk the tree. Past the last of a node's siblings the arrow carries on into the next branch along at the same level, staying on that side of the map. Unlike <kbd>Tab</kbd> it does not wrap: run out of map that way and it stops.</td></tr>
+      <tr data-demo="walk"><td><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></td><td>Walk the tree. Past the last of a node's siblings the arrow carries on into the next branch along at the same level, staying on that side of the map. Unlike <kbd>Tab</kbd> it does not wrap: run out of map that way and it stops.</td></tr>
       <tr><td>Arrows while typing</td><td>Stop typing and start moving, in one press. <kbd>⌥</kbd>+arrow moves the cursor inside the text instead.</td></tr>
       <tr><td><kbd>Tab</kbd> / <kbd>⇧</kbd><kbd>Tab</kbd></td><td>Cycle every node at the same level. On a focused branch's own node, it moves the focus round the sibling branches instead, like the arrows do, and wraps.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>K</kbd></td><td>Jump to any node by typing a few letters of it. Works across the whole map, opens folded branches and steps out of focus to get there.</td></tr>
@@ -914,16 +1057,16 @@
     </table></section>
     <section class="hpane" data-tab="edit"><h3>Edit</h3>
     <table class="keys">
-      <tr><td><kbd>Space</kbd> or any letter</td><td>Retype the selected node, replacing its text. A new node is ready the same way: it is selected rather than opened, so there is no cursor to look at, and your first letter starts it. Leave it blank and it goes. <em>Cursor in new nodes</em>, in the style panel, opens new nodes for typing instead.</td></tr>
+      <tr data-demo="retype"><td><kbd>Space</kbd> or any letter</td><td>Retype the selected node, replacing its text. A new node is ready the same way: it is selected rather than opened, so there is no cursor to look at, and your first letter starts it. Leave it blank and it goes. <em>Cursor in new nodes</em>, in the style panel, opens new nodes for typing instead.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>⏎</kbd></td><td>Line break inside a node.</td></tr>
       <tr><td><kbd>Esc</kbd></td><td>Stop typing. A node left blank is dropped.</td></tr>
-      <tr><td><kbd>⌫</kbd></td><td>Delete just the node. Its children move up and take its place, and flash so you can see where they went. With a selection up it deletes <em>exactly</em> what is selected, and anything underneath that you did not select moves up the same way.</td></tr>
+      <tr data-demo="del"><td><kbd>⌫</kbd></td><td>Delete just the node. Its children move up and take its place, and flash so you can see where they went. With a selection up it deletes <em>exactly</em> what is selected, and anything underneath that you did not select moves up the same way.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⌫</kbd></td><td>Delete the whole branch, or every selected branch. <kbd>⌘</kbd><kbd>Z</kbd> brings any delete back.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>Z</kbd> / <kbd>⌘</kbd><kbd>⇧</kbd><kbd>Z</kbd></td><td>Undo / redo. Retyping a node is a step of its own, so overwriting one by accident comes back with <kbd>⌘</kbd><kbd>Z</kbd>, even while you are still typing.</td></tr>
-      <tr><td><kbd>⌥</kbd><kbd>←↑→↓</kbd></td><td>Move the node itself. Sideways reorders it among its siblings, and past the last one carries it on into the next branch along on that side, outward tucks it under the sibling before it, back toward the centre promotes it a level. The whole branch travels with it. With a selection up, every selected branch moves together and stays selected, so you can keep pressing.</td></tr>
-      <tr><td><kbd>⌘</kbd><kbd>E</kbd></td><td>Fold or unfold a branch. A folded node wears a badge with the number hidden underneath; click the badge to open it. With a selection up it folds every selected node at once, so a whole level goes away in one press.</td></tr>
-      <tr><td><kbd>⌥</kbd><kbd>J</kbd></td><td><b>Merge</b> the selected nodes into one. The first in map order keeps its place; its text becomes all of theirs, one per line, and it takes every child they had. Links and frames follow it. Also on the selection bar.</td></tr>
-      <tr><td><kbd>⌥</kbd><kbd>S</kbd> / <kbd>⌥</kbd><kbd>⇧</kbd><kbd>S</kbd></td><td><b>Split</b> a node with several lines into one node per line: as siblings right after it, or with <kbd>⇧</kbd> as its children. It keeps the first line and its own children, and leading bullets or numbers are dropped. Works on every selected node at once.</td></tr>
+      <tr data-demo="move"><td><kbd>⌥</kbd><kbd>←↑→↓</kbd></td><td>Move the node itself. Sideways reorders it among its siblings, and past the last one carries it on into the next branch along on that side, outward tucks it under the sibling before it, back toward the centre promotes it a level. The whole branch travels with it. With a selection up, every selected branch moves together and stays selected, so you can keep pressing.</td></tr>
+      <tr data-demo="fold"><td><kbd>⌘</kbd><kbd>E</kbd></td><td>Fold or unfold a branch. A folded node wears a badge with the number hidden underneath; click the badge to open it. With a selection up it folds every selected node at once, so a whole level goes away in one press.</td></tr>
+      <tr data-demo="merge"><td><kbd>⌥</kbd><kbd>J</kbd></td><td><b>Merge</b> the selected nodes into one. The first in map order keeps its place; its text becomes all of theirs, one per line, and it takes every child they had. Links and frames follow it. Also on the selection bar.</td></tr>
+      <tr data-demo="split"><td><kbd>⌥</kbd><kbd>S</kbd> / <kbd>⌥</kbd><kbd>⇧</kbd><kbd>S</kbd></td><td><b>Split</b> a node with several lines into one node per line: as siblings right after it, or with <kbd>⇧</kbd> as its children. It keeps the first line and its own children, and leading bullets or numbers are dropped. Works on every selected node at once.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>O</kbd></td><td><b>Sort.</b> A small menu, a number picks: A to Z, Z to A, reverse, biggest branch first, done last, or back to how it was. It sorts the selected siblings among the places they already hold, or with one node selected, that node's children. On the centre each side is sorted on its own.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>X</kbd></td><td><b>Carry.</b> Picks up the selection (or the selected node): it goes faint where it is, and the arrows, or a click, choose where it goes. <kbd>⏎</kbd> drops it inside the ringed node, <kbd>⇧</kbd><kbd>⏎</kbd> right after it, <kbd>Esc</kbd> puts it back. Nothing changes until the drop, and one <kbd>⌘</kbd><kbd>Z</kbd> undoes it. <kbd>⌘</kbd><kbd>V</kbd> puts it down as well as <kbd>⏎</kbd> does, and the clipboard still holds what you picked up, so you can paste a copy of it anywhere else.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>D</kbd></td><td>Duplicate the branch, right below itself. With a selection up, every selected branch is duplicated and the copies come out selected.</td></tr>
@@ -934,7 +1077,7 @@
     </table></section>
     <section class="hpane" data-tab="frames"><h3>Select and frames</h3>
     <table class="keys">
-      <tr><td><kbd>⇧</kbd><kbd>←↑→↓</kbd></td><td>Grow the selection node by node, the way Shift grows a text selection. Stepping back lets go of the last one. While typing, it selects text as usual.</td></tr>
+      <tr data-demo="grow"><td><kbd>⇧</kbd><kbd>←↑→↓</kbd></td><td>Grow the selection node by node, the way Shift grows a text selection. Stepping back lets go of the last one. While typing, it selects text as usual.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd><kbd>←↑→↓</kbd></td><td>Select whole branches that way. Outward: this node's branch. Sideways: this node and every sibling that way, with their branches. Back toward the centre: the parent's whole branch. From the centre: every branch on that side.</td></tr>
       <tr><td><kbd>⇧</kbd> + drag</td><td>Lasso part of the map. Select a node and its whole branch comes with it. The <b>Select</b> button makes plain dragging do this too.</td></tr>
       <tr><td><kbd>⇧</kbd> + click</td><td>Select a node's whole sibling row: every child of its parent, in one gesture. This is how you get a level in hand to fold or delete it.</td></tr>
@@ -950,10 +1093,9 @@
     </table></section>
     <section class="hpane" data-tab="links"><h3>Links</h3>
     <table class="keys">
-      <tr><td><kbd>⌘</kbd> + click</td><td>Tie the selected node to the one you click, anywhere on the map. A faint arc joins them. The same pair again unties. A link says these two relate; it does not change who owns whom, so nothing moves.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>⇧</kbd> + click</td><td><b>Tie two branches.</b> Ties the selected node to the one you click as a <em>branch tie</em>: one heavier arc with a bracket at each end, and in Networks everything under either node counts as the same network, so a whole branch relates to a whole branch without a tie per node. The same again removes it. From the keyboard, select the two nodes and press <kbd>⌥</kbd><kbd>⇧</kbd><kbd>T</kbd>.</td></tr>
       <tr><td>The <b>∿</b> badge</td><td>How many links land on this node. Click it to walk to the other end, which is usually off screen; clicking again cycles through the rest. A folded branch carries the badge for everything tied up inside it, and walking there opens it.</td></tr>
-      <tr><td><kbd>⌘</kbd> + click</td><td><b>Tie two nodes, and hand the branch over.</b> A tie says the node you started from is on the branch you clicked. The <em>work</em> is the end with a branch; if both ends have one, or neither does, it is the end you <em>clicked</em>, so the order you click in is the direction. A node tied straight to a single item takes on that item. In <b>Networks</b> the held branch is drawn once, as a tree. Its <em>items</em> are its top row, since being done with a node means being done with what is under it; to track something deeper on its own, tie a name straight to it. The <b>Holders</b> switch beside the view tabs says how much of that to show: <b>Off</b> puts a quiet count under each item, <b>Chips</b> a chip per holder on every item of its top row, and <b>Lanes</b> the same thing as a grid. <b>Clicking a chip</b> marks that holder done with that item; there is no key for it. On the map the tie wears a small mark at the end that holds it. A <b>branch tie</b> (<kbd>⌘</kbd><kbd>⇧</kbd> + click) is the one tie that hands nothing over.</td></tr>
+      <tr><td><kbd>⌘</kbd> + click</td><td><b>Tie two nodes, and hand the branch over.</b> The same pair again unties. A tie says the node you started from is on the branch you clicked. The <em>work</em> is the end with a branch; if both ends have one, or neither does, it is the end you <em>clicked</em>, so the order you click in is the direction. A node tied straight to a single item takes on that item. In <b>Networks</b> the held branch is drawn once, as a tree. Its <em>items</em> are its top row, since being done with a node means being done with what is under it; to track something deeper on its own, tie a name straight to it. The <b>Holders</b> switch beside the view tabs says how much of that to show: <b>Off</b> puts a quiet count under each item, <b>Chips</b> a chip per holder on every item of its top row, and <b>Lanes</b> the same thing as a grid. <b>Clicking a chip</b> marks that holder done with that item; there is no key for it. On the map the tie wears a small mark at the end that holds it. A <b>branch tie</b> (<kbd>⌘</kbd><kbd>⇧</kbd> + click) is the one tie that hands nothing over.</td></tr>
       <tr><td>A hollow end</td><td>The node you actually tied is folded away inside the one the arc reaches, or lives in the map a link stands for. Better than a line running into nothing. In a focused branch, a tie that leaves the branch is not drawn, but the ∿ badge counts it as <em>outside</em> and a click on it goes there.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>1</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>1</kbd></td><td><b>Normal view.</b> The number keys are views, and 1 is the plain map. From any other view it puts you back where you were, focus and all. The <kbd>⌥</kbd> versions are there because a browser tab may keep <kbd>⌘</kbd> plus a number for itself.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>2</kbd> / <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Networks.</b> Every network laid out by its ties, each clear of the others, and nothing else: a node with no tie on it leaves the view, so what is on screen is only what relates to something. The centre stays as a fixed point. <kbd>⌘</kbd><kbd>E</kbd> folds what is only reached through a node. Pressed while focused on a tied branch, it goes straight to that node's network. Press it again, or <kbd>Esc</kbd>, to turn it off: you land back where you were, focus and all. The Style panel's <b>Networks</b> row has the older view, <b>Dimmed</b>: the whole map stays put and everything no tie touches drops to a ghost.</td></tr>
@@ -1001,7 +1143,7 @@
     </table></section>
       </div>
     </div>
-    <p class="hfoot">↑↓ or a number to switch tabs · Esc to close</p>
+    <p class="hfoot">A number or ↑↓ switches tabs · type to find a move · Esc to close</p>
     <button class="tb" id="btnCloseHelp" style="border-color:var(--panel-line)">Close</button>
   </div>
 </div>
@@ -1010,8 +1152,8 @@
      panel cannot drift from the record of what actually shipped. -->
 <div id="notes">
   <div id="notesCard">
-    <h2>What&rsquo;s new <span style="font-family:var(--font-ui);font-size:11px;color:var(--muted)">v__VERSION__</span></h2>
-    <p class="sub">The last few releases. Click the Mappr wordmark any time to read this again.</p>
+    <h2 style="display:flex;align-items:center;gap:10px"><svg viewBox="0 0 120 120" width="26" height="26" aria-hidden="true"><use href="#mappr-tile"/></svg>What&rsquo;s new <span style="font:500 10.5px var(--font-mono);color:var(--muted)">v__VERSION__</span></h2>
+    <p class="sub">The last few releases. Click the Mappr name, top left, any time to read this again.</p>
     <div id="notesBody">__NOTES__</div>
     <button class="tb" id="btnCloseNotes" style="border-color:var(--panel-line);margin-top:18px">Close</button>
   </div>
@@ -1035,7 +1177,7 @@ var DEFAULTS = {
   width:2, dash:"solid", slop:1, edges:"round",
   arrow:"curve", head:"arrow", font:"sketch", size:"m",
   align:"center", valign:"center", nodew:"m", minSize:false,
-  gap:"m", paper:"graph", theme:"light", typeOnCreate:false, follow:true, linkStyle:"stack",
+  gap:"m", paper:"graph", theme:"dark", typeOnCreate:false, follow:true, linkStyle:"stack",
   spread:"manual",
   /* ⌘2: every network arranged (1.7.0), or the whole map dimmed in place, which is what it did before */
   netView:"arranged",
@@ -1052,6 +1194,15 @@ var DEFAULTS = {
   presStyle:"map", presReach:"told", presBack:"fade", presStep:"node", presCam:"follow"
 };
 var CFG = Object.assign({}, DEFAULTS);
+/* A map's saved settings over the defaults. Every map saved before 1.12.0
+   carries theme:"light" only because light was the default then, so a stored
+   theme counts only once someone has picked one in Style (themeSet); until
+   then the map follows the default, which is dark now. */
+function cfgFrom(c){
+  var o=Object.assign({},DEFAULTS,c||{});
+  if(!o.themeSet) o.theme=DEFAULTS.theme;
+  return o;
+}
 
 var STROKES = {
   ink:{light:"#1e1e1e",dark:"#e3e3e3"}, red:{light:"#e03131",dark:"#ff8787"},
@@ -2703,9 +2854,12 @@ function presFrame(ids,maxZ){
 }
 function glideTo(tx,ty,tz){
   stopCam();
-  var x0=view.x,y0=view.y,z0=view.z,t0=performance.now(),dur=520;
+  var x0=view.x,y0=view.y,z0=view.z,t0=performance.now();
+  /* stepped by distance (1.12.0): a zoom counts as travel too */
+  var n=camSteps(Math.hypot(tx-x0,ty-y0)+Math.abs(Math.log((tz||1)/(z0||1)))*240), dur=n*CAM_STEP;
+  if(!n){ view.x=tx; view.y=ty; view.z=tz; applyView(); return; }
   (function step(t){
-    var k=Math.min(1,(t-t0)/dur), e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+    var k=Math.min(1,(t-t0)/dur), e=Math.min(1,Math.ceil(k*n)/n);
     view.x=x0+(tx-x0)*e; view.y=y0+(ty-y0)*e; view.z=z0+(tz-z0)*e; applyView();
     camAnim=k<1?requestAnimationFrame(step):null;
   })(t0);
@@ -4745,13 +4899,22 @@ function centerOn(id){
   panTo(LI+(innerWidth-LI)/2-p.cx*view.z, innerHeight/2-p.cy*view.z);
 }
 function stopCam(){ if(camAnim){ cancelAnimationFrame(camAnim); camAnim=null; } }
+/* Motion is stepped, never eased (brand book board 27 C): the camera moves in
+   one step per 24px it travels, 60ms a step, never more than six, so a nudge
+   is one jump and a long pan reads as travel. The frame loop still runs every
+   frame, but the view only changes on a step boundary, so the painter and the
+   curtain stay in step with it. Reduced motion jumps straight there (n=0). */
+var CAM_STEP=60, CAM_PX=24, CAM_MAX=6;
+var REDUCED=matchMedia("(prefers-reduced-motion: reduce)");
+function camSteps(px){ return REDUCED.matches ? 0 : Math.max(1,Math.min(CAM_MAX,Math.round(px/CAM_PX))); }
 function panTo(tx,ty){
   stopCam();
   var x0=view.x,y0=view.y;
   if(Math.abs(tx-x0)<.5&&Math.abs(ty-y0)<.5) return;
-  var t0=performance.now(),dur=280;
+  var t0=performance.now(), n=camSteps(Math.hypot(tx-x0,ty-y0)), dur=n*CAM_STEP;
+  if(!n){ view.x=tx; view.y=ty; applyView(); return; }
   (function step(t){
-    var k=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-k,3);
+    var k=Math.min(1,(t-t0)/dur), e=Math.min(1,Math.ceil(k*n)/n);
     view.x=x0+(tx-x0)*e; view.y=y0+(ty-y0)*e; applyView();
     camAnim=k<1?requestAnimationFrame(step):null;
   })(t0);
@@ -4831,13 +4994,18 @@ var HINTS={
   map:[["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Child","⌘","⏎"],["Retype","Space"],["Fold","⌘","E"],["Focus","⌘","/"],["Jump","⌘","K"],["Done","⌥","X"]],
   focus:[["Next branch","Tab"],["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Fold","⌘","E"],["Out","Esc"]],
   dim:[["Tie","⌘","+click"],["Next network","Tab"],["Open it","⌘","/"],["Clear links","⇧","+double-click"],["Fit","⌘","0"],["Map","⌘","1"]],
-  nets:[["Tie, and hand it over","⌘","+click"],["Holders","the switch, top right"],["Next network","Tab"],["Open it","⌘","/"],["Fold beyond","⌘","E"],["Copy all","⌘","C"],["Fit","⌘","0"],["Map","⌘","1"]],
+  nets:[["Tie","⌘","+click"],["Holders","top right"],["Next network","Tab"],["Open it","⌘","/"],["Fold beyond","⌘","E"],["Copy all","⌘","C"],["Fit","⌘","0"],["Map","⌘","1"]],
   flags:[["Next flag","Tab"],["Unflag","⌘","⇧","F"],["Focus","⌘","/"],["Fit","⌘","0"],["Map","⌘","1"]],
   net:[["Move","←↑→↓"],["Walk","Tab"],["Tick a holder","click a chip"],["Fold beyond","⌘","E"],["New linked node","⏎"],["Back to Networks","Esc"]],
   carry:[["Choose where","←↑→↓"],["Drop inside","⏎"],["Drop after","⇧","⏎"],["Put back","Esc"]],
   sort:[],
-  sel:[["Grow","⇧","←↑→↓"],["Branches","⌘","⇧","←↑→↓"],["Hand over","⌥","⇧","H"],["Move","⌥","←↑→↓"],["Carry","⌘","X"],["Done","⌥","X"],["Sort","⌥","O"],["Merge","⌥","J"],["Break out","⌥","B"],["Copy","⌘","C"],["Delete","⌫"],["Frame","⌘","G"],["Clear","Esc"]],
-  arrange:[["Pick next","⌘","+click"],["Pick up / drop","Space"],["Unpick","⌫"],["Story","[","]"],["Present","R"]]
+  sel:[["Grow","⇧","←↑→↓"],["Branches","⌘","⇧","←↑→↓"],["Move","⌥","←↑→↓"],["Carry","⌘","X"],["Done","⌥","X"],["Sort","⌥","O"],["Merge","⌥","J"],["Break out","⌥","B"],["Copy","⌘","C"],["Delete","⌫"],["Frame","⌘","G"],["Clear","Esc"]],
+  arrange:[["Pick next","⌘","+click"],["Pick up / drop","Space"],["Unpick","⌫"],["Story","[","]"],["Present","R"]],
+  /* a modifier held on its own (1.12.0): the bar becomes that layer while the
+     map shows it as ghosts */
+  hcmd:[["Branch","⌘","←↑→↓"],["Child","⌘","⏎"],["Fold","⌘","E"],["Focus","⌘","/"],["Jump","⌘","K"],["Carry","⌘","X"],["Copy","⌘","C"],["Undo","⌘","Z"]],
+  halt:[["Move","⌥","←↑→↓"],["Done","⌥","X"],["Flag","⌥","F"],["Own map","⌥","B"],["Merge","⌥","J"],["Sort","⌥","O"],["Switch map","⌥","M"]],
+  hshift:[["Take more","⇧","←↑→↓"],["Whole branch","⌘","⇧","←↑→↓"],["Next branch","⇧","⏎"],["Row","⇧","+click"],["Back a level","⇧","Tab"]]
 };
 var hintMin=false, hintSig="";
 /* ⌥⇧K walks the key bar through the other modes without changing mode. The
@@ -4846,6 +5014,7 @@ var hintMin=false, hintSig="";
 var HINT_MODES=["map","focus","nets","dim","flags","net","arrange","sel","carry"];
 var hintBrowse=null, hintBrowseT=null, hintDraws=0;
 function hintLive(){
+  if(ghostHeld) return "h"+ghostHeld;
   return pres ? (pres.arrange?"arrange":null) : carry ? "carry" :
     (Object.keys(marked).length?"sel":(lensOne?"net":(lensFlags()?"flags":(lens?(lensArr()?"nets":"dim"):(focusId?"focus":"map")))));
 }
@@ -4881,7 +5050,8 @@ function drawHint(){
   hintSig=sig;
   hintDraws++;
   if(!mode){ el.innerHTML=""; return; }
-  var names={map:"Map",focus:"Focus",nets:"Networks",dim:"Networks, dimmed",flags:"Flags",net:"Network",arrange:"Story",sel:"Selection",carry:"Carrying"};
+  var names={map:"Map",focus:"Focus",nets:"Networks",dim:"Networks, dimmed",flags:"Flags",net:"Network",arrange:"Story",sel:"Selection",carry:"Carrying",
+    hcmd:(IS_MAC?"\u2318":"Ctrl")+" held",halt:(IS_MAC?"\u2325":"Alt")+" held",hshift:"\u21e7 held"};
   var h;
   if(hintMin){
     h='<span class="hm">'+names[mode]+'</span>'+(hintBrowse?'<span><b>Next mode</b> <kbd>\u2325</kbd><kbd>\u21e7</kbd><kbd>K</kbd></span>':'')+'<span><b>Keys</b> <kbd>?</kbd></span><button class="hx" data-hint="1" title="Show key hints">\u25b4</button>';
@@ -4893,9 +5063,181 @@ function drawHint(){
     h+=hintBrowse?'<span><b>Next mode</b> <kbd>\u2325</kbd><kbd>\u21e7</kbd><kbd>K</kbd></span>'
                  :'<span><b>All</b> <kbd>?</kbd></span><button class="hx" data-hint="1" title="Hide key hints">\u00d7</button>';
   }
-  el.className="bar"+(hintMin?" min":"")+(hintBrowse?" browsing":"");
+  el.className="bar"+(hintMin?" min":"")+(hintBrowse?" browsing":"")+(ghostHeld?" held":"");
   el.innerHTML=IS_MAC?h:keyWords(h);
+  /* The bar never clips a hint in half (it cut "Done" at 1440 before 1.12.0):
+     drop hints from the end until the rest fits, and "All ?" says where the
+     others are. */
+  if(!hintMin){
+    var kids=el.querySelectorAll(":scope > span:not(.hm)"), tail=kids[kids.length-1];
+    for(var i=kids.length-2;i>0 && el.scrollWidth>el.clientWidth+1;i--) kids[i].remove();
+    hintDropped=kids.length-el.querySelectorAll(":scope > span:not(.hm)").length;
+  }
 }
+var hintDropped=0;
+addEventListener("resize",function(){ hintSig=""; drawHint(); });
+/* ============================================================
+   GHOSTS (1.12.0, brand book board 26 C)
+   Hold ⌘ (or ⌃), ⌥ or ⇧ on its own for half a second and the map shows, from
+   the selection, what that layer's keys would do: a dashed ghost where a node
+   would land, a drawn key on whatever a key would act on. The key bar becomes
+   the same layer. Letting go, or any other key, clears it; the key still does
+   what it does, so a slow chord costs nothing.
+
+   Where a ghost lands is not drawn by rule: the real mutation runs on a
+   throwaway copy of the tree and the real layout() places it (ghostTry). The
+   copy never reaches undo, the save or the painter; state.nodes, pos, edir and
+   the id counter are put back before anything else runs. The ghost is then
+   drawn at the same offset from the selection as the layout gave it, which is
+   where it lands relative to what you are looking at.
+   ============================================================ */
+var GHOST_WAIT=500, ghostT=null, ghostHeld=null, ghostWant=null, ghostList=[];
+var elGhost=document.getElementById("ghostLayer");
+function ghostOK(){
+  var sel=N(selected);
+  if(!sel || !pos[selected] || !box[selected]) return false;
+  if(editing || pres || carry || lens || helpOpen()) return false;
+  if(document.querySelector("#jump.on,#switcher.on,#notes.open,#exportMenu.on,#storyMenu.on")) return false;
+  var m=hintLive(); return m==="map" || m==="focus" || m==="sel";
+}
+function ghostTry(fn,pressed){
+  var keepNodes=state.nodes, keepPos=pos, keepEdir=edir, keepUid=uid, keepSpread=CFG.spread, out=null, made=null;
+  var clone={};
+  Object.keys(keepNodes).forEach(function(id){ var n=keepNodes[id]; clone[id]=Object.assign({},n,{children:n.children.slice()}); });
+  try{
+    /* doBranch hands a spread mode back to As placed when the press disagrees
+       with it (takeOverSpread): do the same to the copy, or the ghost lands
+       where the mode would put it rather than where the key will */
+    var sel0=keepNodes[selected];
+    if(pressed && isVR(sel0) && CFG.spread!=="manual" && (SPREAD[CFG.spread]||[]).indexOf(pressed)<0){
+      Object.keys(edir).forEach(function(id){ if(clone[id]) clone[id].dir=edir[id]; });
+      CFG.spread="manual";
+    }
+    state.nodes=clone;
+    made=fn(clone[selected]);
+    if(made){
+      var b=box[selected];
+      box[made.id]={w:Math.max(64,Math.round(b.h*1.8)),h:b.h};
+      layout();
+      /* anchor it to what it lands beside, so the tidy moving the neighbours
+         in the preview does not put the ghost on top of them on screen: the
+         sibling before it, the one after, the middle of both, or the parent */
+      var sib=clone[made.parent]?clone[made.parent].children:[], i=sib.indexOf(made.id);
+      var a=sib[i-1], z=sib[i+1], pm=pos[made.id];
+      var at=function(id){ var q=pos[id], c=keepPos[id]; return (q&&c&&pm)?{x:c.cx+(pm.cx-q.cx), y:c.cy+(pm.cy-q.cy)}:null; };
+      var pa=a&&at(a), pz=z&&at(z), g=(pa&&pz)?{x:(pa.x+pz.x)/2,y:(pa.y+pz.y)/2}:(pa||pz||at(made.parent));
+      if(g) out={cx:g.x, cy:g.y, w:box[made.id].w, h:box[made.id].h, parent:made.parent&&keepPos[made.parent]?made.parent:null};
+    }
+  }catch(e){ out=null; }
+  finally{
+    if(made) delete box[made.id];
+    state.nodes=keepNodes; pos=keepPos; edir=keepEdir; uid=keepUid; CFG.spread=keepSpread;
+  }
+  return out;
+}
+function ghostChip(x,y,keys,word,anchor){
+  /* constant size on screen whatever the zoom: drawn at 1/z round its anchor */
+  if(!IS_MAC) keys=keyWords(keys).replace(/(Ctrl|Alt|Shift)(?=[^\s+])/g,"$1+");
+  var z=view.z||1, kw=keys.length*8+14, ww=word?word.length*6.7+10:0, w=kw+ww, h=22;
+  var x0=anchor==="r"?-w:(anchor==="c"?-w/2:0);
+  var r=rngFrom(seedOf(keys+word)), cap=roughRect(x0,-h/2,kw,h,4,r,.9);
+  return '<g class="gchip" transform="translate('+x+','+y+') scale('+(1/z)+')">'+
+    '<rect x="'+(x0-2)+'" y="'+(-h/2-2)+'" width="'+(w+4)+'" height="'+(h+4)+'" rx="3" class="gback"/>'+
+    '<path d="'+smoothRect(x0,-h/2,kw,h,4)+'" class="gfill"/><path d="'+cap+'" class="gcap"/>'+
+    '<text x="'+(x0+kw/2)+'" y="4.5" text-anchor="middle" class="gkey">'+esc(keys)+'</text>'+
+    (word?'<text x="'+(x0+kw+7)+'" y="4.5" class="gword">'+esc(word)+'</text>':'')+'</g>';
+}
+function ghostBox(cx,cy,w,h){
+  return '<rect class="gbox" x="'+(cx-w/2)+'" y="'+(cy-h/2)+'" width="'+w+'" height="'+h+'" rx="9"/>';
+}
+function ghostEdge(x1,y1,x2,y2,vert){
+  var d=vert ? "M"+x1+","+y1+" C"+x1+","+((y1+y2)/2)+" "+x2+","+((y1+y2)/2)+" "+x2+","+y2
+             : "M"+x1+","+y1+" C"+((x1+x2)/2)+","+y1+" "+((x1+x2)/2)+","+y2+" "+x2+","+y2;
+  return '<path class="gedge" d="'+d+'"/>';
+}
+function ghostHalo(id){
+  var p=pos[id], b=box[id]; if(!p||!b) return "";
+  return '<rect class="ghalo" x="'+(p.cx-b.w/2-7)+'" y="'+(p.cy-b.h/2-7)+'" width="'+(b.w+14)+'" height="'+(b.h+14)+'" rx="14"/>';
+}
+var GARROW={L:"←",R:"→",U:"↑",D:"↓"};
+function ghostDraw(layer){
+  var sel=N(selected), p=pos[selected], b=box[selected], out=[], seen={};
+  var K={cmd:"\u2318",alt:"\u2325"};   /* ghostChip turns these into words off the Mac */
+  ghostList=[];
+  var d0=isRoot(sel)?null:dirOf(sel.id), x0=p.cx-b.w/2, x1=p.cx+b.w/2, y0=p.cy-b.h/2, y1=p.cy+b.h/2;
+  if(layer==="cmd"){
+    ["R","D","L","U"].forEach(function(d){
+      if(sel.link && (isRoot(sel) || d===dirOf(sel.id))) return;   /* linkStop: a map link is a leaf */
+      var g=ghostTry(function(n){ return branch(n,d); }, d);
+      if(!g) return;
+      var cx=g.cx, cy=g.cy, key=Math.round(cx)+","+Math.round(cy);
+      var deeper=isVR(sel) || d===d0;
+      var word=isVR(sel)?"a branch":(deeper?"deeper":"a sibling");
+      var keys=K.cmd+GARROW[d]+(deeper&&!isVR(sel)?"  "+K.cmd+"⏎":"");
+      if(seen[key]) return; seen[key]=1;
+      var from=g.parent && pos[g.parent] ? g.parent : null;
+      if(from){
+        var fp=pos[from], fb=box[from], vert=(d==="U"||d==="D") && (isVR(N(from)) || dirOf(from)==="U"||dirOf(from)==="D");
+        var side=cx>=fp.cx?1:-1;
+        if(from===selected || !vert) out.push(ghostEdge(fp.cx+side*fb.w/2, fp.cy, cx-side*g.w/2, cy, false));
+      }
+      out.push(ghostBox(cx,cy,g.w,g.h));
+      var right=cx>=p.cx;
+      out.push(ghostChip(right?cx+g.w/2+8:cx-g.w/2-8, cy, keys, word, right?"l":"r"));
+      ghostList.push({layer:"cmd",dir:d,cx:cx,cy:cy,word:word});
+    });
+    if(sel.children.length) out.push(ghostChip(x0-8, y1, K.cmd+"E", "fold", "r"));
+    if(!isVR(sel)) out.push(ghostChip(p.cx, y0-18, K.cmd+"/", "focus", "c"));
+  } else if(layer==="alt"){
+    var ax=(d0==="U"||d0==="D")?["L","R"]:["U","D"];
+    out.push(ghostChip(x1+10, y0, K.alt+GARROW[ax[0]], "move", "l"));
+    out.push(ghostChip(x1+10, y1, K.alt+GARROW[ax[1]], "move", "l"));
+    out.push(ghostChip(p.cx, y0-18, K.alt+"X", "done", "c"));
+    out.push(ghostChip(x0-8, y0, K.alt+"F", "flag", "r"));
+    if(sel.children.length && !isRoot(sel)) out.push(ghostChip(x0-8, y1, K.alt+"B", "its own map", "r"));
+    ghostList.push({layer:"alt"});
+  } else if(layer==="shift"){
+    ["R","D","L","U"].forEach(function(d){
+      var t=navigate(sel,d); if(!t || !pos[t]) return;
+      out.push(ghostHalo(t));
+      var tp=pos[t], tb=box[t], ch="⇧"+GARROW[d];
+      if(d==="R") out.push(ghostChip(tp.cx+tb.w/2+12, tp.cy, ch, "take this too", "l"));
+      else if(d==="L") out.push(ghostChip(tp.cx-tb.w/2-12, tp.cy, ch, "take this too", "r"));
+      else out.push(ghostChip(tp.cx, d==="U"?tp.cy-tb.h/2-20:tp.cy+tb.h/2+20, ch, "take this too", "c"));
+      ghostList.push({layer:"shift",dir:d,id:t});
+    });
+    if(!isVR(sel)) out.push(ghostChip(p.cx, y1+20, "⇧⏎", "same level, next branch", "c"));
+  }
+  elGhost.innerHTML=out.join("");
+}
+function ghostShow(layer){
+  if(!ghostOK()) return false;
+  ghostHeld=layer; ghostDraw(layer); drawHint();
+  document.body.classList.add("ghosting");
+  return true;
+}
+function ghostClear(){
+  if(ghostT){ clearTimeout(ghostT); ghostT=null; }
+  ghostWant=null;
+  if(!ghostHeld) return;
+  ghostHeld=null; ghostList=[]; elGhost.innerHTML="";
+  document.body.classList.remove("ghosting");
+  drawHint();
+}
+var GHOST_KEY={Meta:"cmd",Control:"cmd",Alt:"alt",Shift:"shift"};
+addEventListener("keydown",function(e){
+  var layer=GHOST_KEY[e.key];
+  var alone=layer && ((e.metaKey||e.ctrlKey)?1:0)+(e.altKey?1:0)+(e.shiftKey?1:0)===1;
+  if(!alone){ ghostClear(); return; }
+  if(e.repeat || ghostWant===layer || ghostHeld===layer) return;
+  ghostClear(); ghostWant=layer;
+  ghostT=setTimeout(function(){ ghostT=null; if(ghostWant===layer) ghostShow(layer); }, GHOST_WAIT);
+},true);
+addEventListener("keyup",function(){ ghostClear(); },true);
+addEventListener("blur",ghostClear);
+addEventListener("mousedown",ghostClear,true);
+addEventListener("wheel",ghostClear,{capture:true,passive:true});
+
 document.getElementById("hint").addEventListener("mousedown",function(e){ e.preventDefault(); });
 document.getElementById("hint").addEventListener("click",function(e){
   if(!e.target.closest("[data-hint]")) return;
@@ -8123,7 +8465,7 @@ function switchDoc(id){
   if(focusId&&!N(focusId)) focusId=null;
   if(!N(selected)) selected=VR();
   if(d.view) view=d.view;
-  if(d.cfg) CFG=Object.assign({},DEFAULTS,d.cfg);
+  if(d.cfg) CFG=cfgFrom(d.cfg);
   migrateSpread();
   editing=null; clearMarks(); if(!sameDoc) loadUndo(id);
   applyCss(); drawPanel(); hardRender();
@@ -8325,7 +8667,7 @@ var PANEL=[
   {h:"Your row",key:"hereSibs",opts:[["window",I.hwin,"Three either side, the rest folded"],["scroll",I.hscroll,"The whole row, in a box that scrolls"],["count",I.hcount,"Just the one you are on, and the count"],["chips",I.hchips,"The row as chips, ten and a plus"]],when:function(){ return CFG.hereStyle!=="sketch"; }},
   {h:"In a focus",key:"hereFocus",opts:[["pips",I.hpips,"Pips for how deep you are"],["words",I.hwords,"Depth in words"],["crumbs",I.hcrumbs,"The focus root and where you are"]],when:function(){ return CFG.hereStyle!=="sketch"; }},
   {h:"Paper",key:"paper",opts:[["graph",I.pgraph,"Graph"],["lines",I.plines,"Ruled"],["dots",I.pdots,"Dots"],["blank",I.pblank,"Blank"]]},
-  {h:"Theme",key:"theme",opts:[["light",I.tlight,"Light"],["dark",I.tdark,"Dark"]]},
+  {h:"Theme",key:"theme",opts:[["dark",I.tdark,"Dark"],["light",I.tlight,"Light"]]},
   {h:"Behaviour",toggles:[["minSize","Uniform node size"],["typeOnCreate","Cursor in new nodes"],["follow","Camera follows"],["hereFade","navi fades when idle"],["hereAttach","navi joins the maps rail"]]}
 ];
 var elStyle=document.getElementById("style"), elScroll=document.getElementById("styleScroll");
@@ -8382,6 +8724,7 @@ function panelPick(b){
     if(b.dataset.k==="width"||b.dataset.k==="slop") v=Number(v);
     if(CFG[b.dataset.k]===v) return;
     CFG[b.dataset.k]=v;
+    if(b.dataset.k==="theme") CFG.themeSet=true;
   } else return;
   applyCss(); drawPanel(); drawTalk(); render(true); save();
   /* mid-talk, the step you are on takes the new setting, camera included */
@@ -8395,6 +8738,7 @@ function toggleStyle(on){
   var want=(on==null)?!elStyle.classList.contains("on"):on;
   elStyle.classList.toggle("on",want);
   document.body.classList.toggle("panelopen",want);
+  hintSig=""; drawHint();   /* the panel narrows the bar: trim it again (1.12.0) */
   document.getElementById("btnStyle").classList.toggle("on",want);
   if(want) drawPanel();
   if(pos[selected]) cameraTo(selected);
@@ -8991,7 +9335,7 @@ function adopt(o){
   uid=o.uid||100000; selected=o.selected;
   focusId=o.focusId||null; if(focusId&&!N(focusId)) focusId=null;
   if(o.view) view=o.view;
-  if(o.cfg) CFG=Object.assign({},DEFAULTS,o.cfg);
+  if(o.cfg) CFG=cfgFrom(o.cfg);
   if(!N(selected)) selected=VR();
   migrateSpread();
 }
@@ -9042,7 +9386,7 @@ function importJsonText(text){
   try{
       var o=JSON.parse(text), s=o.state||o;
       if(!s.nodes||!s.rootId) throw new Error("bad");
-      if(o.cfg) CFG=Object.assign({},DEFAULTS,o.cfg);
+      if(o.cfg) CFG=cfgFrom(o.cfg);
       var nUnder=importMaps(o,s);
       newDoc(s);
       if(nUnder) setTimeout(function(){ flashSave("imported with "+nUnder+(nUnder===1?" map under it":" maps under it")); },50);
@@ -9098,7 +9442,92 @@ addEventListener("mousedown",function(e){
 /* ============================================================
    CHROME
    ============================================================ */
-function toggleHelp(on){ document.getElementById("help").classList.toggle("open",on); if(on) helpTab(); }
+
+/* ---------- the key list as moves (1.12.0, brand book board 26 B) ----------
+   ? opens the keys as cards, by task. The rows stay written once, in the
+   tables above; the first time the panel opens each row becomes a card, and a
+   row tagged data-demo plays its move on a tiny map drawn by the same hand as
+   the real one: before, the key goes down, after. Typing filters every tab. */
+var DEMOS={
+  sib:[[["Plan",0,45,52],["Risks",1,160,34,0,1]],[["Plan",0,45,52],["Risks",1,160,34,0],["Cost",1,160,74,0,1]]],
+  next:[[["Plan",0,40,52],["Why",1,122,28,0],["So",1,122,78,0],["Now",2,208,28,1,1]],[["Plan",0,40,52],["Why",1,122,28,0],["So",1,122,78,0],["Now",2,208,28,1],["Next",2,208,78,2,1]]],
+  child:[[["Plan",0,45,52],["Risks",1,140,52,0,1]],[["Plan",0,45,52],["Risks",1,140,52,0],["Cost",2,220,52,1,1]]],
+  branch:[[["Plan",0,125,52,-1,1]],[["Plan",0,85,52],["Risks",1,190,52,0,1]]],
+  between:[[["Plan",0,45,52],["Risks",1,195,52,0,1]],[["Plan",0,40,52],["Now",1,122,52,0,1],["Risks",2,208,52,1]]],
+  walk:[[["Plan",0,55,52],["Risks",1,175,32,0,1],["Cost",1,175,74,0]],[["Plan",0,55,52],["Risks",1,175,32,0],["Cost",1,175,74,0,1]]],
+  retype:[[["Plan",0,55,52],["Risks",1,170,52,0,1]],[["Plan",0,55,52],["Threats",1,170,52,0,1]]],
+  del:[[["Plan",0,38,52],["Risks",1,122,52,0,1],["Cost",2,208,32,1],["Time",2,208,74,1]],[["Plan",0,60,52],["Cost",1,175,32,0,1],["Time",1,175,74,0]]],
+  move:[[["Plan",0,55,52],["Risks",1,175,32,0,1],["Cost",1,175,74,0]],[["Plan",0,55,52],["Cost",1,175,32,0],["Risks",1,175,74,0,1]]],
+  fold:[[["Plan",0,40,52],["Risks",1,122,52,0,1],["Cost",2,208,32,1],["Time",2,208,74,1]],[["Plan",0,60,52],["Risks",1,170,52,0,1,"2"]]],
+  merge:[[["Plan",0,55,52],["Risks",1,175,32,0,2],["Cost",1,175,74,0,2]],[["Plan",0,55,52],["Risks, cost",1,175,52,0,1]]],
+  split:[[["Plan",0,55,52],["Risks, cost",1,175,52,0,1]],[["Plan",0,55,52],["Risks",1,175,32,0,1],["Cost",1,175,74,0]]],
+  grow:[[["Plan",0,55,52],["Risks",1,175,32,0,1],["Cost",1,175,74,0]],[["Plan",0,55,52],["Risks",1,175,32,0,2],["Cost",1,175,74,0,2]]]
+};
+/* a node is [text, depth, x, y, parent index, selected (1 ring, 2 marked), badge] */
+function demoSvg(list,seed){
+  var pal=dark()?PAL_D:PAL_L, out=[], W=250, H=104;
+  var bx=list.map(function(n){ return {w:Math.max(34,n[0].length*7.1+20), h:26}; });
+  list.forEach(function(n,i){
+    if(n[4]==null || n[4]<0) return;
+    var a=list[n[4]], A=bx[n[4]], B=bx[i], col=pal[Math.min(n[1],2)].line;
+    var x1=a[2]+A.w/2, x2=n[2]-B.w/2, mx=(x1+x2)/2, r=rngFrom(seed+i);
+    out.push('<path d="M'+x1+','+a[3]+' C'+mx+','+a[3]+' '+mx+','+n[3]+' '+x2+','+n[3]+'" fill="none" stroke="'+col+'" stroke-width="1.6" stroke-linecap="round"/>');
+  });
+  list.forEach(function(n,i){
+    var P=pal[Math.min(n[1],2)], b=bx[i], x=n[2]-b.w/2, y=n[3]-b.h/2, r=rngFrom(seedOf(n[0])+seed);
+    if(n[5]===2) out.push('<rect x="'+(x-5)+'" y="'+(y-5)+'" width="'+(b.w+10)+'" height="'+(b.h+10)+'" rx="10" fill="var(--sel-soft)" stroke="var(--sel)" stroke-width="1.2"/>');
+    if(n[5]===1) out.push('<rect x="'+(x-5)+'" y="'+(y-5)+'" width="'+(b.w+10)+'" height="'+(b.h+10)+'" rx="10" fill="none" stroke="var(--sel)" stroke-width="1.3" stroke-dasharray="5 4"/>');
+    out.push('<path d="'+smoothRect(x,y,b.w,b.h,7)+'" fill="'+P.fill+'"/>');
+    out.push('<path d="'+roughRect(x,y,b.w,b.h,7,r,1)+'" fill="none" stroke="'+P.line+'" stroke-width="'+(n[1]?1.6:2)+'" stroke-linecap="round"/>');
+    out.push('<text x="'+n[2]+'" y="'+(n[3]+4.5)+'" text-anchor="middle" font-family="Excalifont,cursive" font-size="13" fill="var(--ink)">'+esc(n[0])+'</text>');
+    if(n[6]) out.push('<circle cx="'+(x+b.w)+'" cy="'+(y+b.h)+'" r="8" fill="var(--panel)" stroke="var(--muted)"/><text x="'+(x+b.w)+'" y="'+(y+b.h+3.5)+'" text-anchor="middle" font-size="10" font-family="var(--font-mono)" fill="var(--ink)">'+n[6]+'</text>');
+  });
+  return '<svg viewBox="0 0 '+W+' '+H+'" aria-hidden="true">'+out.join("")+'</svg>';
+}
+var helpBuilt=false, helpFind="", helpTheme=null;
+function helpBuild(){
+  /* the mini-maps carry the palette they were drawn in: redraw on a theme change */
+  if(helpBuilt && helpTheme!==CFG.theme){
+    helpTheme=CFG.theme;
+    [].forEach.call(document.querySelectorAll("#helpPanes .mv[data-demo]"),function(c){
+      var d=DEMOS[c.dataset.demo], seed=seedOf(c.dataset.demo), fa=c.querySelector(".fa"), fb=c.querySelector(".fb");
+      if(d && fa && fb){ fa.innerHTML=demoSvg(d[0],seed); fb.innerHTML=demoSvg(d[1],seed); }
+    });
+  }
+  if(helpBuilt) return; helpBuilt=true; helpTheme=CFG.theme;
+  [].forEach.call(document.querySelectorAll("#helpPanes table.keys"),function(t){
+    var g=document.createElement("div"); g.className="mvg";
+    var rows=[].slice.call(t.querySelectorAll("tr"));
+    /* the moves that play go first, so a tab opens on what it shows */
+    rows.sort(function(a,b){ return (b.dataset.demo?1:0)-(a.dataset.demo?1:0); });
+    rows.forEach(function(tr,i){
+      var td=tr.querySelectorAll("td"); if(td.length<2) return;
+      var c=document.createElement("div"); c.className="mv"+(tr.dataset.demo?" play":"");
+      var d=tr.dataset.demo&&DEMOS[tr.dataset.demo], seed=seedOf(tr.dataset.demo||String(i));
+      c.innerHTML='<div class="mvk">'+td[0].innerHTML+'</div>'+
+        (d?'<div class="mvd"><div class="fa">'+demoSvg(d[0],seed)+'</div><div class="fb">'+demoSvg(d[1],seed)+'</div></div>':'')+
+        '<div class="mvt">'+td[1].innerHTML+'</div>';
+      if(tr.dataset.demo) c.dataset.demo=tr.dataset.demo;
+      g.appendChild(c);
+    });
+    t.replaceWith(g);
+  });
+}
+function helpFilter(q){
+  helpFind=q; var el=document.getElementById("helpFind");
+  el.textContent=q||"Find a move: fold, number, present…"; el.classList.toggle("on",!!q);
+  var help=document.getElementById("help"); help.classList.toggle("finding",!!q);
+  var ql=q.toLowerCase(), hits=0;
+  [].forEach.call(document.querySelectorAll("#helpPanes .mv"),function(c){
+    var hit=!q || c.textContent.toLowerCase().indexOf(ql)>=0;
+    c.classList.toggle("miss",!hit); if(q&&hit) hits++;
+  });
+  [].forEach.call(document.querySelectorAll("#helpPanes .hpane"),function(p){
+    p.classList.toggle("hit", !!q && !!p.querySelector(".mv:not(.miss)"));
+  });
+  document.getElementById("helpHits").textContent=q?(hits?hits+(hits===1?" move":" moves"):"nothing"):"";
+}
+function toggleHelp(on){ if(on){ helpBuild(); helpFilter(""); } document.getElementById("help").classList.toggle("open",on); if(on) helpTab(); }
 /* The key list is tabbed, and remembers the tab you last read. */
 var HELP_TABS=[].map.call(document.querySelectorAll("#helpTabs button"),function(b){ return b.dataset.tab; });
 function helpTab(t){
@@ -9112,9 +9541,13 @@ function helpTab(t){
 function helpOpen(){ return document.getElementById("help").classList.contains("open"); }
 function helpKey(e){
   var cur=(document.querySelector("#helpTabs button.on")||{}).dataset, i=HELP_TABS.indexOf(cur?cur.tab:"");
+  if(e.key==="Escape" && helpFind){ e.preventDefault(); helpFilter(""); return; }
   if(e.key==="Escape"||e.key==="?"){ e.preventDefault(); toggleHelp(false); return; }
   if(e.metaKey||e.ctrlKey) return;
   e.preventDefault();
+  /* typing finds a move across every tab; a number still picks a tab until you have typed a letter */
+  if(e.key==="Backspace"){ helpFilter(helpFind.slice(0,-1)); return; }
+  if(e.key.length===1 && !e.altKey && (helpFind || !/^[0-9 ]$/.test(e.key))){ helpFilter(helpFind+e.key); return; }
   if(/^[1-9]$/.test(e.key) && +e.key<=HELP_TABS.length) helpTab(HELP_TABS[+e.key-1]);
   else if(e.key==="ArrowDown"||e.key==="ArrowRight"||(e.key==="Tab"&&!e.shiftKey)) helpTab(HELP_TABS[(i+1)%HELP_TABS.length]);
   else if(e.key==="ArrowUp"||e.key==="ArrowLeft"||e.key==="Tab") helpTab(HELP_TABS[(i-1+HELP_TABS.length)%HELP_TABS.length]);
@@ -9237,11 +9670,13 @@ else boot();
 })();
 
 window.__mf={
+  ghostShow:function(l){ return ghostShow(l); }, ghostClear:function(){ ghostClear(); }, ghostItems:function(){ return ghostList.slice(); },
+  ghostHeld:function(){ return ghostHeld; }, hintDropped:function(){ return hintDropped; },
   version:VERSION,
   get state(){ return state; }, get selected(){ return selected; }, get focus(){ return focusId; },
   get cfg(){ return CFG; }, get marked(){ return markedSet(); }, get frames(){ return state.frames; },
   get selFrame(){ return selFrame; }, get editing(){ return editing; },
-  set:function(k,v){ CFG[k]=v; applyCss(); drawPanel(); render(true); save(); },
+  set:function(k,v){ CFG[k]=v; if(k==="theme") CFG.themeSet=true; applyCss(); drawPanel(); render(true); save(); },
   undo:undo, redo:redo, cycleTag:cycleTag, togglePin:togglePin,
   branch:doBranch, sibling:doSibling, nextBranch:doNextBranch, child:doChild,
   between:insertBetween, del:doDelete, select:select,
@@ -9357,6 +9792,7 @@ window.__mf={
   trash:function(){ return trashList().map(function(d){ return {id:d.id,name:docName(d.state)}; }); },
   restore:trashRestore,
   cam:function(){ return {x:view.x,y:view.y,z:view.z}; },
+  camSteps:function(px){ return camSteps(px); }, glide:function(x,y,z){ glideTo(x,y,z); }, pan:function(x,y){ panTo(x,y); },
   get rawMarked(){ return Object.keys(marked); },
   frame:makeFrame, ungroup:ungroup, pickFrame:function(id){ selFrame=id; render(true); },
   navigate:function(d){ var t=navigate(N(selected),d); if(t) select(t); return t; },

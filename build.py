@@ -14,6 +14,13 @@ ROOT = pathlib.Path(__file__).parent
 SRC = ROOT / "src" / "app.html"
 FONT = ROOT / "assets" / "Excalifont-Regular.woff2"
 ICON = ROOT / "assets" / "icon.svg"
+# the ARGH! faces (1.12.0): one display weight, two reading weights, one for keys
+FACES = {
+    "__DISP800_B64__": ROOT / "assets" / "bricolage-grotesque-latin-800-normal.woff2",
+    "__SANS400_B64__": ROOT / "assets" / "ibm-plex-sans-latin-400-normal.woff2",
+    "__SANS600_B64__": ROOT / "assets" / "ibm-plex-sans-latin-600-normal.woff2",
+    "__MONO500_B64__": ROOT / "assets" / "ibm-plex-mono-latin-500-normal.woff2",
+}
 OUT = ROOT / "index.html"
 SW_SRC = ROOT / "src" / "sw.js"
 SW_OUT = ROOT / "sw.js"
@@ -88,7 +95,9 @@ def main():
               .replace("__ICON_B64__", icon)
               .replace("__NOTES__", notes)
               .replace("__VERSION__", VERSION))
-    for token in ("__FONT_B64__", "__ICON_B64__", "__VERSION__", "__NOTES__"):
+    for token, path in FACES.items():
+        out = out.replace(token, base64.b64encode(path.read_bytes()).decode())
+    for token in ("__FONT_B64__", "__ICON_B64__", "__VERSION__", "__NOTES__", *FACES):
         if token in out:
             sys.exit("build failed: %s still present" % token)
     OUT.write_text(out)

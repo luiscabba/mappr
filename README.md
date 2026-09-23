@@ -49,7 +49,8 @@ The build only substitutes tokens:
 | token | becomes |
 | --- | --- |
 | `__FONT_B64__` | base64 of `assets/Excalifont-Regular.woff2` |
-| `__ICON_B64__` | base64 of `assets/icon.svg` |
+| `__DISP800_B64__`, `__SANS400_B64__`, `__SANS600_B64__`, `__MONO500_B64__` | base64 of the ARGH! faces in `assets/` (1.12.0) |
+| `__ICON_B64__` | base64 of `assets/icon.svg`, the mark: Mappr's quarter-disc tile |
 | `__VERSION__` | contents of `VERSION` (in the app, and as the worker's cache name) |
 
 Edit `src/app.html`, run `python3 build.py`, reload the browser.
@@ -58,6 +59,14 @@ The PNG icons are generated too, but only when the mark itself changes:
 
 ```
 node tools/make-icons.mjs     # assets/icon.svg -> icons/*.png
+```
+
+The drawn edges on the controls (brand book boards 05 and 06) are CSS masks
+written into `src/app.html` between `/*hand:start*/` and `/*hand:end*/`. They
+only change when the drawing does:
+
+```
+python3 tools/build-hand.py   # the hand's masks -> src/app.html
 ```
 
 ## Test it

@@ -3,6 +3,54 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.12.0] - 2026-09-23
+
+### Added
+- **Hold a key to see what it does from where you are.** Hold ⌘, ⌥ or ⇧ on
+  its own for half a second and your map shows that key's moves as ghosts:
+  a dashed box where a new branch, a sibling or a child would land, and a
+  drawn key on whatever a key would act on. The key bar switches to the same
+  keys. Where each ghost lands comes from the real layout, run on a copy of
+  your map, so it is where the node will actually go; nothing is made, saved
+  or added to undo. Let go, or press anything, and it clears. A quick chord
+  never shows a ghost, so nothing gets in the way of keys you already know.
+- **The key list shows each move.** `?` opens the keys as cards by task.
+  Thirteen of the moves you use most (a sibling, a child, a branch, the next
+  branch along, walking, retyping, deleting, moving, folding, merging,
+  splitting, selecting) play on a small map when you hover them: before, the
+  key goes down, after. Start typing to find a move across every tab; `Esc`
+  clears the search, and `Esc` again closes the list.
+
+### Changed
+- **Mappr looks like the place you opened it from.** It is dark by default
+  now, and the chrome is set in the ARGH! faces: Bricolage for the name,
+  IBM Plex Sans for words, IBM Plex Mono for keys and counts. Your nodes keep
+  their hand-drawn face. Maps you made before this open dark too, unless you
+  picked Light yourself; Light is still in Style.
+- **The mark is Mappr's tile**, the yellow quarter disc from arghtools.com,
+  top left, in your browser tab and on your home screen. The brace has
+  retired.
+- **Everything you can click has a drawn edge.** At rest it is a quiet
+  outline; under the cursor it turns yellow and wobbles; the view you are in
+  is glazed yellow. The keys in the bar and the key list are drawn keycaps.
+- **Selection is the violet from the ARGH! palette**, a shade closer to the
+  rest of it.
+- **Opening Mappr from arghtools.com ends on the mark.** The tiles still
+  roll up off your map, but the top row waits a beat, steps away, and its
+  last tile lands in the corner as the mark.
+- **The camera moves in steps, never a glide.** One step per short
+  distance, up to six, so a small move is a single jump and a long one reads
+  as travel. Fades step too. If you have asked your system for less motion,
+  the camera simply goes there.
+
+### Fixed
+- The key bar no longer cuts a hint in half on a narrow screen; it keeps
+  the hints that fit and `?` has the rest. It is wider on a wide screen, and
+  Networks names its keys more briefly so they all fit.
+- The selection keys no longer offer ⌥⇧H, which 1.9.0 took away.
+- The key list had two rows for ⌘+click in Links, one from before 1.9.0.
+  There is one now, and it says what a tie does today.
+
 ## [1.11.0] - 2026-09-23
 
 ### Added

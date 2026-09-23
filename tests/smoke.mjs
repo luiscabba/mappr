@@ -5391,6 +5391,100 @@ group("orbital zoom");
   ok("no runtime errors", errors.length === 0, errors);
 }
 
+group("the ARGH! redesign (1.12.0)");
+{
+  ok("the brand faces are in", await M(() => document.fonts.check('800 17px "Bricolage Grotesque"') && document.fonts.check('500 11px "IBM Plex Mono"') && document.fonts.check('12px "IBM Plex Sans"')));
+  ok("the mark is the tile, beside the name", await M(() => !!document.querySelector('#brand .mark use[href="#mappr-tile"]') && document.querySelector("#brand .wm").textContent === "Mappr"));
+  ok("the name is set in Bricolage", await M(() => /Bricolage/.test(getComputedStyle(document.getElementById("brand")).fontFamily)));
+  ok("a control wears a drawn edge at rest", await M(() => /data:image\/svg/.test(getComputedStyle(document.getElementById("btnMaps"), "::before").maskImage || getComputedStyle(document.getElementById("btnMaps"), "::before").webkitMaskImage)));
+  ok("the view you are in is glazed", await M(() => { const b = document.querySelector('#modebar button.on'); const c = getComputedStyle(b, "::before").backgroundColor; return c === "rgb(255, 212, 59)"; }));
+  ok("a keycap is drawn, in Plex Mono", await M(() => { const k = document.querySelector("#hint kbd"); return k && /Plex Mono/.test(getComputedStyle(k).fontFamily) && /data:image\/svg/.test(getComputedStyle(k, "::after").maskImage || getComputedStyle(k, "::after").webkitMaskImage); }));
+  ok("selection violet is the book's", await M(() => { const was = __mf.cfg.theme; __mf.set("theme", "dark"); const v = getComputedStyle(document.documentElement).getPropertyValue("--sel").trim(); __mf.set("theme", was); return v === "#b197fc"; }));
+  ok("no eased motion left on a node", await M(() => { const n = document.querySelector(".node"); const f = getComputedStyle(n).transitionTimingFunction; return !/cubic-bezier|ease/.test(f); }), await M(() => getComputedStyle(document.querySelector(".node")).transitionTimingFunction));
+  const hintsFit = [];
+  for (let i = 0; i < 9; i++) { await key("Alt+Shift+KeyK"); hintsFit.push(await M(() => { const h = document.getElementById("hint"); return __mf.hintMode() + ":" + (h.scrollWidth <= h.clientWidth + 1); })); }
+  await key("Escape");
+  ok("no key bar clips a hint, in any mode", hintsFit.every((x) => x.endsWith("true")), hintsFit);
+  ok("the selection bar no longer offers the removed hand-over key", await M(() => !/Hand over/.test(JSON.stringify(document.getElementById("hint").textContent))));
+  // a map saved before 1.12.0 says light only because light was the default
+  const before = await M(() => __mf.doc);
+  const mk = (cfg) => JSON.stringify({ v: 5, state: { rootId: "r1", nodes: { r1: { id: "r1", parent: null, children: [], text: "Theme test", dir: "R" } }, frames: [], links: [] }, cfg });
+  await M((j) => __mf.importJson(j), mk({ theme: "light" })); await page.waitForTimeout(150);
+  ok("an old map that never picked a theme opens dark", (await M(() => __mf.cfg.theme)) === "dark" && (await M(() => document.documentElement.dataset.theme)) === "dark");
+  await M((j) => __mf.importJson(j), mk({ theme: "light", themeSet: true })); await page.waitForTimeout(150);
+  ok("a map that picked light keeps it", (await M(() => __mf.cfg.theme)) === "light");
+  ok("the camera steps by distance: a nudge is one step, a long pan six", (await M(() => [__mf.camSteps(10), __mf.camSteps(72), __mf.camSteps(4000)].join())) === "1,3,6", await M(() => [__mf.camSteps(10), __mf.camSteps(72), __mf.camSteps(4000)].join()));
+  const seen = await M(async () => {
+    const c = __mf.cam(), xs = new Set(); __mf.pan(c.x + 600, c.y);
+    const t0 = performance.now();
+    await new Promise((res) => { (function f() { xs.add(Math.round(__mf.cam().x)); if (performance.now() - t0 < 520) requestAnimationFrame(f); else res(); })(); });
+    return [...xs].length;
+  });
+  ok("and a pan shows only its steps, never an eased slide", seen <= 7, seen);
+}
+
+group("ghosts: hold a modifier to see where the keys go (1.12.0)");
+{
+  await M(() => __mf.paste("Ghost plan\n- Left\n- Right\n  - Deep"));
+  await page.waitForTimeout(200); await key("Escape");
+  await pick("Right");
+  const n0 = await M(() => Object.keys(__mf.state.nodes).length), u0 = await M(() => __mf.undoSteps);
+  await page.keyboard.down("Control"); await page.waitForTimeout(700);
+  ok("holding the command key alone shows its layer", (await M(() => __mf.ghostHeld())) === "cmd", await M(() => __mf.ghostHeld()));
+  ok("as ghosts on the map", (await M(() => __mf.ghostItems().length)) >= 2 && (await M(() => document.querySelectorAll("#ghostLayer .gbox").length)) >= 2);
+  ok("and the key bar becomes that layer", (await M(() => __mf.hintMode())) === "hcmd" && (await M(() => /held/.test(document.getElementById("hint").textContent))));
+  ok("a preview changes nothing: no node, no undo step", (await M(() => Object.keys(__mf.state.nodes).length)) === n0 && (await M(() => __mf.undoSteps)) === u0);
+  const deeper = await M(() => { const g = __mf.ghostItems().find((x) => x.word === "deeper"); const p = __mf.pos()[__mf.selected]; return g && p && g.cx > p.cx; });
+  ok("deeper lands out past the node, where the layout puts it", deeper);
+  await page.keyboard.up("Control"); await page.waitForTimeout(50);
+  ok("letting go clears it", (await M(() => __mf.ghostHeld())) === null && (await M(() => document.querySelectorAll("#ghostLayer *").length)) === 0);
+  await page.keyboard.down("Control"); await page.keyboard.press("ArrowRight"); await page.keyboard.up("Control"); await page.waitForTimeout(650);
+  ok("a quick chord never shows a ghost and still does its job", (await M(() => __mf.ghostHeld())) === null && (await M(() => Object.keys(__mf.state.nodes).length)) === n0 + 1);
+  await key("Escape"); await pick("Right");
+  for (const [k, l] of [["Alt", "alt"], ["Shift", "shift"]]) {
+    await page.keyboard.down(k); await page.waitForTimeout(700);
+    ok("holding " + k + " shows its layer", (await M(() => __mf.ghostHeld())) === l && (await M(() => document.querySelectorAll("#ghostLayer .gchip").length)) >= 2);
+    await page.keyboard.up(k); await page.waitForTimeout(50);
+  }
+  await key("Space"); await page.waitForTimeout(80);
+  await page.keyboard.down("Control"); await page.waitForTimeout(700);
+  ok("nothing while typing", (await M(() => __mf.ghostHeld())) === null);
+  await page.keyboard.up("Control"); await key("Escape");
+  // review fix: a spread mode hands over first, as the real key does
+  const sg = await M(() => { const was = __mf.cfg.spread; __mf.select(__mf.state.rootId); __mf.set("spread", "sides"); __mf.ghostShow("cmd"); const g = __mf.ghostItems().map((x) => x.dir); __mf.ghostClear(); __mf.set("spread", was); return { g, back: __mf.cfg.spread === was }; });
+  ok("under a spread mode the up and down ghosts still show, and the mode is left alone", sg.g.includes("U") && sg.g.includes("D") && sg.back, sg);
+  ok("off the Mac a ghost's keys read as words", await M(() => { __mf.ghostShow("cmd"); const t = [...document.querySelectorAll("#ghostLayer .gkey")].map((x) => x.textContent).join(" "); __mf.ghostClear(); return /Ctrl/.test(t) && !/[⌘⇧⏎]/.test(t); }));
+  ok("no runtime errors from the ghosts", errors.length === 0, errors);
+}
+
+group("the keys as moves (1.12.0)");
+{
+  await key("?"); await page.waitForTimeout(150);
+  ok("? opens the keys as cards", (await M(() => document.querySelectorAll("#helpPanes .mv").length)) > 60, await M(() => document.querySelectorAll("#helpPanes .mv").length));
+  ok("thirteen of them play their move", (await M(() => document.querySelectorAll("#helpPanes .mv.play .mvd svg").length)) === 26);
+  ok("the old pre-1.9 tie row is gone", (await M(() => [...document.querySelectorAll("#helpPanes .mv")].filter((c) => /Tie the selected node to the one you click/.test(c.textContent)).length)) === 0);
+  await key("2");
+  ok("a number still picks a tab", (await M(() => document.querySelector(".hpane.on").dataset.tab)) === "move");
+  for (const c of "fold") await key(c);
+  ok("typing finds a move across every tab", await M(() => { const v = [...document.querySelectorAll("#helpPanes .mv")].filter((c) => c.offsetParent); return v.length > 0 && v.every((c) => /fold/i.test(c.textContent)); }));
+  ok("and says how many", /move/.test(await M(() => document.getElementById("helpHits").textContent)));
+  await key("Escape");
+  ok("Esc clears the search first", (await M(() => document.getElementById("help").classList.contains("open"))) && !(await M(() => document.getElementById("help").classList.contains("finding"))));
+  await key("Escape");
+  ok("and closes on the second", !(await M(() => document.getElementById("help").classList.contains("open"))));
+  const was = await M(() => __mf.cfg.theme);
+  await M((w) => __mf.set("theme", w === "dark" ? "light" : "dark"), was);
+  await key("?"); await page.waitForTimeout(120);
+  ok("the mini-maps follow a theme change", await M(() => { const f = document.querySelector("#helpPanes .mv.play .fa path[fill]"); const dark = __mf.cfg.theme === "dark"; return f && (dark ? f.getAttribute("fill") !== "#ffffff" : f.getAttribute("fill") !== "#232323"); }));
+  await key("0");
+  ok("0 is not a search", !(await M(() => document.getElementById("help").classList.contains("finding"))));
+  await key("Escape");
+  await M((w) => __mf.set("theme", w), was);
+  await M(() => document.getElementById("btnStyle").click()); await page.waitForTimeout(120);
+  ok("the key bar trims again when the Style panel narrows it", await M(() => { const h = document.getElementById("hint"); return h.scrollWidth <= h.clientWidth + 1; }));
+  await M(() => document.getElementById("btnStyle").click()); await page.waitForTimeout(80);
+}
+
 group("the arrival plate from arghtools.com");
 {
   const pg = await browser.newPage({ viewport: { width: 1500, height: 920 } });
@@ -5402,8 +5496,16 @@ group("the arrival plate from arghtools.com");
   ok("the hash is gone at once, so a reload does not replay it", await pg.evaluate(() => location.hash === ""), await pg.evaluate(() => location.hash));
   const tile = await pg.evaluate(() => { const i = document.querySelector("#glaze i"); return i && { l: parseFloat(i.style.left), t: parseFloat(i.style.top) }; });
   ok("it sits on the band's grid", tile && ((tile.l + 640) % 68 === 0) && ((tile.t - 63) % 68 === 0), tile);
-  await pg.waitForTimeout(1800);
+  // 1.12.0: the top row holds, steps away, and its corner tile lands on the mark
+  const midway = await pg.evaluate(() => new Promise((res) => { const seen = { hid: false, land: false }; const t0 = performance.now(); (function f() {
+    const m = document.querySelector("#brand .mark"); if (m && m.style.visibility === "hidden" && document.getElementById("glaze")) seen.hid = true;
+    if (document.querySelector("#glaze i.land")) seen.land = true;
+    if (performance.now() - t0 < 2200 && document.getElementById("glaze")) requestAnimationFrame(f); else res(seen); })(); }));
+  ok("the mark waits while the plate is down", midway.hid, midway);
+  ok("and the last tile lands where it sits", midway.land, midway);
+  await pg.waitForTimeout(400);
   ok("it rolls up once the map has drawn", await pg.evaluate(() => !document.getElementById("glaze")));
+  ok("and the mark is back", await pg.evaluate(() => document.querySelector("#brand .mark").style.visibility === ""));
   await pg.goto(APP); await pg.reload(); await pg.waitForTimeout(300);
   ok("without the hash nothing is laid", await pg.evaluate(() => !document.getElementById("glaze")));
   ok("no runtime errors on the way in", perr.length === 0, perr);
