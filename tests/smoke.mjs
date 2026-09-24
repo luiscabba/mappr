@@ -96,8 +96,19 @@ await page.keyboard.down("Tab"); await page.keyboard.press(outward); await page.
 await page.keyboard.type("Phase 1"); await key("Escape");
 ok("Tab+out adopts the children", (await node("Product")).kids.join() === "Phase 1" && (await node("Phase 1")).kids.includes("Onboarding"));
 await pick("Marketing");
-await page.keyboard.down("Tab"); await page.keyboard.up("Tab");
-ok("a quick Tab still cycles the level", (await textOf()) !== "Marketing");
+{
+  // 1.13.0: a quick Tab makes a child, exactly as Cmd+Enter
+  const kids0 = (await node("Marketing")).kids.length;
+  await page.keyboard.down("Tab"); await page.keyboard.up("Tab");
+  await page.keyboard.type("By Tab"); await key("Escape");
+  ok("a quick Tab makes a child, as Cmd+Enter does", (await node("By Tab")).parent === "Marketing" && (await node("Marketing")).kids.length === kids0 + 1);
+  await key("Space"); await page.keyboard.type("Typed then Tab");
+  await page.keyboard.down("Tab"); await page.keyboard.up("Tab");
+  await page.keyboard.type("Its child"); await key("Escape");
+  ok("Tab while typing finishes the node and starts its child", (await node("Its child")).parent === "Typed then Tab");
+  await M(() => __mf.undo()); await M(() => __mf.undo()); await M(() => __mf.undo()); await M(() => __mf.undo());
+  await pick("Marketing");
+}
 
 group("editing");
 await pick("Email");
@@ -1180,8 +1191,8 @@ group("networks: every network arranged (1.7.0)");
 
   // 4. the memo: a keystroke runs nothing, a link runs one, a fold re-relaxes its own network only
   const r0 = await runs();
-  await M((x) => __mf.select(x), B); await M((x) => __mf.select(x), C); await press("Tab"); await press("ArrowRight");
-  ok("selection, Tab and arrows run no relaxation", (await runs()) === r0, (await runs()) - r0);
+  await M((x) => __mf.select(x), B); await M((x) => __mf.select(x), C); await press("ArrowRight");
+  ok("selection and arrows run no relaxation", (await runs()) === r0, (await runs()) - r0);
   await M((x) => __mf.select(x), B);
   await press("Meta+e");
   ok("Cmd+E folds inside a network", (await M(() => __mf.lensFold)).join() === B && !(await has(C)) && !(await has(D)));
@@ -1204,14 +1215,11 @@ group("networks: every network arranged (1.7.0)");
   const nets2 = await M(() => __mf.networks());
   const netOf = (id) => nets2.findIndex((c) => c.indexOf(id) >= 0);
   await M((x) => __mf.select(x), nets2[0][0]);
-  await press("Tab");
-  const tab1 = await M(() => __mf.selected);
-  ok("Tab steps to another network", netOf(tab1) >= 0 && netOf(tab1) !== 0, tab1);
-  ok("and lands on its first node", nets2[netOf(tab1)][0] === tab1);
   {
-    const seenN = new Set([0, netOf(tab1)]);
-    for (let i = 0; i < 2; i++) { await press("Tab"); seenN.add(netOf(await M(() => __mf.selected))); }
-    ok("and Tab round the lot visits every network", seenN.size === 3, [...seenN]);
+    // 1.13.0: Tab walks nothing in Networks, and makes nothing either
+    const s0 = await M(() => __mf.selected), n0 = await M(() => Object.keys(__mf.state.nodes).length);
+    await press("Tab");
+    ok("Tab does nothing in Networks", (await M(() => __mf.selected)) === s0 && (await M(() => Object.keys(__mf.state.nodes).length)) === n0);
   }
   let land = null, dir = null;
   const b0 = await bbox(nets2[0]);
@@ -1734,8 +1742,8 @@ group("presentation: a talk set up the way you talk (1.6.0)");
   await reset();
   /* 13 presenting options plus the two Networks ones, worded the same way since 1.7.0 */
   /* 1.9.0: the held-branch row left the panel for the Holders switch */
-  /* 1.10.0: the two Zooming out options joined them */
-  ok("the Style panel's Presenting rows are worded the same way", (await M(() => { document.getElementById("btnStyle").click(); const n = document.querySelectorAll("#styleScroll .opt.txt").length; document.getElementById("btnStyle").click(); return n; })) === 17);
+  /* 1.10.0: the two Zooming out options joined them; 1.13.0: they left with orbital zoom */
+  ok("the Style panel's Presenting rows are worded the same way", (await M(() => { document.getElementById("btnStyle").click(); const n = document.querySelectorAll("#styleScroll .opt.txt").length; document.getElementById("btnStyle").click(); return n; })) === 15);
 
   // ---- 8. a 1.5.1 settings blob loads with the new keys defaulted ----
   await M(() => { __mf.cfg.slop = 3; __mf.set("gap", __mf.cfg.gap); });
@@ -1871,19 +1879,15 @@ group("cycling branches and networks");
   await page.waitForTimeout(280);
   const [A, B, C, a1, b1, c1, c2] = await Promise.all(["A","B","C","a1","b1","c1","c2"].map(idOf));
 
-  // focus: Tab cycles sibling branches and wraps
+  // focus (1.13.0): Tab makes a child there too; the arrows walk the branches
   await M((x) => __mf.select(x), A);
   await press("Meta+/");
+  const aKids = await M((x) => __mf.state.nodes[x].children.length, A);
   await tab();
-  ok("Tab moves the focus to the next branch", (await M(() => __mf.focus)) === B, await M(() => __mf.focus));
-  ok("the bar counts branches", await M(() => /branch 2 of 3/.test(document.getElementById("crumbs").textContent)));
-  await tab(); await tab();
-  ok("and wraps round", (await M(() => __mf.focus)) === A);
+  ok("in a focus, Tab makes a child and keeps the focus", (await M((x) => __mf.state.nodes[x].children.length, A)) === aKids + 1 && (await M(() => __mf.focus)) === A);
+  await page.keyboard.press("Escape"); await page.waitForTimeout(150);
   await tab(true);
-  ok("Shift+Tab goes back", (await M(() => __mf.focus)) === C);
-  await M((x) => __mf.select(x), c1);
-  await tab();
-  ok("inside the branch, Tab still cycles the level", (await M(() => __mf.selected)) === c2 && (await M(() => __mf.focus)) === C);
+  ok("Shift+Tab does nothing", (await M((x) => __mf.state.nodes[x].children.length, A)) === aKids);
   await M(() => { while (__mf.focus) __mf.focusOut(); });
 
   // two separate networks: a1-b1 and c1-c2
@@ -1892,10 +1896,6 @@ group("cycling branches and networks");
   await M((x) => __mf.select(x), a1);
   await press("Meta+2");
   ok("dim counts the networks", await M(() => /network 1 of 2/.test(document.getElementById("crumbs").textContent)), await M(() => document.getElementById("crumbs").textContent));
-  await tab();
-  ok("Tab in dim jumps to the next network", (await M(() => __mf.selected)) === c1, await M(() => __mf.selected));
-  await tab();
-  ok("and wraps", (await M(() => __mf.selected)) === a1);
   await press("ArrowRight");
   ok("arrows step networks in dim too", (await M(() => __mf.selected)) === c1);
   await press("ArrowRight");
@@ -1910,8 +1910,6 @@ group("cycling branches and networks");
   await press("ArrowDown");
   ok("an arrow on the centre opens the next network", (await M(() => __mf.selected)) === c1 && (await M(() => __mf.lens)) === "one");
   ok("showing only that network", await M(([x, y]) => !!__mf.pos()[x] && !__mf.pos()[y], [c2, b1]));
-  await tab();
-  ok("Tab on the centre goes round to the first again", (await M(() => __mf.selected)) === a1);
   await press("Meta+1");
 }
 
@@ -2088,18 +2086,11 @@ group("working inside a network");
   ok("arrows stay on nodes you can see", allSeen);
   ok("and do get somewhere", moved > 0, moved);
 
-  // Tab walks the network, nearest first, and wraps
+  // 1.13.0: Tab walks nothing in a network, and makes nothing
   await M((x) => __mf.select(x), B);
+  const nNet = await M(() => Object.keys(__mf.state.nodes).length);
   await page.keyboard.down("Tab"); await page.keyboard.up("Tab"); await page.waitForTimeout(200);
-  const t1 = await M(() => __mf.selected);
-  /* 1.9.0: A-B hands A's branch over, so a1 is in the network and is reached
-     from A in the same hop as B and D */
-  const a1 = await idOf("a1");
-  ok("Tab goes on through the network, nearest first", t1 === a1, t1);
-  const seen = new Set([B, t1]);
-  for (let i = 0; i < 4; i++) { await page.keyboard.down("Tab"); await page.keyboard.up("Tab"); await page.waitForTimeout(150); seen.add(await M(() => __mf.selected)); }
-  ok("and visits the whole network", [A, B, C, D, a1].every((x) => seen.has(x)), [...seen].length);
-  ok("and nothing outside it", seen.size === 5);
+  ok("Tab does nothing in a network", (await M(() => __mf.selected)) === B && (await M(() => Object.keys(__mf.state.nodes).length)) === nNet);
 
   // making a node ties it, so it stays in view
   await M((x) => __mf.select(x), C);
@@ -3569,13 +3560,11 @@ group("0.39: flags you can find, and the maps rail");
   ok("unflagged nodes are ghosts, flagged ones are not", (await M(() => __mf.ghosts)) === 3 && !(await M((x) => document.querySelector('.node[data-id="' + x + '"]').classList.contains("ghost"), await id("Press kit"))), await M(() => __mf.ghosts));
   ok("it lands on the first flag", (await M(() => __mf.selected)) === (await id("Marketing")));
   await press("Tab");
-  ok("Tab steps to the next flag", (await M(() => __mf.selected)) === (await id("Press kit")));
-  await press("Tab"); await press("Tab");
-  ok("and wraps", (await M(() => __mf.selected)) === (await id("Marketing")));
+  ok("Tab does nothing in Flags", (await M(() => __mf.selected)) === (await id("Marketing")));
   await press("Meta+2");
   ok("Cmd+2 from the flags goes to connections, or says nothing is tied", (await M(() => __mf.lensKind)) !== "flags" || /nothing is tied/.test(await status()));
   await press("Escape");
-  await press("Meta+4"); await press("Meta+Shift+f"); await press("Tab"); await press("Meta+Shift+f"); await press("Tab"); await press("Meta+Shift+f");
+  await press("Meta+4"); for (const x of await M(() => Object.keys(__mf.state.nodes).filter((k) => __mf.state.nodes[k].mark === "flag"))) { await M((x) => __mf.select(x), x); await press("Meta+Shift+f"); }
   ok("unflagging the last flag ends the lens", (await M(() => __mf.lens)) === "off" && /no flags left/.test(await status()), await status());
   for (const t of ["Marketing", "Press kit"]) { await M((x) => __mf.select(x), await id(t)); await press("Meta+Shift+f"); }
   // Jump
@@ -5031,8 +5020,8 @@ group("1.9.0: a tie is the hand-over");
   await page.waitForTimeout(200);
   ok("a click on a chip leaves the selection alone", (await M(() => __mf.selected)) === sel0);
   ok("and nothing is being edited", (await M(() => __mf.editing)) == null);
-  await press("Tab");
-  ok("an arrow or Tab straight after still moves", (await M(() => __mf.selected)) !== sel0, await M(() => __mf.selected));
+  await press("ArrowDown");
+  ok("an arrow straight after still moves", (await M(() => __mf.selected)) !== sel0, await M(() => __mf.selected));
   await M(([h2, i]) => __mf.tickHold(h2, i), [RA, AB]);
   await page.waitForTimeout(200);
 
@@ -5169,6 +5158,12 @@ group("1.9.0: a tie is the hand-over");
    ============================================================ */
 group("orbital zoom");
 {
+  // 1.13.0: switched off, not removed. Off by default; the group turns it on to keep guarding it.
+  ok("orbital zoom is off by default", (await M(() => __mf.orbital())) === false);
+  await M(() => { const v = __mf.cam(); __mf.setView(v.x, v.y, .1); }); await page.waitForTimeout(150);
+  ok("and zooming right out hides nothing", (await M(() => __mf.curtainHidden().length)) === 0, await M(() => __mf.curtainHidden()));
+  ok("and Style has no Zooming out row", await M(() => { document.getElementById("btnStyle").click(); const has = /Zooming out/.test(document.getElementById("styleScroll").textContent); document.getElementById("btnStyle").click(); return !has; }));
+  await M(() => __mf.orbital(true));
   const press = (k) => page.keyboard.press(k);
   const idOf = (t) => M((t) => Object.values(__mf.state.nodes).find((n) => n.text === t).id, t);
   const zoom = async (z) => { await M((z) => { const v = __mf.cam(); __mf.setView(v.x, v.y, z); }, z); await page.waitForTimeout(140); };
@@ -5388,6 +5383,7 @@ group("orbital zoom");
     await M(() => { __mf.cfg.netGroup = "off"; __mf.set("netGroup", "off"); });
   }
 
+  await M(() => __mf.orbital(false));
   ok("no runtime errors", errors.length === 0, errors);
 }
 

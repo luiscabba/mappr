@@ -1039,15 +1039,14 @@
     <table class="keys">
       <tr data-demo="sib"><td><kbd>⏎</kbd></td><td>A new node beside this one, same level, same branch. Type, Enter, type, Enter lays down a whole level without stopping.</td></tr>
       <tr data-demo="next"><td><kbd>⇧</kbd><kbd>⏎</kbd></td><td>A new node at the same level but in the <em>next branch along</em>, so you can fill a level across the whole map without walking back to each parent. It goes in the order you see: top to bottom on a sideways branch, left to right on an up or down one, and wraps round on the same side.</td></tr>
-      <tr data-demo="child"><td><kbd>⌘</kbd><kbd>⏎</kbd></td><td>A child, one level deeper.</td></tr>
+      <tr data-demo="child"><td><kbd>Tab</kbd> <span style="color:var(--muted)">or</span> <kbd>⌘</kbd><kbd>⏎</kbd></td><td>A child, one level deeper. While typing, <kbd>Tab</kbd> finishes the node and starts its first child, the way an outline indents.</td></tr>
       <tr data-demo="branch"><td><kbd>⌘</kbd><kbd>←↑→↓</kbd></td><td>From the centre: start a branch that way. On a branch: the same direction again goes deeper, a sideways direction adds a sibling on that side.</td></tr>
       <tr data-demo="between"><td>hold <kbd>Tab</kbd> + <kbd>←↑→↓</kbd></td><td>With a selection up, the arrow back toward the centre <b>groups</b> it: a new parent slides in above every selected branch, wherever they were, and they all become its children, in map order. Type its name. Otherwise: insert a node <em>in between</em>. Point back toward the centre and the new node becomes this one's parent. Point outward and it slides in above this node's children, adopting them. This is how you backtrack and add a layer you did not plan for.</td></tr>
     </table></section>
     <section class="hpane" data-tab="move"><h3>Move</h3>
     <table class="keys">
-      <tr data-demo="walk"><td><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></td><td>Walk the tree. Past the last of a node's siblings the arrow carries on into the next branch along at the same level, staying on that side of the map. Unlike <kbd>Tab</kbd> it does not wrap: run out of map that way and it stops.</td></tr>
+      <tr data-demo="walk"><td><kbd>←</kbd><kbd>↑</kbd><kbd>→</kbd><kbd>↓</kbd></td><td>Walk the tree. Past the last of a node's siblings the arrow carries on into the next branch along at the same level, staying on that side of the map. It does not wrap: run out of map that way and it stops.</td></tr>
       <tr><td>Arrows while typing</td><td>Stop typing and start moving, in one press. <kbd>⌥</kbd>+arrow moves the cursor inside the text instead.</td></tr>
-      <tr><td><kbd>Tab</kbd> / <kbd>⇧</kbd><kbd>Tab</kbd></td><td>Cycle every node at the same level. On a focused branch's own node, it moves the focus round the sibling branches instead, like the arrows do, and wraps.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>K</kbd></td><td>Jump to any node by typing a few letters of it. Works across the whole map, opens folded branches and steps out of focus to get there.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>0</kbd></td><td><b>Zoom out to the whole map.</b> Steps out of focus first, so this always shows you everything.</td></tr>
       <tr><td><kbd>⇧</kbd><kbd>⌘</kbd><kbd>0</kbd></td><td>Fit just the selected branch, or the selected frame.</td></tr>
@@ -1100,15 +1099,15 @@
       <tr><td><kbd>⌘</kbd><kbd>1</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>1</kbd></td><td><b>Normal view.</b> The number keys are views, and 1 is the plain map. From any other view it puts you back where you were, focus and all. The <kbd>⌥</kbd> versions are there because a browser tab may keep <kbd>⌘</kbd> plus a number for itself.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>2</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>2</kbd> / <kbd>⌥</kbd><kbd>L</kbd></td><td><b>Networks.</b> Every network laid out by its ties, each clear of the others, and nothing else: a node with no tie on it leaves the view, so what is on screen is only what relates to something. The centre stays as a fixed point. <kbd>⌘</kbd><kbd>E</kbd> folds what is only reached through a node. Pressed while focused on a tied branch, it goes straight to that node's network. Press it again, or <kbd>Esc</kbd>, to turn it off: you land back where you were, focus and all. The Style panel's <b>Networks</b> row has the older view, <b>Dimmed</b>: the whole map stays put and everything no tie touches drops to a ghost.</td></tr>
       <tr><td><kbd>⇧</kbd> + double-click in Networks</td><td>Clear every link on that node. <kbd>⌘</kbd><kbd>Z</kbd> brings them back.</td></tr>
-      <tr><td><kbd>Tab</kbd> / arrows in Networks</td><td>Step from one network to the next. In Networks, they move the selection network to network; in a focused network, they do it when the network's centre is selected, and move within the network otherwise. <kbd>Tab</kbd> wraps round, arrows stop at the ends.</td></tr>
+      <tr><td>Arrows in Networks</td><td>Step from one network to the next. In Networks, they move the selection network to network; in a focused network, they do it when the network's centre is selected, and move within the network otherwise. They stop at the ends.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>/</kbd> in Networks</td><td>On a tied node, Focus shows <em>its network on its own</em>: the node, everything tied to it, and everything tied to those, and nothing else, laid out by the links; nothing is moved for good. <kbd>⌘</kbd><kbd>/</kbd> again, or <kbd>Esc</kbd>, steps back to Networks. In the Dimmed view, Focus on an untied node does what it always did.</td></tr>
-      <tr><td>Moving in a network</td><td>The tree is hidden, so the keys follow what is on screen: arrows go to the nearest node that way, <kbd>Tab</kbd> walks the network nearest first, and anything you make with <kbd>Enter</kbd> or <kbd>⌘</kbd>+arrow is tied to the node you made it from, so it stays in view. Moving nodes and inserting between them are off until you leave.</td></tr>
+      <tr><td>Moving in a network</td><td>The tree is hidden, so the keys follow what is on screen: arrows go to the nearest node that way, and anything you make with <kbd>Enter</kbd> or <kbd>⌘</kbd>+arrow is tied to the node you made it from, so it stays in view. Moving nodes and inserting between them are off until you leave.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>E</kbd> in a network</td><td>Folds the network instead of the tree: everything reached only <em>through</em> the selected node goes, and it wears a badge counting them. Click the badge or press it again to bring them back.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>C</kbd> / <kbd>⇧</kbd><kbd>⌘</kbd><kbd>C</kbd></td><td><b>In a network:</b> copy the network as an outline (the centre, what is tied to it, what is tied to those) or as an image of just the network. The <b>Copy</b> menu in the bar does both.</td></tr>
     </table></section>
     <section class="hpane" data-tab="present"><h3>Present</h3>
     <table class="keys">
-      <tr><td><kbd>⌘</kbd><kbd>4</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>4</kbd></td><td><b>Flags.</b> Everything without a flag drops to a ghost, <kbd>Tab</kbd> and the arrows step flag to flag, <kbd>Esc</kbd> puts you back. The view is offered only while the map has a flag.</td></tr>
+      <tr><td><kbd>⌘</kbd><kbd>4</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>4</kbd></td><td><b>Flags.</b> Everything without a flag drops to a ghost, the arrows step flag to flag, <kbd>Esc</kbd> puts you back. The view is offered only while the map has a flag.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>3</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>3</kbd></td><td><b>Present.</b> Walks the map (or the focused branch) one node at a time in reading order, showing nothing you have not reached yet. Each node lands where it will stay and the camera follows. <kbd>→</kbd> or <kbd>Space</kbd> next, <kbd>⇧</kbd><kbd>→</kbd> the whole level at once, <kbd>←</kbd> back, <kbd>O</kbd> a look at everything so far, <kbd>Home</kbd> from the top. <kbd>⇧</kbd><kbd>O</kbd> shows the whole story at once. After the last node, one more step lights the whole story and stands back. <kbd>⌘</kbd><kbd>K</kbd> jumps to any node in the story, telling everything before it. A click moves on too, and a right-click goes back. Leave and come back and it picks up where you were. The bar has a full screen button. <kbd>Esc</kbd>, <kbd>⌘</kbd><kbd>1</kbd> or <kbd>⌘</kbd><kbd>3</kbd> ends it and puts you back where you were. Folded branches stay folded. <kbd>T</kbd> mid-talk (or the Set up button in the bar, or the Style panel's <b>Presenting</b> rows) sets up the talk, and a change takes effect on the step you are on: the whole map on screen from the first second with the path lit (On screen: All, Behind you: Fade), what is behind you kept, faded or hidden again, one step revealing a node, a row or a branch (<kbd>⇧</kbd><kbd>→</kbd> is always one step coarser), and a camera that follows, holds the whole map or holds the branch. A talk as <b>Cards</b> drops the map: one node to a screen, its paragraphs as the body, its children as chips, and <kbd>O</kbd> has nothing to show.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>P</kbd> <span style="color:var(--muted)">or</span> <kbd>⌥</kbd><kbd>⇧</kbd><kbd>P</kbd></td><td><b>Present from here.</b> The same talk, starting from the selected node instead of the centre, so the rest of the map is never told. On the centre it is <kbd>⌘</kbd><kbd>3</kbd>. Also in the right-click menu.</td></tr>
       <tr><td><kbd>R</kbd> while presenting</td><td><b>Arrange the story.</b> The whole walk comes up, numbered. <kbd>⌘</kbd>+click a sibling to say <em>this, then that</em>, or from a parent to one of its children to say which child that level opens with; the same pair again undoes. From the keyboard, <kbd>Space</kbd> picks a node up and <kbd>Space</kbd> on another puts the picked one before it. <kbd>⌫</kbd> unpicks a node and resets every arrangement underneath it; unlinking a node does the same. Order only ever changes things inside one level. A level you never touch is told in map order; once you pick any of its children, the ones you did not pick are skipped, and arrange mode marks them so nothing goes missing by accident. <kbd>R</kbd> again presents the new order from the top. It is saved with the map, and a map can hold several stories: the story menu in the bar switches between them (or <kbd>[</kbd> and <kbd>]</kbd>, or a number while it is open), adds, renames and deletes them. Delete asks twice, and <kbd>⌘</kbd><kbd>Z</kbd> brings one back.</td></tr>
@@ -1136,7 +1135,6 @@
     <table class="keys">
       <tr><td>The camera</td><td>Follows on its own. It holds still while you work mid-screen and slides only when you are about to run off an edge.</td></tr>
       <tr><td>Drag / scroll</td><td>Pan. <kbd>⌘</kbd>+scroll zooms.</td></tr>
-      <tr><td>Zooming out</td><td>Below 25% the map starts shedding its depth, a layer at a time, and each parent at the edge says how much it is holding. Nothing re-packs and nothing you folded by hand is unfolded: zoom back in and it all comes back exactly where it was. Click a count to dive into what it is hiding. The Style panel decides whether what survives shrinks with the camera or holds its size on screen.</td></tr>
       <tr><td>Right-click</td><td>Mappr's own menu. On a node: everything that can be done to it, each row with its key beside it, so the menu teaches the keys. On empty canvas: the views, the camera and the maps. Any key closes it and still does what it does.</td></tr>
       <tr><td><kbd>⌘</kbd><kbd>,</kbd></td><td>Style panel. It never takes the keyboard, so shortcuts keep working while it is open.</td></tr>
       <tr><td><kbd>⌥</kbd><kbd>⇧</kbd><kbd>K</kbd></td><td>Walk the key bar through the other modes without leaving the one you are in, so you can read the selection keys while you are on the map. Any other key, or five seconds, brings your own keys back, and the key you pressed still does what it does.</td></tr>
@@ -3209,7 +3207,11 @@ function curtainLimit(z){
    already own the camera, both already delete pos entries, and two hide rules
    on one screen is unreadable. An export lifts it too, because exports ignore
    every view (house rule 6). */
-function curtainOff(){ return !state || ORB.suspend || !!pres || !!lens || !!lensOne; }
+/* Orbital zoom (1.10.0) is switched off in 1.13.0, not removed: with ORBITAL
+   false the curtain never draws, zooming out only shrinks the map, and the
+   Zooming out row leaves Style. Set it true to bring the whole thing back. */
+var ORBITAL=false;
+function curtainOff(){ return !ORBITAL || !state || ORB.suspend || !!pres || !!lens || !!lensOne; }
 
 /* Run at the top of render, before the classes are written: what the curtain
    hides is read off the tree rather than off pos, so it is known before
@@ -4991,12 +4993,12 @@ function esc(t){ return String(t).replace(/[&<>"]/g,function(c){ return {"&":"&a
 /* The bottom bar: a handful of keys for the mode you are in, not all of them.
    ? has the rest. It folds to a small pill and remembers that. */
 var HINTS={
-  map:[["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Child","⌘","⏎"],["Retype","Space"],["Fold","⌘","E"],["Focus","⌘","/"],["Jump","⌘","K"],["Done","⌥","X"]],
-  focus:[["Next branch","Tab"],["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Fold","⌘","E"],["Out","Esc"]],
-  dim:[["Tie","⌘","+click"],["Next network","Tab"],["Open it","⌘","/"],["Clear links","⇧","+double-click"],["Fit","⌘","0"],["Map","⌘","1"]],
-  nets:[["Tie","⌘","+click"],["Holders","top right"],["Next network","Tab"],["Open it","⌘","/"],["Fold beyond","⌘","E"],["Copy all","⌘","C"],["Fit","⌘","0"],["Map","⌘","1"]],
-  flags:[["Next flag","Tab"],["Unflag","⌘","⇧","F"],["Focus","⌘","/"],["Fit","⌘","0"],["Map","⌘","1"]],
-  net:[["Move","←↑→↓"],["Walk","Tab"],["Tick a holder","click a chip"],["Fold beyond","⌘","E"],["New linked node","⏎"],["Back to Networks","Esc"]],
+  map:[["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Child","Tab"],["Retype","Space"],["Fold","⌘","E"],["Focus","⌘","/"],["Jump","⌘","K"],["Done","⌥","X"]],
+  focus:[["Child","Tab"],["Branch","⌘","←↑→↓"],["Sibling","⏎"],["Fold","⌘","E"],["Out","Esc"]],
+  dim:[["Tie","⌘","+click"],["Next network","←↑→↓"],["Open it","⌘","/"],["Clear links","⇧","+double-click"],["Fit","⌘","0"],["Map","⌘","1"]],
+  nets:[["Tie","⌘","+click"],["Holders","top right"],["Next network","←↑→↓"],["Open it","⌘","/"],["Fold beyond","⌘","E"],["Copy all","⌘","C"],["Fit","⌘","0"],["Map","⌘","1"]],
+  flags:[["Next flag","←↑→↓"],["Unflag","⌘","⇧","F"],["Focus","⌘","/"],["Fit","⌘","0"],["Map","⌘","1"]],
+  net:[["Move","←↑→↓"],["Tick a holder","click a chip"],["Fold beyond","⌘","E"],["New linked node","⏎"],["Back to Networks","Esc"]],
   carry:[["Choose where","←↑→↓"],["Drop inside","⏎"],["Drop after","⇧","⏎"],["Put back","Esc"]],
   sort:[],
   sel:[["Grow","⇧","←↑→↓"],["Branches","⌘","⇧","←↑→↓"],["Move","⌥","←↑→↓"],["Carry","⌘","X"],["Done","⌥","X"],["Sort","⌥","O"],["Merge","⌥","J"],["Break out","⌥","B"],["Copy","⌘","C"],["Delete","⌫"],["Frame","⌘","G"],["Clear","Esc"]],
@@ -5005,7 +5007,7 @@ var HINTS={
      map shows it as ghosts */
   hcmd:[["Branch","⌘","←↑→↓"],["Child","⌘","⏎"],["Fold","⌘","E"],["Focus","⌘","/"],["Jump","⌘","K"],["Carry","⌘","X"],["Copy","⌘","C"],["Undo","⌘","Z"]],
   halt:[["Move","⌥","←↑→↓"],["Done","⌥","X"],["Flag","⌥","F"],["Own map","⌥","B"],["Merge","⌥","J"],["Sort","⌥","O"],["Switch map","⌥","M"]],
-  hshift:[["Take more","⇧","←↑→↓"],["Whole branch","⌘","⇧","←↑→↓"],["Next branch","⇧","⏎"],["Row","⇧","+click"],["Back a level","⇧","Tab"]]
+  hshift:[["Take more","⇧","←↑→↓"],["Whole branch","⌘","⇧","←↑→↓"],["Next branch","⇧","⏎"],["Row","⇧","+click"]]
 };
 var hintMin=false, hintSig="";
 /* ⌥⇧K walks the key bar through the other modes without changing mode. The
@@ -5300,7 +5302,7 @@ function goMode(m){
     if(focusId && !lensActive()) lensFromFocus();
     lensSet(true,null,"flags");
     var fl=flagList(); if(fl.length && fl.indexOf(selected)<0){ selected=fl[0]; render(true); centerOn(selected); }
-    flashSave(fl.length+(fl.length===1?" flag":" flags")+" \u00b7 Tab steps through them");
+    flashSave(fl.length+(fl.length===1?" flag":" flags")+" \u00b7 the arrows step through them");
   }
 }
 /* Cards: the current node fills the screen. Its paragraphs are the body, in
@@ -8670,6 +8672,8 @@ var PANEL=[
   {h:"Theme",key:"theme",opts:[["dark",I.tdark,"Dark"],["light",I.tlight,"Light"]]},
   {h:"Behaviour",toggles:[["minSize","Uniform node size"],["typeOnCreate","Cursor in new nodes"],["follow","Camera follows"],["hereFade","navi fades when idle"],["hereAttach","navi joins the maps rail"]]}
 ];
+/* orbital zoom is off (1.13.0): its section and row leave the panel with it */
+if(!ORBITAL) PANEL=PANEL.filter(function(g){ return g.key!=="orbitSize" && g.sect!=="Zoom"; });
 var elStyle=document.getElementById("style"), elScroll=document.getElementById("styleScroll");
 function panelHtml(groups){
   var h=[];
@@ -8771,14 +8775,11 @@ elFb.addEventListener("click",function(e){
 var tabDown=false, tabUsed=false;
 addEventListener("keyup",function(e){
   if(e.key==="Tab"){
-    if(tabDown && !tabUsed){
-      if((lens && !lensOne) || (lensOne && selected===lensOne)){ lensCycle(e.shiftKey?-1:1,true); }
-      else if(!lensActive() && focusId && selected===focusId){ focusCycle(e.shiftKey); }
-      else {
-        var nx=lensOne ? netCycle(e.shiftKey) : cycleLevel(N(selected),e.shiftKey);
-        nx?select(nx):render();
-      }
-    }
+    /* 1.13.0: Tab is a child, exactly as ⌘⏎. It acts on release, so
+       holding it with an arrow still slides a node in between or groups a
+       selection. It walks nothing any more: the arrows do that, and in
+       Networks and Flags Tab does nothing. */
+    if(tabDown && !tabUsed && !e.shiftKey && !pres && !lensActive() && N(selected)) doChild();
     tabDown=false; tabUsed=false;
   }
 });
@@ -9792,6 +9793,8 @@ window.__mf={
   trash:function(){ return trashList().map(function(d){ return {id:d.id,name:docName(d.state)}; }); },
   restore:trashRestore,
   cam:function(){ return {x:view.x,y:view.y,z:view.z}; },
+  /* orbital zoom is off since 1.13.0; the tests switch it on to keep guarding the code */
+  orbital:function(on){ if(on!=null){ ORBITAL=!!on; render(true); } return ORBITAL; },
   camSteps:function(px){ return camSteps(px); }, glide:function(x,y,z){ glideTo(x,y,z); }, pan:function(x,y){ panTo(x,y); },
   get rawMarked(){ return Object.keys(marked); },
   frame:makeFrame, ungroup:ungroup, pickFrame:function(id){ selFrame=id; render(true); },

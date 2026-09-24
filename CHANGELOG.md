@@ -3,6 +3,22 @@
 All notable changes to Mappr. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow semver.
 
+## [1.13.0] - 2026-09-24
+
+### Changed
+- **Tab makes a child.** It does exactly what ⌘⏎ does: a new node one level
+  deeper, under the one you are on. While you are typing, Tab finishes the
+  node and starts its first child, the way an outline indents, so you can
+  lay down a branch without leaving the keyboard's home row. Holding Tab with
+  an arrow still slides a node in between or groups a selection.
+- **Tab no longer walks.** The arrows already step along a level, round the
+  branches of a focus, from network to network and from flag to flag, so
+  Tab stopped doing the same thing a second way. In Networks and Flags it
+  does nothing.
+- **Zooming out just zooms out again.** The map no longer sheds its deeper
+  branches as you pull back, and the "Zooming out" setting has left Style.
+  It is switched off rather than gone, so it can come back.
+
 ## [1.12.0] - 2026-09-23
 
 ### Added
